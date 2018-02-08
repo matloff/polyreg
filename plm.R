@@ -50,12 +50,25 @@ combnDeg <- function(n, deg) { # distribute (deg) degrees to (n) different X's
 }
 
 
-deg_plm <- function(xy, deg) { # deal with nondummy terms only
+deg_plm <- function(xyd, deg) { # deal with nondummy terms only
   
+  row <- dim(xyd)[1]
+  col <- dim(xyd)[2]
+  
+  if (typeof(xyd) == "list") {
+    xy <- data.frame(as.numeric(unlist(xyd[1])))
+    for (i in 2:col)
+    {
+      xy <- cbind(xy, as.numeric(unlist(xyd[i])))
+    }
+    
+  } # fix type
+  else {
+    xy <- xyd
+  }
   result <- xy^deg 
   
-  row <- nrow(xy)
-  col <- ncol(xy)
+  
   lim <- min(col, deg)
   if (col > 1) {
     for (i in 2:lim) {
@@ -97,7 +110,7 @@ only_dummy <- function(xy, deg) { # deal with dummy terms only
                   # --> X1*X2^2 = X1^2*X2 = just need X1*X2 
     result <- matrix(1, ncol=1, nrow=nrow(xy))
     for (i in 1:n) {
-      result <- result * xy[,i]
+      result <- result * as.numeric(xy[,i])
     }
   }
   else { # if n > deg, deal with the case: eg. X1,X2,X3, deg=2 
@@ -106,7 +119,7 @@ only_dummy <- function(xy, deg) { # deal with dummy terms only
     
     result <- matrix(1,ncol=1, nrow=nrow(xy))
     for (k in 1:nrow(idx)) {
-      result <- result * xy[, idx[k,1]]
+      result <- result * as.numeric(xy[, idx[k,1]])
     } # do the first one seperately 
       # because it needs the first one to cbind later
     
@@ -116,7 +129,7 @@ only_dummy <- function(xy, deg) { # deal with dummy terms only
     for (j in 2:ncol(idx)) {
       temp <- matrix(1,ncol=1, nrow=nrow(xy))
       for (k in 1:nrow(idx)) 
-        temp <- temp * xy[, idx[k,j]]
+        temp <- temp * as.numeric(xy[, idx[k,j]])
       
       result <- cbind(result, temp)
     }
@@ -128,7 +141,7 @@ only_dummy <- function(xy, deg) { # deal with dummy terms only
 
 
 # xy: contains all predictor variables (X1, ..., Xi) 
-plm <- function(xydata, deg) {
+getPoly <- function(xydata, deg, maxInteractDeg = deg) {
   ### xydata includes y!
   
   if (deg < 1) {
@@ -150,6 +163,7 @@ plm <- function(xydata, deg) {
 
   
   result <- xy 
+
   
   if (deg > 1) {
     
@@ -157,11 +171,17 @@ plm <- function(xydata, deg) {
       if (ncol(nondummy) > 0) # for nondummy case 
         result <- cbind(result, deg_plm(nondummy,i))
       
+      
       if (ncol(dummy) > 0 && i <= ncol(dummy)){ # for dummy case 
         result <- cbind(result, only_dummy(dummy,i))
         
       }
-      
+    }
+  }
+  
+  if (maxInteractDeg > 1) {
+    
+    for (i in 2:maxInteractDeg) {
       # for dummy & nondummy intersection
       if (ncol(nondummy) > 0 && ncol(dummy) > 0) {
         for (j in 1:(i-1)) {
@@ -187,7 +207,7 @@ plm <- function(xydata, deg) {
             
           } 
           
-          mix <- r_dummy[,1] * r_nondummy[,1]
+          mix <- as.numeric(r_dummy[,1]) * as.numeric(r_nondummy[,1])
           skip <- 1
           
           n_dummy <- ncol(r_dummy)
@@ -202,43 +222,90 @@ plm <- function(xydata, deg) {
                 next
               }
               
-              mix <- cbind(mix, r_dummy[,a] * r_nondummy[,b])
-              
+              mix <- cbind(mix, as.numeric(r_dummy[,a]) * as.numeric(r_nondummy[,b]))
               
             }
             
           }   
           
           result <- cbind(result, mix)
+          
         }
         
       } # dummy & nondummy intersection
-      
-    } # for (i in 2:deg)   
+    } # for (i in 2:maxInteractDeg)
+ 
     
   }
   
-  rt <- cbind(result, y)
-  colnames(rt) <- NULL
-  return (rt)
-  #return (lm(as.vector(y)~as.matrix(result)))
+  rt <- as.data.frame(cbind(result, y))
+  colnames(rt)[ncol(rt)] <- "y"
+  for (i in 1:(ncol(rt) - 1)) {
+    colnames(rt)[i] <- paste("V", i, sep = "")
+  }
+  return (as.data.frame(rt))
+  
+}
+
+library(quantreg)
+# assume y is in the last column of xy
+polyFit <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8) {
+  n <- nrow(xy)
+  ntrain <- round(trnProp*n)
+  trainidxs <- sample(1:n, ntrain, replace = FALSE)
+  
+  error <- NULL
+  for (i in 1:maxDeg) {  # for each degree
+    m <- ifelse(i > maxInteractDeg, maxInteractDeg, i)
+    pxy <- getPoly(xy, i, m)
+    training <- pxy[trainidxs,]
+    testing <- pxy[-trainidxs,]
+    
+    if (use == "lm") {
+      pol <- lm(y~., data = training)
+      pred <- predict(pol, testing[, -ncol(testing)], na.action = na.omit)
+      error[i] <- mean(abs(pred - testing$y))
+    }
+    else if (use == "qr"){
+      pol <- rq(y~.,.5, data=training, na.action = na.omit)
+      pred <- predict(pol, testing[, -ncol(testing)], na.action = na.omit)
+      error[i] <- mean(abs(pred - testing$y))
+    }
+    else if (use == "glm") {
+      pol <- glm(y~., family = binomial(link = "logit"), data = training)
+      pred <- predict(pol, testing[, -ncol(testing)], na.action = na.omit)
+      error[i] <- mean(abs(pred - testing$y))
+    }
+    else {
+      print("Please choose lm, qr, or glm.")
+    }
+    
+  }
+  
+  return(error)
   
 }
 
 
 
-### Testing
-d1 <- 2:4
-d2 <- 7:9
-d3 <- c(T, F, F)
-d4 <- c(T, T, F)
-dy <- c(1,2,4)
-xy <- cbind(d1,d2,d3,d4,dy)
-plm(xy,3)
-# d1, d2, d3, d4
-# d1^2, d2^2, d1*d2, d3*d4, d1*d3, d2*d3, d1*d4, d2*d4
-# d1^3, d2^3, d1*d2^2, d1^2*d2, d1^2*d3, d2^2*d3, d1*d2*d3, d1^2*d4, d2^2*d4, d1*d2*d4, d1*d3*d4, d2*d3*d4
-
-plm(xy,4)
-
-
+## Testing
+library(partools)
+getPE <- function() 
+{
+  data(prgeng)
+  pe <- prgeng[,c(1,3,7:9)]
+  # dummies for MS, PhD
+  pe$ms <- as.integer(pe$educ == 14)
+  pe$phd <- as.integer(pe$educ == 16)
+  pe$educ <- NULL
+  pe <<- pe
+}
+getPE()
+pe2 <- pe[,c(1,2,4:6,3)]
+pe3 <- pe2[, -4]
+pe3 <- as.data.frame(cbind(pe3, pe2[,4]))
+colnames(pe3)[6] <- "ms"
+polyFit(pe3, 1, 1,"glm", 0.8)
+polyFit(pe3, 3, 2,"glm", 0.8)
+polyFit(pe3, 4, 4,"glm", 0.8)
+polyFit(pe3, 5, 5,"glm", 0.8)
