@@ -247,9 +247,64 @@ getPoly <- function(xydata, deg, maxInteractDeg = deg) {
   
 }
 
+
+one_all <- function(xy, trainidxs) {
+  acc <- NULL
+  error <- NULL
+  classes <- unique(xy[,ncol(xy)])
+  for (i in 1:length(classes)) {
+    oneClass <- xy[xy$y == classes[i],]
+    oneClass$y <- 1
+    allClass <- xy[xy$y != classes[i],]
+    allClass$y <- 0
+    new_xy <- as.data.frame(rbind(oneClass, allClass))
+    training <- new_xy[trainidxs,]
+    testing <- new_xy[-trainidxs,]
+    pol <- glm(y~., family = binomial(link = "logit"), data = training)
+    pred <- predict(pol, testing[, -ncol(testing)], na.action = na.omit)
+    predT <- ifelse(pred > 0.5, 1, 0)
+    accuracy <- table(predT, testing$y)
+    acc[i] <- sum(diag(accuracy))/sum(accuracy)
+    error[i] <- mean(abs(predT - testing$y))
+  }
+  ind <- which.max(acc)
+  return(error[ind])
+}
+
+all_all <- function(xy, trainidxs) {
+  classes <- unique(xy[,ncol(xy)])
+  training <- xy[trainidxs,]
+  testing <- xy[-trainidxs,]
+  acc <- matrix(0, nrow=length(classes), ncol=length(classes))
+  error <- matrix(0, nrow=length(classes), ncol=length(classes))
+  votes <- matrix(0, nrow = nrow(testing),ncol=length(classes))
+  for (i in 1:length(classes)) {
+    for (j in 1:length(classes)) {
+      if (i == j) # same class
+        next
+      newtrain <- training[training$y == classes[i] | training$y == classes[j],]
+      newtrain$y <- ifelse(newtrain$y == classes[i], 1, 0)
+      newtest <- testing[testing$y == classes[i] | testing$y == classes[j],]
+      newtest$y <- ifelse(newtest$y == classes[i], 1, 0)
+      pol <- glm(y~., family = binomial(link = "logit"), data = newtrain)
+      pred <- predict(pol, newtest[, -ncol(newtest)], na.action = na.omit)
+      predT <- ifelse(pred > 0.5, 1, 0)
+      votes[,i] <- predT
+    } # for j
+  } # for i 
+  ridx <- apply(votes, 1, which.max)
+  predF <- NULL
+  for (k in 1:length(rdix)) {
+    predF[k] <- classes[ridx[k]]
+  }
+  return(mean(abs(predF - newtest$y)))
+}
+
+
 library(quantreg)
 # assume y is in the last column of xy
-polyFit <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8) {
+polyFit <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8, glmMethod = "all") {
+  set.seed(500)
   n <- nrow(xy)
   ntrain <- round(trnProp*n)
   trainidxs <- sample(1:n, ntrain, replace = FALSE)
@@ -258,24 +313,56 @@ polyFit <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8) 
   for (i in 1:maxDeg) {  # for each degree
     m <- ifelse(i > maxInteractDeg, maxInteractDeg, i)
     pxy <- getPoly(xy, i, m)
-    training <- pxy[trainidxs,]
-    testing <- pxy[-trainidxs,]
+    
+    pxy.pca <- prcomp(pxy[,-ncol(pxy)])
+    pcNo = cumsum(pxy.pca$sdev)/sum(pxy.pca$sdev)
+    for (k in 1:length(pcNo)) {
+      if (pcNo[k] >= 0.9)
+        break
+    }
+    trainingX <- pxy.pca$x[trainidxs,1:k]
+    trainY <- pxy[trainidxs, ncol(pxy)]
+    training <- as.data.frame(cbind(trainingX, trainY))
+    testingX <- pxy.pca$x[-trainidxs,1:k]
+    testY <- pxy[-trainidxs, ncol(pxy)]
+    testing <- as.data.frame(cbind(testingX, testY))
     
     if (use == "lm") {
-      pol <- lm(y~., data = training)
-      pred <- predict(pol, testing[, -ncol(testing)], na.action = na.omit)
-      error[i] <- mean(abs(pred - testing$y))
+      pol <- lm(trainY~., data = training)
+      pred <- predict(pol, testing[,-ncol(testing)], na.action = na.omit)
+      error[i] <- mean(abs(pred - testing$testY))
     }
     else if (use == "qr"){
-      pol <- rq(y~.,.5, data=training, na.action = na.omit)
+      pol <- rq(trainY~.,.5, data=training, na.action = na.omit)
       pred <- predict(pol, testing[, -ncol(testing)], na.action = na.omit)
-      error[i] <- mean(abs(pred - testing$y))
+      error[i] <- mean(abs(pred - testing$testY))
     }
     else if (use == "glm") {
-      pol <- glm(y~., family = binomial(link = "logit"), data = training)
-      pred <- predict(pol, testing[, -ncol(testing)], na.action = na.omit)
-      error[i] <- mean(abs(pred - testing$y))
-    }
+      classes <- unique(xy[,ncol(xy)])
+      if (length(classes) == 2) { # two categories
+        training$trainY <- ifelse(training$trainY == classes[1], 1, 0)
+        testing$testY <- ifelse(testing$testY == classes[1], 1, 0)
+        pol <- glm(trainY~., family = binomial(link = "logit"), data = training)
+        pred <- predict(pol, testing[, -ncol(testing)], na.action = na.omit)
+        predT <- ifelse(pred > 0.5, 1, 0)
+        error[i] <- mean(abs(predT - testing$testY))
+      }
+      else { # more than two categories
+        if (glmMethod == "one") {
+          error[i] <- one_all(pxy, trainidxs)
+        }
+        else if (glmMethod == "all")
+        {
+          error[i] <- all_all(pxy, trainidxs)
+        }
+        else {
+          print("Please choose 'one' for one-vs-all or 'all' for all-vs-all. ")
+        }
+        
+        
+      } # else more than two categories
+      
+    } # glm
     else {
       print("Please choose lm, qr, or glm.")
     }
@@ -286,26 +373,3 @@ polyFit <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8) 
   
 }
 
-
-
-## Testing
-library(partools)
-getPE <- function() 
-{
-  data(prgeng)
-  pe <- prgeng[,c(1,3,7:9)]
-  # dummies for MS, PhD
-  pe$ms <- as.integer(pe$educ == 14)
-  pe$phd <- as.integer(pe$educ == 16)
-  pe$educ <- NULL
-  pe <<- pe
-}
-getPE()
-pe2 <- pe[,c(1,2,4:6,3)]
-pe3 <- pe2[, -4]
-pe3 <- as.data.frame(cbind(pe3, pe2[,4]))
-colnames(pe3)[6] <- "ms"
-polyFit(pe3, 1, 1,"glm", 0.8)
-polyFit(pe3, 3, 2,"glm", 0.8)
-polyFit(pe3, 4, 4,"glm", 0.8)
-polyFit(pe3, 5, 5,"glm", 0.8)
