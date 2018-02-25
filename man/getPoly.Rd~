@@ -21,10 +21,11 @@ getPoly(xydata, deg, maxInteractDeg = deg)
 
    The \code{getPoly} function takes in a dataframe or data matrix and
    generates polynomial terms of predictor variables, removing
-   redundant terms for dummy variables (since their powers are the same
-   as the original variable).  Also, this function treats predictor variables 
-   that have only two kinds of values as categorical variables, so the data 
-   needs preprocessing to multiple dummy variables if needed.
+   redundant terms for dummy variables. For example, for a predictor
+   variable with only 0 and 1, its square and cubic terms are the same.
+   Also, this function treats predictor variables that have only two kinds
+   of values categorical variables, so the data needs preprocessing to
+   multiple dummy variables if needed.
 }
 \value{
 The return value of \code{getPoly} is a dataframe including generated polynomial terms. The response variable is in the last column with column name "y", and other predictor variables have column names V1, V2, etc.
