@@ -47,10 +47,7 @@ error (for \code{lm}) or probability of correct classification
 \examples{
 y <- mtcars[,1]
 data <- cbind(mtcars[,-1], y) # make y column the last column
-pf1 <- polyFit(data,2,1,"lm",0.8,FALSE)
-pf2 <- polyFit(data,5,1,"lm",0.8,TRUE,0.9)
+pf1 <- polyFit(data,2,2,"lm",0.8,FALSE)
+pf2 <- polyFit(data,5,3,"lm",0.8,TRUE,0.9)
 
-mydata <- read.csv("https://stats.idre.ucla.edu/stat/data/binary.csv")
-pf3 <- polyFit(mydata,2,1,"glm",0.8,FALSE)
-pf4 <- polyFit(mydata,2,1,"glm",0.8,FALSE,0.9,"one")
 }
