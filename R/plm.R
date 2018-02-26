@@ -381,29 +381,20 @@ polyFit <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8,p
   error <- NULL
   for (i in 1:maxDeg) {  # for each degree
     m <- ifelse(i > maxInteractDeg, maxInteractDeg, i)
-    pxy <- getPoly(xy, i, m)
 
     if (pcaMethod == TRUE) {
-      pxy.pca <- prcomp(pxy[,-ncol(pxy)])
-      pcNo = cumsum(pxy.pca$sdev)/sum(pxy.pca$sdev)
+      xy.pca <- prcomp(xy[,-ncol(xy)])
+      pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
       for (k in 1:length(pcNo)) {
         if (pcNo[k] >= pcaPortion)
           break
       }
-      trainingX <- pxy.pca$x[trainidxs,1:k]
-      y <- pxy[trainidxs, ncol(pxy)]
-      training <- as.data.frame(cbind(trainingX, y))
-      testingX <- pxy.pca$x[-trainidxs,1:k]
-      y <- pxy[-trainidxs, ncol(pxy)]
-      testing <- as.data.frame(cbind(testingX, y))
-      pxy <- as.data.frame(cbind(pxy.pca$x[,1:k], pxy[,ncol(pxy)]))
-      colnames(pxy)[ncol(dt)] <- "y"
-    } else if (pcaMethod == FALSE){
-      training <- pxy[trainidxs,]
-      testing <- pxy[-trainidxs,]
-    } else {
-      return("Please choose whether to use PCA (TRUE or FALSE).")
+      xy <- as.data.frame(cbind(xy.pca$x[,1:k], xy[,ncol(xy)]))
+      colnames(xy)[ncol(xy)] <- "y"
     }
+    pxy <- getPoly(xy, i, m)
+    training <- pxy[trainidxs,]
+    testing <- pxy[-trainidxs,]
 
     if (use == "lm") {
       pol <- lm(y~., data = training)
@@ -443,7 +434,6 @@ polyFit <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8,p
   return(error)
 
 }
-
 
 
 
