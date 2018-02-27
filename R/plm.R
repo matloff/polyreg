@@ -175,7 +175,7 @@ only_dummy <- function(xy, deg) { # deal with dummy terms only
 # xy:  the actual xy matrix
 # startCols:  a list startCols[i] would be the column number of xy in
 #             which the degree-i terms begin
-
+#' @export
 polyMatrix <- function(x, k) {
   me <- list(xy = x, endCols = k)
   class(me) <- "polyMatrix"
@@ -195,7 +195,7 @@ polyMatrix <- function(x, k) {
 #   maxInteractDeg: the max degree of dummy and nondummy predictor variable
 #                   interaction terms
 
-# return: a dataframe of all poly terms
+# return: a polyMatrix object
 
 #' @export
 getPoly <- function(xydata, deg, maxInteractDeg = deg) {
@@ -351,9 +351,78 @@ all_all <- function(xy, trainidxs) {
   return(mean(predF == testing$y))
 }
 
-
 ##################################################################
 # polyFit: generate polynomial terms of data and fit models
+##################################################################
+
+# arguments:
+#   xy: dataframe, response variable is in the last column
+#   deg: the degree of the polynomial terms
+#   maxInteractDeg: the max degree of dummy and nondummy predictor variables
+#                   interaction terms
+#   use: can be "lm" for linear regreesion, and "glm" for logistic regression
+#   pcaMethod: whether to use PCA (can be TRUE or FALSE)
+#   pcaPortion: the portion of principal components to be used
+
+# return: the object of class polyFit
+
+#' @export
+polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPortion = 0.9) {
+  ori <- xy
+  if (pcaMethod == TRUE) {
+    xy.pca <- prcomp(xy[,-ncol(xy)])
+    pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
+    for (k in 1:length(pcNo)) {
+      if (pcNo[k] >= pcaPortion)
+        break
+    }
+    xy <- as.data.frame(cbind(xy.pca$x[,1:k], xy[,ncol(xy)]))
+    colnames(xy)[ncol(xy)] <- "y"
+  }
+  plm.xy <- getPoly(xy, deg, maxInteractDeg)$xy
+  if (use == "lm")
+    ft <- lm(y~., data = plm.xy)
+  else if (use == "glm") {
+    ft <- glm(y~., family = binomial(link = "logit"), data = plm.xy)
+  }
+  pcaPrn <- ifelse(pcaMethod == TRUE, pcaPortion, 0)
+  me <- list(xy = ori, degree = deg, maxInteractDeg = maxInteractDeg, use = use,
+             poly.xy = plm.xy, fit = ft, PCA = pcaMethod, pca.portion = pcaPrn)
+  class(me) <- "polyFit"
+  return(me)
+
+}
+
+##################################################################
+# predict.polyFit: predict the fitted models on newdata
+##################################################################
+
+# arguments:
+#   object: a polyFit class object
+#   newdata: a new dataframe, without response variable
+
+# return: predicted values of newdata
+
+#' @export
+predict.polyFit <- function(object, newdata) { # newdata doesn't have y column
+  if (object$PCA == TRUE) {
+    newdata.pca <- prcomp(newdata)
+    pcNo = cumsum(newdata.pca$sdev)/sum(newdata.pca$sdev)
+    for (k in 1:length(pcNo)) {
+      if (pcNo[k] >= object$pca.portion)
+        break
+    }
+    newdata <- newdata.pca$x[,1:k]
+  }
+  y <- rep(0, nrow(newdata)) # pretend has y column
+  fdata <- cbind(newdata,y)
+  plm.newdata <- getPoly(fdata, object$degree, object$maxInteractDeg)$xy
+  pred <- predict(object$fit, plm.newdata[,-ncol(plm.newdata)])
+  return(pred)
+}
+
+##################################################################
+# xvalPoly: generate mean absolute error of fitted models
 ##################################################################
 
 # arguments:
@@ -372,7 +441,7 @@ all_all <- function(xy, trainidxs) {
 #         the i-th element of the list is for degree = i
 
 #' @export
-polyFit <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8,pcaMethod = FALSE,pcaPortion = 0.9, glmMethod = "all") {
+xvalPoly <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8,pcaMethod = FALSE,pcaPortion = 0.9, glmMethod = "all") {
   set.seed(500)
   n <- nrow(xy)
   ntrain <- round(trnProp*n)
@@ -437,3 +506,5 @@ polyFit <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8,p
   return(error)
 
 }
+
+
