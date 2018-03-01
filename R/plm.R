@@ -190,7 +190,7 @@ polyMatrix <- function(x, k) {
 
 # arguments:
 
-#   xydata: the dataframe (includes both predictor and response variables)
+#   xy: the dataframe (only predictor variables)
 #   deg: the max degree of polynomial terms
 #   maxInteractDeg: the max degree of dummy and nondummy predictor variable
 #                   interaction terms
@@ -198,17 +198,17 @@ polyMatrix <- function(x, k) {
 # return: a polyMatrix object
 
 #' @export
-getPoly <- function(xydata, deg, maxInteractDeg = deg) {
-  ### xydata includes y
+getPoly <- function(xy, deg, maxInteractDeg = deg) {
+  ### xy doesn't include y
 
   if (deg < 1) {
     return("deg must be larger than or equal to 1.")
   }
 
-  xydata <- as.data.frame(xydata)
+  xy <- as.data.frame(xy)
   endCols <- NULL
-  xy <- xydata[,-ncol(xydata), drop=FALSE]
-  y <- xydata[,ncol(xydata)]
+  #xy <- xydata[,-ncol(xydata), drop=FALSE]
+  #y <- xydata[,ncol(xydata)]
   n <- ncol(xy)
   # seperate dummy variables and continuous variables
   is_dummy <- (lapply(lapply(xy, table), length)==2)
@@ -269,13 +269,13 @@ getPoly <- function(xydata, deg, maxInteractDeg = deg) {
     } # loop 2:deg
   } # if deg > 1
 
-  rt <- as.data.frame(cbind(result, y))
-  colnames(rt)[ncol(rt)] <- "y"
-  for (i in 1:(ncol(rt) - 1)) {
+  rt <- as.data.frame(result)
+  #colnames(rt)[ncol(rt)] <- "y"
+  for (i in 1:ncol(rt)) {
     colnames(rt)[i] <- paste("V", i, sep = "")
   }
 
-  return (polyMatrix(as.data.frame(rt), endCols))
+  return (polyMatrix(rt, endCols))
 
 }
 
@@ -368,7 +368,7 @@ all_all <- function(xy, trainidxs) {
 
 #' @export
 polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPortion = 0.9) {
-  ori <- xy
+  y <- xy[,ncol(xy)]
   if (pcaMethod == TRUE) {
     xy.pca <- prcomp(xy[,-ncol(xy)])
     pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
@@ -376,17 +376,21 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPor
       if (pcNo[k] >= pcaPortion)
         break
     }
-    xy <- as.data.frame(cbind(xy.pca$x[,1:k], xy[,ncol(xy)]))
-    colnames(xy)[ncol(xy)] <- "y"
+    xdata <- xy.pca$x[,1:k]
+
+  } else {
+    xdata <- xy[,-ncol(xy)]
   }
-  plm.xy <- getPoly(xy, deg, maxInteractDeg)$xy
-  if (use == "lm")
+  plm.xy <- cbind(getPoly(xdata, deg, maxInteractDeg)$xy,y)
+
+  if (use == "lm") {
     ft <- lm(y~., data = plm.xy)
+  }
   else if (use == "glm") {
     ft <- glm(y~., family = binomial(link = "logit"), data = plm.xy)
   }
   pcaPrn <- ifelse(pcaMethod == TRUE, pcaPortion, 0)
-  me <- list(xy = ori, degree = deg, maxInteractDeg = maxInteractDeg, use = use,
+  me <- list(xy = xy, degree = deg, maxInteractDeg = maxInteractDeg, use = use,
              poly.xy = plm.xy, fit = ft, PCA = pcaMethod, pca.portion = pcaPrn)
   class(me) <- "polyFit"
   return(me)
@@ -414,10 +418,10 @@ predict.polyFit <- function(object, newdata) { # newdata doesn't have y column
     }
     newdata <- newdata.pca$x[,1:k]
   }
-  y <- rep(0, nrow(newdata)) # pretend has y column
-  fdata <- cbind(newdata,y)
-  plm.newdata <- getPoly(fdata, object$degree, object$maxInteractDeg)$xy
-  pred <- predict(object$fit, plm.newdata[,-ncol(plm.newdata)])
+  #y <- rep(0, nrow(newdata)) # pretend has y column
+  #fdata <- cbind(newdata,y)
+  plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg)$xy
+  pred <- predict(object$fit, plm.newdata)
   return(pred)
 }
 
@@ -447,7 +451,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8,
   ntrain <- round(trnProp*n)
   trainidxs <- sample(1:n, ntrain, replace = FALSE)
   error <- NULL
-
+  y <- xy[,ncol(xy)]
   if (pcaMethod == TRUE) {
     xy.pca <- prcomp(xy[,-ncol(xy)])
     pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
@@ -455,15 +459,17 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8,
       if (pcNo[k] >= pcaPortion)
         break
     }
-    xy <- as.data.frame(cbind(xy.pca$x[,1:k], xy[,ncol(xy)]))
-    colnames(xy)[ncol(xy)] <- "y"
+    xdata <- xy.pca$x[,1:k]
+    #colnames(xy)[ncol(xy)] <- "y"
+  } else {
+    xdata <- xy[,-ncol(xy)]
   }
 
-  plm.xy <- getPoly(xy, maxDeg, maxInteractDeg)
+  plm.xy <- getPoly(xdata, maxDeg, maxInteractDeg)
 
   for (i in 1:maxDeg) {  # for each degree
     endCol <- plm.xy$endCols[i] # change to end column
-    y <- plm.xy$xy[,"y"]
+    #y <- plm.xy$xy[,"y"]
     pxy <- cbind(plm.xy$xy[,1:endCol],y)
     training <- pxy[trainidxs,]
     testing <- pxy[-trainidxs,]
