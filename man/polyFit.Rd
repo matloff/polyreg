@@ -1,38 +1,32 @@
 \name{polyFit}
 \alias{polyFit}
+\alias{predict.polyFit}
 
 \title{Polynomial Fit}
 
 \description{
-Fit a polynomial regression/classification model using linear 
-or logistic regreesion. 
+Fit a polynomial regression using linear regreesion or logistic regreesion for classification, and predict on a new dataset.
 }
 
 \usage{
-polyFit(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm", trnProp = 0.8,
-        pcaMethod = FALSE, pcaPortion = 0.9, glmMethod = "all")
+polyFit(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPortion = 0.9)
+predict.polyFit(object, newdata)
 }
 
 \arguments{
-  \item{xy}{Data matrix or dataframe with response variable in the last column.}
-  \item{maxDeg}{Max degree for power terms.}
-  \item{maxInteractDeg}{Max degree of interaction terms.}
-  \item{use}{Can be "lm" for using linear regreesion, and "glm" for 
-              using logistic regression.}
-  \item{trnProp}{Proportion of data to be used as training set.}
-  \item{pcaMethod}{If TRUE, use PCA.}
-  \item{pcaPortion}{If pcaMethod is TRUE, use components up to this
-                    proportion of total variance.}
-  \item{glmMethod}{For classification problems.  If there are more than
-                   two classes, this can be "all" for All-vs-All method,
-                   or "one" for One-vs-All method.}
+  \item{xy}{Data matrix or dataframe with response variable at the last column.}
+  \item{maxDeg}{The max degree to generate polynomial terms.}
+  \item{maxInteractDeg}{The max degree of dummny and nondummy interaction predictor variables.}
+  \item{use}{Can be "lm" for using linear regreesion, and "glm" for using logistic regression.}
+  \item{pcaMethod}{Whether to use PCA (can be TRUE or FALSE).}
+  \item{pcaPortion}{The portion of principal components to be used.}
 }
 
 \details{
 
-   The \code{polyFit} function takes in a dataframe and uses the \code{getPoly}
-   function to generate polynomial terms of the predictor variables. 
-   Then it fits the generated data to linear or logistic regression models. If
+   The \code{polyFit} function takes in a dataframe and use \code{getPoly}
+   function to generate polynomial terms of predictor variables, then it fits
+   the generated data to linear or logistic regreesion models. If
    \code{pcaMethod == TRUE}, the principal component analysis is performed
    using the indicated portion of principal components before fitting the
    models. When logistic regression for classification is indicated,
@@ -40,14 +34,12 @@ polyFit(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm", trnProp = 0.8,
    multiclass problem.
 }
 \value{
-The return value of \code{polyFit} is an R vector of mean absolute 
-error (for \code{lm}) or probability of correct classification
-(for \code{glm}).  The i-th element of the vector is for degree i.
+The return value of \code{polyFit()} is an \code{polyFit} object.
 }
 \examples{
 y <- mtcars[,1]
 data <- cbind(mtcars[,-1], y) # make y column the last column
-pf1 <- polyFit(data,2,2,"lm",0.8,FALSE)
-pf2 <- polyFit(data,5,3,"lm",0.8,TRUE,0.9)
+f <- polyFit(data,2,2,"lm",TRUE, 0.9)
+pred <- predict(f,data[,-ncol(data)])
 
 }
