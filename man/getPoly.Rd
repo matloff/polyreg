@@ -1,5 +1,6 @@
 \name{getPoly}
 \alias{getPoly}
+\alias{polyMatrix}
 
 \title{Get polynomial terms}
 
@@ -12,7 +13,7 @@ getPoly(xydata, deg, maxInteractDeg = deg)
 }
 
 \arguments{
-  \item{xydata}{Data matrix or dataframe with response variable in the last column.}
+  \item{xydata}{Data matrix or dataframe without response variable.}
   \item{deg}{The max degree to generate polynomial terms.}
   \item{maxInteractDeg}{The max degree of dummny and nondummy interaction predictor variables.}
 }
@@ -20,14 +21,15 @@ getPoly(xydata, deg, maxInteractDeg = deg)
 \details{
 
    The \code{getPoly} function takes in a dataframe or data matrix and
-   generates polynomial terms of predictor variables, removing
-   redundant terms for dummy variables (since their powers are the same
-   as the original variable).  Also, this function treats predictor variables 
-   that have only two kinds of values as categorical variables, so the data 
-   needs preprocessing to multiple dummy variables if needed.
+   generate polynomial terms of predictor variables, and it gets rid of
+   redundant terms for categorical variables. For example, for a predictor
+   variable with only 0 and 1, its square and cubic terms are the same.
+   Also, this function treats predictor variables that have only two kinds
+   of values categorical variables, so the data needs preprocessing to
+   multiple dummy variables if needed.
 }
 \value{
-The return value of \code{getPoly} is a dataframe including generated polynomial terms. The response variable is in the last column with column name "y", and other predictor variables have column names V1, V2, etc.
+The return value of \code{getPoly} is a \code{polyMatrix} object. It contains a dataframe including generated polynomial terms. The predictor variables have column names V1, V2, etc. It also has a list, with i-th element representing the end column of polynomial terms for i-th degree.
 }
 \examples{
 x1 <- 1:3
