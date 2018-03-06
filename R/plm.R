@@ -72,11 +72,12 @@ deg_plm <- function(xyd, deg) { # deal with nondummy terms only
 
   if (typeof(xyd) == "list") {
     xy <- data.frame(as.numeric(unlist(xyd[1])))
-    for (i in 2:col)
-    {
-      xy <- cbind(xy, as.numeric(unlist(xyd[i])))
+    if (col > 1) {
+      for (i in 2:col)
+      {
+        xy <- cbind(xy, as.numeric(unlist(xyd[i])))
+      }
     }
-
   } # fix type
   else {
     xy <- xyd
@@ -340,7 +341,7 @@ all_all <- function(xy, trainidxs) {
       pol <- glm(y~., family = binomial(link = "logit"), data = newtrain)
       pred <- predict(pol, testing[, -ncol(testing), drop=FALSE])
       predT <- ifelse(pred > 0.5, 1, 0)
-      votes[,i] <- predT
+      votes[,i] <- votes[,i] + predT
     } # for j
   } # for i
   ridx <- apply(votes, 1, which.max)
@@ -349,6 +350,35 @@ all_all <- function(xy, trainidxs) {
     predF[k] <- classes[ridx[k]]
   }
   return(mean(predF == testing$y))
+}
+
+polyAllvsAll <- function(plm.xy, classes){
+  len <- length(classes)
+  ft <- list()
+  for (i in 1:len) {
+    ft[[i]] <- list()
+    for (j in 1:len) {
+      if (i == j) # same class
+        next
+      newxy <- plm.xy[plm.xy$y == classes[i] | plm.xy$y == classes[j],]
+      newxy$y <- ifelse(newxy$y == classes[i], 1, 0)
+      ft[[i]][[j]] <- glm(y~., family = binomial(link = "logit"), data = newxy)
+    } # for j
+  } # for i
+  return(ft)
+}
+
+polyOnevsAll <- function(plm.xy, classes) {
+  ft <- list()
+  for (i in 1:length(classes)) {
+    oneClass <- plm.xy[plm.xy$y == classes[i],]
+    oneClass$y <- 1
+    allClass <- plm.xy[plm.xy$y != classes[i],]
+    allClass$y <- 0
+    new_xy <- rbind(oneClass, allClass)
+    ft[[i]] <- glm(y~., family = binomial(link = "logit"), data = new_xy)
+  }
+  return(ft)
 }
 
 ##################################################################
@@ -367,8 +397,9 @@ all_all <- function(xy, trainidxs) {
 # return: the object of class polyFit
 
 #' @export
-polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPortion = 0.9) {
+polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPortion = 0.9, glmMethod = "All") {
   y <- xy[,ncol(xy)]
+  classes <- NULL
   if (pcaMethod == TRUE) {
     xy.pca <- prcomp(xy[,-ncol(xy)])
     pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
@@ -376,22 +407,37 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPor
       if (pcNo[k] >= pcaPortion)
         break
     }
-    xdata <- xy.pca$x[,1:k]
+    xdata <- xy.pca$x[,1:k, drop=FALSE]
 
   } else {
-    xdata <- xy[,-ncol(xy)]
+    xdata <- xy[,-ncol(xy), drop=FALSE]
   }
   plm.xy <- cbind(getPoly(xdata, deg, maxInteractDeg)$xy,y)
 
   if (use == "lm") {
     ft <- lm(y~., data = plm.xy)
+    glmMethod <- NULL
   }
   else if (use == "glm") {
-    ft <- glm(y~., family = binomial(link = "logit"), data = plm.xy)
+    classes <- unique(y)
+    if (length(classes) == 2) {
+      plm.xy$y <- as.numeric(ifelse(plm.xy$y == classes[1], 1, 0))
+      ft <- glm(y~., family = binomial(link = "logit"), data = plm.xy)
+      glmMethod <- NULL
+    }
+    else { # more than two classes
+      if (glmMethod == "All") { # all-vs-all
+        ft <- polyAllvsAll(plm.xy, classes)
+      } else if (glmMethod == "One") { # one-vs-all
+        ft <- polyOnevsAll(plm.xy, classes)
+      }
+    } # more than two classes
+
   }
   pcaPrn <- ifelse(pcaMethod == TRUE, pcaPortion, 0)
   me <- list(xy = xy, degree = deg, maxInteractDeg = maxInteractDeg, use = use,
-             poly.xy = plm.xy, fit = ft, PCA = pcaMethod, pca.portion = pcaPrn)
+             poly.xy = plm.xy, fit = ft, PCA = pcaMethod, pca.portion = pcaPrn,
+             glmMethod = glmMethod, classes = classes)
   class(me) <- "polyFit"
   return(me)
 
@@ -418,10 +464,42 @@ predict.polyFit <- function(object, newdata) { # newdata doesn't have y column
     }
     newdata <- newdata.pca$x[,1:k]
   }
-  #y <- rep(0, nrow(newdata)) # pretend has y column
-  #fdata <- cbind(newdata,y)
+
   plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg)$xy
-  pred <- predict(object$fit, plm.newdata)
+  if (object$use == "lm") {
+    pred <- predict(object$fit, plm.newdata)
+  } else { # glm case
+    if (is.null(object$glmMethod)) { # only two classes
+      pre <- predict(object$fit, plm.newdata)
+      pred <- ifelse(pre > 0.5, object$classes[1], object$classes[2])
+    } else { # more than two classes
+      len <- length(object$classes)
+      if (object$glmMethod == "All") { # all-vs-all method
+        votes <- matrix(0, nrow = nrow(plm.newdata), ncol = len)
+        for (i in 1:len) {
+          for (j in 1:len) {
+            if (i == j)
+              next
+            pre <- predict(object$fit[[i]][[j]], plm.newdata, type="response")
+            votes[,i] <- votes[,i] + ifelse(pre > 0.5, 1, 0)
+          } # for i
+        } # for j
+        winner <- apply(votes, 1, which.max)
+
+      } else { # one-vs-all method
+        prob <- matrix(0, nrow=nrow(plm.newdata), ncol=len)
+        for (i in 1:len) {
+          prob[,i] <- predict(object$fit[[i]], plm.newdata, type = "response")
+        }
+        winner <- apply(prob, 1, which.max)
+      }
+      pred <- NULL
+      for (k in 1:nrow(plm.newdata)) {
+        pred[k] <- object$classes[winner[k]]
+      }
+    } # more than two classes
+  } # glm case
+
   return(pred)
 }
 
@@ -443,7 +521,6 @@ predict.polyFit <- function(object, newdata) { # newdata doesn't have y column
 
 # return: a list of mean absolute error (for lm) or accuracy (for glm),
 #         the i-th element of the list is for degree = i
-
 #' @export
 xvalPoly <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8,pcaMethod = FALSE,pcaPortion = 0.9, glmMethod = "all") {
   set.seed(500)
@@ -460,7 +537,6 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8,
         break
     }
     xdata <- xy.pca$x[,1:k]
-    #colnames(xy)[ncol(xy)] <- "y"
   } else {
     xdata <- xy[,-ncol(xy)]
   }
@@ -469,7 +545,6 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8,
 
   for (i in 1:maxDeg) {  # for each degree
     endCol <- plm.xy$endCols[i] # change to end column
-    #y <- plm.xy$xy[,"y"]
     pxy <- cbind(plm.xy$xy[,1:endCol],y)
     training <- pxy[trainidxs,]
     testing <- pxy[-trainidxs,]
