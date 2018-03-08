@@ -397,7 +397,7 @@ polyOnevsAll <- function(plm.xy, classes) {
 # return: the object of class polyFit
 
 #' @export
-polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPortion = 0.9, glmMethod = "All") {
+polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPortion = 0.9, glmMethod = "all") {
   y <- xy[,ncol(xy)]
   classes <- NULL
   if (pcaMethod == TRUE) {
@@ -426,9 +426,9 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPor
       glmMethod <- NULL
     }
     else { # more than two classes
-      if (glmMethod == "All") { # all-vs-all
+      if (glmMethod == "all") { # all-vs-all
         ft <- polyAllvsAll(plm.xy, classes)
-      } else if (glmMethod == "One") { # one-vs-all
+      } else if (glmMethod == "one") { # one-vs-all
         ft <- polyOnevsAll(plm.xy, classes)
       }
     } # more than two classes
@@ -474,7 +474,7 @@ predict.polyFit <- function(object, newdata) { # newdata doesn't have y column
       pred <- ifelse(pre > 0.5, object$classes[1], object$classes[2])
     } else { # more than two classes
       len <- length(object$classes)
-      if (object$glmMethod == "All") { # all-vs-all method
+      if (object$glmMethod == "all") { # all-vs-all method
         votes <- matrix(0, nrow = nrow(plm.newdata), ncol = len)
         for (i in 1:len) {
           for (j in 1:len) {
@@ -486,7 +486,7 @@ predict.polyFit <- function(object, newdata) { # newdata doesn't have y column
         } # for j
         winner <- apply(votes, 1, which.max)
 
-      } else { # one-vs-all method
+      } else if (object$glmMethod == "one") { # one-vs-all method
         prob <- matrix(0, nrow=nrow(plm.newdata), ncol=len)
         for (i in 1:len) {
           prob[,i] <- predict(object$fit[[i]], plm.newdata, type = "response")
@@ -536,56 +536,22 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8,
       if (pcNo[k] >= pcaPortion)
         break
     }
-    xdata <- xy.pca$x[,1:k]
-  } else {
-    xdata <- xy[,-ncol(xy)]
+    xy <- cbind(xy.pca$x[,1:k], y)
   }
-
-  plm.xy <- getPoly(xdata, maxDeg, maxInteractDeg)
+  training <- xy[trainidxs,]
+  testing <- xy[-trainidxs,]
 
   for (i in 1:maxDeg) {  # for each degree
-    endCol <- plm.xy$endCols[i] # change to end column
-    pxy <- cbind(plm.xy$xy[,1:endCol],y)
-    training <- pxy[trainidxs,]
-    testing <- pxy[-trainidxs,]
-
+    m <- ifelse(i > maxInteractDeg, maxInteractDeg, i)
+    pol <- polyFit(training, i, m, use, FALSE, pcaPortion, glmMethod)
+    pred <- predict(pol, testing[,-ncol(testing)])
     if (use == "lm") {
-      pol <- lm(y~., data = training)
-      pred <- predict(pol, testing[,-ncol(testing)], na.action = na.omit)
-      error[i] <- mean(abs(pred - testing$y))
-    }
-    else if (use == "glm") {
-      classes <- unique(xy[,ncol(xy)])
-      if (length(classes) == 2) { # two categories
-        training$y <- ifelse(training$y == classes[1], 1, 0)
-        testing$y <- ifelse(testing$y == classes[1], 1, 0)
-        pol <- glm(y~., family = binomial(link = "logit"), data = training)
-        pred <- predict(pol, testing[, -ncol(testing)])
-        predT <- ifelse(pred > 0.5, 1, 0)
-        error[i] <- mean(predT == testing$y)
-      }
-      else { # more than two categories
+      error[i] <- mean(abs(pred - testing[,ncol(testing)])) # absolute mean error
+    } else if (use == "glm")
+      error[i] <- mean(pred == testing[,ncol(testing)]) # accuracy
 
-        if (glmMethod == "one") {
-          error[i] <- one_all(pxy, trainidxs)
-        }
-        else if (glmMethod == "all")
-        {
-          error[i] <- all_all(pxy, trainidxs)
-        }
-        else {
-          return("Please choose 'one' for one-vs-all or 'all' for all-vs-all. ")
-        }
-      } # else more than two categories
-
-    } # glm
-    else {
-      return("Please choose lm or glm.")
-
-    }
   }
   return(error)
 
 }
-
 
