@@ -281,7 +281,6 @@ getPoly <- function(xy, deg, maxInteractDeg = deg) {
 }
 
 
-
 polyAllvsAll <- function(plm.xy, classes){
   len <- length(classes)
   ft <- list()
@@ -329,9 +328,12 @@ polyOnevsAll <- function(plm.xy, classes) {
 #' @export
 polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPortion = 0.9, glmMethod = "all") {
   y <- xy[,ncol(xy)]
-  classes <- NULL
+  classes <- FALSE
+  rotation <- FALSE
+  k <- 0
   if (pcaMethod == TRUE) {
     xy.pca <- prcomp(xy[,-ncol(xy)])
+    rotation <- xy.pca$rotation
     pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
     for (k in 1:length(pcNo)) {
       if (pcNo[k] >= pcaPortion)
@@ -367,7 +369,8 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPor
   pcaPrn <- ifelse(pcaMethod == TRUE, pcaPortion, 0)
   me <- list(xy = xy, degree = deg, maxInteractDeg = maxInteractDeg, use = use,
              poly.xy = plm.xy, fit = ft, PCA = pcaMethod, pca.portion = pcaPrn,
-             glmMethod = glmMethod, classes = classes)
+             pcaRotation = rotation, pcaCol = k, glmMethod = glmMethod,
+             classes = classes)
   class(me) <- "polyFit"
   return(me)
 
@@ -386,13 +389,7 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPor
 #' @export
 predict.polyFit <- function(object, newdata) { # newdata doesn't have y column
   if (object$PCA == TRUE) {
-    newdata.pca <- prcomp(newdata)
-    pcNo = cumsum(newdata.pca$sdev)/sum(newdata.pca$sdev)
-    for (k in 1:length(pcNo)) {
-      if (pcNo[k] >= object$pca.portion)
-        break
-    }
-    newdata <- newdata.pca$x[,1:k]
+    newdata <- (scale(newdata,scale=FALSE, center=TRUE) %*% object$pcaRotation)[,1:object$pcaCol]
   }
 
   plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg)$xy
@@ -458,22 +455,12 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8,
   ntrain <- round(trnProp*n)
   trainidxs <- sample(1:n, ntrain, replace = FALSE)
   error <- NULL
-  y <- xy[,ncol(xy)]
-  if (pcaMethod == TRUE) {
-    xy.pca <- prcomp(xy[,-ncol(xy)])
-    pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
-    for (k in 1:length(pcNo)) {
-      if (pcNo[k] >= pcaPortion)
-        break
-    }
-    xy <- cbind(xy.pca$x[,1:k], y)
-  }
   training <- xy[trainidxs,]
   testing <- xy[-trainidxs,]
 
   for (i in 1:maxDeg) {  # for each degree
     m <- ifelse(i > maxInteractDeg, maxInteractDeg, i)
-    pol <- polyFit(training, i, m, use, FALSE, pcaPortion, glmMethod)
+    pol <- polyFit(training, i, m, use, pcaMethod, pcaPortion, glmMethod)
     pred <- predict(pol, testing[,-ncol(testing)])
     if (use == "lm") {
       error[i] <- mean(abs(pred - testing[,ncol(testing)])) # absolute mean error
