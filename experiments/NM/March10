@@ -1,0 +1,68 @@
+
+> library(regtools)
+> getPE()
+
+> trnidxs <- sample(1:nrow(pe),round(0.8*nrow(pe)))
+> trn <- pe[trnidxs,]
+> tst <- pe[-trnidxs,]
+
+> lmout <- lm(wageinc ~ .,data=trn)
+> lmpreds <- predict(lmout,tst)
+> mean(abs(lmpreds - tst$wageinc))
+[1] 25622.04
+
+> nn8 <- nnet(wageinc ~ .,trn,size=8,linout=T)
+...
+converged
+> nn8preds <- predict(nn8,tst)    
+> mean(abs(nn8preds - tst$wageinc))
+[1] 32388.52
+
+# size = 4,8,16 all gave exactly the same result
+
+# "folklore" on scaling in NNs; my (limited) experience is that this can
+# really help with nonconvergence; we didn't have that issue here, but
+# give it a try
+
+# scale the X values (e.g. 'caret' package scales only X)
+> pe1 <- pe
+> head(pe1)            
+> pe1[,-3] <- scale(pe1[,-3])
+
+> nn1.16preds <- predict(nn1.16,tst)
+...
+stopped after 100 iterations
+> mean(abs(nn1.16preds - tst$wageinc))
+[1] 54125.41  # terrible overfit
+
+> nn1.8 <- nnet(wageinc ~ .,trn1,size=8,linout=T)      
+stopped after 100 iterations
+> mean(abs(nn1.8preds - tst$wageinc))
+[1] 32583.2
+
+> nn1.4 <- nnet(wageinc ~ .,trn1,size=4,linout=T)
+...
+stopped after 100 iterations
+> nn1.4preds <- predict(nn1.4,tst)
+> mean(abs(nn1.4preds - tst$wageinc))
+[1] 32675.17
+
+> nn1.2 <- nnet(wageinc ~ .,trn1,size=2,linout=T)
+...
+converged
+> nn1.2preds <- predict(nn1.2,tst)
+> mean(abs(nn1.2preds - tst$wageinc))
+[1] 32675.14
+
+library(polyfit)
+> pexy <- cbind(pe[,-3],pe[,3])          
+> names(pexy)[16] <- 'wageinc'
+> xvlmout <- xvalPoly(pexy,3)
+Warning messages:
+1: In predict.lm(object$fit, plm.newdata) :
+  prediction from a rank-deficient fit may be misleading
+2: In predict.lm(object$fit, plm.newdata) :
+  prediction from a rank-deficient fit may be misleading
+> xvlmout
+[1]   25997.00   25323.86 2596702.12
+
