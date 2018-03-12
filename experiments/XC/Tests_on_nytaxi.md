@@ -8,33 +8,8 @@ Data preprocessing
 library(readr)
 library(chron)
 library(caret)
-```
-
-    ## Loading required package: lattice
-
-    ## Loading required package: ggplot2
-
-``` r
 # train.csv is downloaded from https://www.kaggle.com/c/nyc-taxi-trip-duration/data
 nytaxi <- read_csv("~/Desktop/project/train.csv")
-```
-
-    ## Parsed with column specification:
-    ## cols(
-    ##   id = col_character(),
-    ##   vendor_id = col_integer(),
-    ##   pickup_datetime = col_datetime(format = ""),
-    ##   dropoff_datetime = col_datetime(format = ""),
-    ##   passenger_count = col_integer(),
-    ##   pickup_longitude = col_double(),
-    ##   pickup_latitude = col_double(),
-    ##   dropoff_longitude = col_double(),
-    ##   dropoff_latitude = col_double(),
-    ##   store_and_fwd_flag = col_character(),
-    ##   trip_duration = col_integer()
-    ## )
-
-``` r
 nytaxi$pickupDate <- as.Date(nytaxi$pickup_datetime)
 nytaxi$pickupTime <- as.factor(format(nytaxi$pickup_datetime, "%H"))
 nytaxi$pickupWeekday <- ifelse(is.weekend(nytaxi$pickupDate), 0, 1)
@@ -90,7 +65,7 @@ Use polyreg
 
 ``` r
 library(polyreg)
-t1 <- system.time(polyE1 <- xvalPoly(nytaxi,3,2,"lm",0.8))
+polyE1 <- xvalPoly(nytaxi,3,2,"lm",0.8)
 ```
 
     ## Warning in predict.lm(object$fit, plm.newdata): prediction from a rank-
@@ -98,13 +73,6 @@ t1 <- system.time(polyE1 <- xvalPoly(nytaxi,3,2,"lm",0.8))
 
     ## Warning in predict.lm(object$fit, plm.newdata): prediction from a rank-
     ## deficient fit may be misleading
-
-``` r
-t1
-```
-
-    ##    user  system elapsed 
-    ## 402.364 136.538 568.461
 
 ``` r
 polyE1
@@ -113,14 +81,7 @@ polyE1
     ## [1] 609.7732 607.0927 708.0398
 
 ``` r
-t2 <- system.time(polyE2 <- xvalPoly(nytaxi,3,2,"lm",0.8,TRUE))
-t1
-```
-
-    ##    user  system elapsed 
-    ## 402.364 136.538 568.461
-
-``` r
+polyE2 <- xvalPoly(nytaxi,3,2,"lm",0.8,TRUE)
 polyE2
 ```
 
@@ -129,12 +90,29 @@ polyE2
 Use nnet
 --------
 
+``` r
+library(nnet)
+set.seed(500)
+n <- nrow(nytaxi)
+ntrain <- round(0.8*n)
+trainidxs <- sample(1:n, ntrain, replace = FALSE)
+nynn <- nnet(y~., data=nytaxi[trainidxs,],size=20,maxit=10000,decay=.001)
+npred <- predict(nynn, nytaxi[-trainidxs, ])
+mean(abs(nytaxi[-trainidxs,]$y - npred))
+```
+
     ## # weights:  341
     ## initial  value 29109540357252.925781 
     ## final  value 29108245202694.953125 
     ## converged
 
     ## [1] 962.2623
+
+``` r
+nynn1 <- nnet(y~., data=nytaxi[trainidxs,],size=30,maxit=10000,decay=.005)
+npred1 <- predict(nynn1, nytaxi[-trainidxs, ])
+mean(abs(nytaxi[-trainidxs,]$y - npred1))
+```
 
     ## # weights:  511
     ## initial  value 29109678474153.464844 
