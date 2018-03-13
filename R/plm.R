@@ -333,7 +333,6 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPor
   k <- 0
   if (pcaMethod == TRUE) {
     xy.pca <- prcomp(xy[,-ncol(xy)])
-    rotation <- xy.pca$rotation
     pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
     for (k in 1:length(pcNo)) {
       if (pcNo[k] >= pcaPortion)
@@ -369,7 +368,7 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPor
   pcaPrn <- ifelse(pcaMethod == TRUE, pcaPortion, 0)
   me <- list(xy = xy, degree = deg, maxInteractDeg = maxInteractDeg, use = use,
              poly.xy = plm.xy, fit = ft, PCA = pcaMethod, pca.portion = pcaPrn,
-             pcaRotation = rotation, pcaCol = k, glmMethod = glmMethod,
+             pca.xy = xy.pca, pcaCol = k, glmMethod = glmMethod,
              classes = classes)
   class(me) <- "polyFit"
   return(me)
@@ -389,10 +388,10 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPor
 #' @export
 predict.polyFit <- function(object, newdata) { # newdata doesn't have y column
   if (object$PCA == TRUE) {
-    newdata <- (scale(newdata,scale=FALSE, center=TRUE) %*% object$pcaRotation)[,1:object$pcaCol]
+    new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
   }
 
-  plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg)$xy
+  plm.newdata <- getPoly(new_data, object$degree, object$maxInteractDeg)$xy
   if (object$use == "lm") {
     pred <- predict(object$fit, plm.newdata)
   } else { # glm case
