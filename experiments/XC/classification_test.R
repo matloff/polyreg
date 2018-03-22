@@ -130,12 +130,21 @@ str(dtrain)
 #  $ V64: int  0 0 0 0 0 6 0 0 0 0 ...
 #  $ V65: int  0 0 7 4 6 2 5 5 0 8 ...
 
-
+pol0 <- polyFit(dtrain, 1, 1, "glm", TRUE, 0.9)
+pred0 <- predict(pol0, dtest[,-ncol(dtest)])
+mean(pred0 == dtest[,ncol(dtest)])
+# [1] 0.9588203
+pol01 <- polyFit(dtrain, 1, 1, "glm", TRUE, 0.9, glmMethod = "one")
+pred01 <- predict(pol01, dtest[,-ncol(dtest)])
+mean(pred01 == dtest[,ncol(dtest)])
+# [1] 0.9276572
 pol <- polyFit(dtrain, 2, 2, "glm", TRUE, 0.9) # about 40 min
 pred <- predict(pol, dtest[,-ncol(dtest)])
 mean(pred == dtest[,ncol(dtest)])
 # [1] 0.8731219
-
+pol2 <- polyFit(dtrain, 3, 2, "glm", TRUE, 0.9)
+pred2 <- predict(pol2, dtest[,-ncol(dtest)])
+mean(pred2 == dtest[,ncol(dtest)])
 
 
 nynn1 <- nnet(as.factor(V65)~., data=dtrain,size=10,decay=.001)
