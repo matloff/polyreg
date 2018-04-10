@@ -201,7 +201,8 @@ polyMatrix <- function(x, k) {
 # return: a polyMatrix object
 
 #' @export
-getPoly <- function(xdf, deg, maxInteractDeg = deg) {
+getPoly <- function(xdf, deg, maxInteractDeg = deg) 
+{
   ### xdf doesn't include y
 
   if (deg < 1) {
@@ -243,7 +244,8 @@ getPoly <- function(xdf, deg, maxInteractDeg = deg) {
             r_dummy <- dummy
             r_nondummy <- deg_plm(nondummy,i-j)
           }
-          else if (i - j == 1) { # the case when nondummy is only distributed 1 deg
+          else if (i - j == 1) { # the case when nondummy is 
+                                 # only distributed 1 deg
             r_dummy <- only_dummy(dummy, j)
             r_nondummy <- nondummy
           }
@@ -261,7 +263,8 @@ getPoly <- function(xdf, deg, maxInteractDeg = deg) {
                 skip <- skip - 1
                 next
               }
-              mix <- cbind(mix, as.numeric(r_dummy[,a]) * as.numeric(r_nondummy[,b]))
+              mix <- cbind(mix, 
+                 as.numeric(r_dummy[,a]) * as.numeric(r_nondummy[,b]))
             }
           }
           result <- cbind(result, mix)
@@ -279,7 +282,6 @@ getPoly <- function(xdf, deg, maxInteractDeg = deg) {
   }
 
   return (polyMatrix(rt, endCols))
-
 }
 
 
@@ -336,7 +338,7 @@ polyOnevsAll <- function(plm.xy, classes) {
 
 #' @export
 polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, 
-     pcaPortion = 0.9, glmMethod = "all") 
+     pcaPortion = 0.9, glmMethod = "all",printTimes=TRUE) 
 {
   y <- xy[,ncol(xy)]
   classes <- FALSE
@@ -344,7 +346,10 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE,
   xy.pca <- NULL
   k <- 0
   if (pcaMethod == TRUE) {
+    tmp <- system.time(
     xy.pca <- prcomp(xy[,-ncol(xy)])
+    )
+    if (printTimes) cat('PCA time: ',tmp,'\n')
     pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
     for (k in 1:length(pcNo)) {
       if (pcNo[k] >= pcaPortion)
@@ -355,10 +360,16 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE,
   } else {
     xdata <- xy[,-ncol(xy), drop=FALSE]
   }
+  tmp <- system.time(
   plm.xy <- cbind(getPoly(xdata, deg, maxInteractDeg)$xy,y)
+  )
+  if (printTimes) cat('getPoly time: ',tmp,'\n')
 
   if (use == "lm") {
+    tmp <- system.time(
     ft <- lm(y~., data = plm.xy)
+    )
+    if (printTimes) cat('lm() time: ',tmp,'\n')
     glmMethod <- NULL
   }
   else if (use == "glm") {
