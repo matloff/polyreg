@@ -7,18 +7,20 @@
 # arguments:
 
 #   n: number of X's
-#   deg: total degrees
+#   deg: total degree
 
-# return: a matrix of all possible degree distribution
+# return: a matrix of all possible degree distributions
 
+# say only have X1, X2, i.e. 2 predictors and 'deg' degree;
+# then the degree distribution can first be: 1, deg-1, i.e. the 
+# exponents of X1^i * X2^j, and similarly
+#  2, deg-2
+#  3, deg-3
+#  ...
+#  deg-1, 1
 combnDeg <- function(n, deg) { # distribute (deg) degrees to (n) different X's
 
-  if (n == 2) { # if only have X1, X2, *2* predictors and *deg* degrees
-    # then the degree distribution can be: 1, deg-1
-    #  2, deg-2
-    #  3, deg-3
-    #  ...
-    #  deg-1, 1
+  if (n == 2) { 
     result <- matrix(0, nrow=deg-1, ncol=2)
     for (i in 1:(deg-1)) {
       result[i,] <- c(i, deg-i)
@@ -191,7 +193,7 @@ polyMatrix <- function(x, k) {
 
 # arguments:
 
-#   xy: the dataframe (only predictor variables)
+#   xdf: the dataframe (only predictor variables)
 #   deg: the max degree of polynomial terms
 #   maxInteractDeg: the max degree of dummy and nondummy predictor variable
 #                   interaction terms
@@ -199,25 +201,25 @@ polyMatrix <- function(x, k) {
 # return: a polyMatrix object
 
 #' @export
-getPoly <- function(xy, deg, maxInteractDeg = deg) {
-  ### xy doesn't include y
+getPoly <- function(xdf, deg, maxInteractDeg = deg) {
+  ### xdf doesn't include y
 
   if (deg < 1) {
     return("deg must be larger than or equal to 1.")
   }
 
-  xy <- as.data.frame(xy)
+  xdf <- as.data.frame(xdf)
   endCols <- NULL
   #xy <- xydata[,-ncol(xydata), drop=FALSE]
   #y <- xydata[,ncol(xydata)]
-  n <- ncol(xy)
+  n <- ncol(xdf)
   # seperate dummy variables and continuous variables
-  is_dummy <- (lapply(lapply(xy, table), length)==2)
-  dummy <-xy[, is_dummy, drop = FALSE]
-  nondummy <- xy[, !is_dummy, drop = FALSE]
+  is_dummy <- (lapply(lapply(xdf, table), length)==2)
+  dummy <-xdf[, is_dummy, drop = FALSE]
+  nondummy <- xdf[, !is_dummy, drop = FALSE]
 
-  result <- xy
-  endCols[1] <- ncol(xy) # deg 1 starts at result[1] (first column)
+  result <- xdf
+  endCols[1] <- ncol(xdf) # deg 1 starts at result[1] (first column)
 
   if (deg > 1) {
 
@@ -323,10 +325,19 @@ polyOnevsAll <- function(plm.xy, classes) {
 #   pcaMethod: whether to use PCA (can be TRUE or FALSE)
 #   pcaPortion: the portion of principal components to be used
 
-# return: the object of class polyFit
+# return: the object of class polyFit, S3 object with components:
+
+# xy,degree,maxInteractDeg,use,PCA(pcaMethod),pca.portion(pcaPortion,glmMethod:
+#    the input arguments of the same/similar names
+# poly.xy:  cbind(poly matrix of the Xs + Y vector)
+# fit:  output of lm() or glm(), except in multiclass case
+# pca.xy:  output of prcomp() on the Xs matrix
+# pcaCol:  number of principal components selected according to pcaPortion
 
 #' @export
-polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPortion = 0.9, glmMethod = "all") {
+polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, 
+     pcaPortion = 0.9, glmMethod = "all") 
+{
   y <- xy[,ncol(xy)]
   classes <- FALSE
   rotation <- FALSE
@@ -389,7 +400,8 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod=FALSE, pcaPor
 #' @export
 predict.polyFit <- function(object, newdata) { # newdata doesn't have y column
   if (object$PCA == TRUE) {
-    #newdata <- (scale(newdata,scale=FALSE, center=TRUE) %*% object$pcaRotation)[,1:object$pcaCol]
+    # newdata <- (scale(newdata,scale=FALSE, center=TRUE) 
+    # %*% object$pcaRotation)[,1:object$pcaCol]
     new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
     plm.newdata <- getPoly(new_data, object$degree, object$maxInteractDeg)$xy
   } else {
@@ -452,7 +464,10 @@ predict.polyFit <- function(object, newdata) { # newdata doesn't have y column
 # return: a list of mean absolute error (for lm) or accuracy (for glm),
 #         the i-th element of the list is for degree = i
 #' @export
-xvalPoly <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8,pcaMethod = FALSE,pcaPortion = 0.9, glmMethod = "all") {
+xvalPoly <- function(xy, maxDeg, maxInteractDeg=maxDeg, 
+      use = "lm", trnProp=0.8,pcaMethod = FALSE,pcaPortion = 0.9, 
+      glmMethod = "all") 
+{
   set.seed(500)
   n <- nrow(xy)
   ntrain <- round(trnProp*n)
@@ -466,7 +481,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg=maxDeg, use = "lm", trnProp=0.8,
     pol <- polyFit(training, i, m, use, pcaMethod, pcaPortion, glmMethod)
     pred <- predict(pol, testing[,-ncol(testing)])
     if (use == "lm") {
-      error[i] <- mean(abs(pred - testing[,ncol(testing)])) # absolute mean error
+      error[i] <- mean(abs(pred - testing[,ncol(testing)])) # abs. mean error
     } else if (use == "glm")
       error[i] <- mean(pred == testing[,ncol(testing)]) # accuracy
 
