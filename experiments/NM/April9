@@ -1,0 +1,36 @@
+
+library(polyreg)
+library(nnet)
+fif <- read.csv('FiftyKSongs.csv',header=T)
+fz <- cbind(fif[,-1],fif[,1])  # polyFit needs (X,Y) format
+
+pfout <- pf(fz,2,2,pcaMethod=T)
+# PCA time:  1.312 0.02 1.331 0 0
+# PCA chose 48 principal comps (out of 90), default 0.90 threshold
+# getPoly time:  69.296 282.82 352.126 0 0
+# lm time:  149.124 1.18 150.305 0 0
+pfpred <- predict(pfout,fz[,-91])
+# mean(abs(fz[,91]-pfpred))
+# [1] 7.327097
+
+fzx <- scale(fz[,-91])
+fzx <- cbind(fzx,fz[,91])
+fzx <- as.data.frame(fzx)
+names(fzx)[91] <- 'year'
+
+system.time(xvp <- xvalPoly(fz,2,2,pcaMethod=T))
+#    user  system elapsed
+# 117.600 612.836 730.417
+xvp
+# [1] 7.620040 7.608196
+tsIdxs <- sample(1:50000,10000)
+tsfzx <- fzx[tsIdxs,-91]
+trfzx <- fzx[-tsIdxs,]
+nnout <- nnet(year ~ .,data=trfzx,size=4,linout=T)
+nnpred <- predict(nnout,tsfzx)
+mean(abs(nnpred - fzx[tsIdxs,91]))
+# [1] 9.81942
+nnpred <- predict(nnout,tsfzx)
+mean(abs(nnpred - fzx[tsIdxs,91]))
+# [1] 10.08684
+
