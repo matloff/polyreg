@@ -41,5 +41,6 @@ y <- mtcars[,1]
 data <- cbind(mtcars[,-1], y) # make y column the last column
 f <- polyFit(data,2,2,"lm",TRUE, 0.9)
 pred <- predict(f,data[,-ncol(data)])
+# e.g. Honda Civic prediction is 30.26006
 
 }
