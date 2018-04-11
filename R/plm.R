@@ -197,8 +197,8 @@ only_dummy <- function(xy, deg) { # deal with dummy terms only
 ##################################################################
 
 # xy:  the actual xy matrix
-# startCols:  a list startCols[i] would be the column number of xy in
-#             which the degree-i terms begin
+# endCols:  a list endCols[i] would be the column number of xy in
+#             which the degree-i terms end
 #' @export
 polyMatrix <- function(x, k) {
   me <- list(xdata = x, endCols = k)
@@ -224,7 +224,6 @@ polyMatrix <- function(x, k) {
 #' @export
 getPoly <- function(xdata, deg, maxInteractDeg = deg)
 {
-  ### xy doesn't include y
 
   if (deg < 1) {
     return("deg must be larger than or equal to 1.")
@@ -306,6 +305,7 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
 
 
 polyAllvsAll <- function(plm.xy, classes){
+  plm.xy <- as.data.frame(plm.xy)
   len <- length(classes)
   ft <- list()
   for (i in 1:len) {
@@ -322,6 +322,7 @@ polyAllvsAll <- function(plm.xy, classes){
 }
 
 polyOnevsAll <- function(plm.xy, classes) {
+  plm.xy <- as.data.frame(plm.xy)
   ft <- list()
   for (i in 1:length(classes)) {
     oneClass <- plm.xy[plm.xy$y == classes[i],]
@@ -349,36 +350,57 @@ polyOnevsAll <- function(plm.xy, classes) {
 #   glmMethod: which method ("all" for all-vs-all, "one" for one-vs-all)
 #              to use for multi-class classification
 #   printTimes: whether to print the time of PCA, getPoly, lm, or glm.
+#   polyMat: if non-NULL, then polynomial matrix will be passed in
 
 # return: the object of class polyFit
 
 #' @export
 polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
-     pcaPortion = 0.9, glmMethod = "all",printTimes=TRUE) {
+     pcaPortion = 0.9, glmMethod = "all",printTimes=TRUE, polyMat = NULL) {
   y <- xy[,ncol(xy)]
   classes <- FALSE
-  rotation <- FALSE
   xy.pca <- NULL
   k <- 0
-  if (pcaMethod == TRUE) {
-    tmp <- system.time(
-    xy.pca <- prcomp(xy[,-ncol(xy)])
-    )
-    if (printTimes) cat('PCA time: ',tmp,'\n')
-    pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
-    for (k in 1:length(pcNo)) {
-      if (pcNo[k] >= pcaPortion)
-        break
+  if (!is.null(polyMat)) { # polynomial matrix is provided
+    if (pcaMethod == TRUE) {
+      tmp <- system.time(
+        xy.pca <- prcomp(polyMat[,-ncol(xy)])
+      )
+      if (printTimes) cat('PCA time: ',tmp,'\n')
+      pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
+      for (k in 1:length(pcNo)) {
+        if (pcNo[k] >= pcaPortion)
+          break
+      }
+      xdata <- xy.pca$x[,1:k, drop=FALSE]
+      
+    } else {
+      xdata <- polyMat
     }
-    xdata <- xy.pca$x[,1:k, drop=FALSE]
-
-  } else {
-    xdata <- xy[,-ncol(xy), drop=FALSE]
-  }
-  tmp <- system.time(
-  plm.xy <- cbind(getPoly(xdata, deg, maxInteractDeg)$xdata,y)
-  )
-  if (printTimes) cat('getPoly time: ',tmp,'\n')
+    plm.xy <- cbind(xdata,y)
+  } # polynomial matrix is provided
+  else { # polynomial matrix is not provided
+    if (pcaMethod == TRUE) {
+      tmp <- system.time(
+        xy.pca <- prcomp(xy[,-ncol(xy)])
+      )
+      if (printTimes) cat('PCA time: ',tmp,'\n')
+      pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
+      for (k in 1:length(pcNo)) {
+        if (pcNo[k] >= pcaPortion)
+          break
+      }
+      xdata <- xy.pca$x[,1:k, drop=FALSE]
+      
+    } else {
+      xdata <- xy[,-ncol(xy), drop=FALSE]
+    }
+    tmp <- system.time(
+      plm.xy <- cbind(getPoly(xdata, deg, maxInteractDeg)$xdata,y)
+    )
+    if (printTimes) cat('getPoly time: ',tmp,'\n')
+  } # polynomial matrix is not provided
+  
 
   if (use == "lm") {
     tmp <- system.time(
@@ -429,17 +451,31 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
 # arguments:
 #   object: a polyFit class object
 #   newdata: a new dataframe, without response variable
+#   polyMat: if non-NULL, then polynomial matrix will be passed in
 
 # return: predicted values of newdata
 
 #' @export
-predict.polyFit <- function(object, newdata) { # newdata doesn't have y column
-  if (object$PCA == TRUE) {
-    new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
-    plm.newdata <- getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
-  } else {
-    plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
-  }
+predict.polyFit <- function(object, newdata, polyMat = NULL) { 
+  # newdata doesn't have y column
+  
+  if (!is.null(polyMat)) { # polynomial matrix is provided
+    if (object$PCA == TRUE) {
+      plm.newdata <- predict(object$pca.xy, polyMat)[,1:object$pcaCol]
+    } else {
+      plm.newdata <- polyMat
+    }
+    plm.newdata <- as.data.frame(plm.newdata)
+  } 
+  else { # polynomial matrix is not provided
+    if (object$PCA == TRUE) {
+      new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
+      plm.newdata <- getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+    } else {
+      plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
+    }
+  } # polynomial matrix is not provided
+  
 
   if (object$use == "lm") {
     pred <- predict(object$fit, plm.newdata)
