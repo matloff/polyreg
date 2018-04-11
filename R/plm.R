@@ -1,4 +1,8 @@
 
+# TODO:
+
+#   need to modify getPoly() so that it can take advantage of work
+#   already done for a lower-degree model, using endCols
 
 ##################################################################
 # combnDeg: generate the degree distribution of different X's

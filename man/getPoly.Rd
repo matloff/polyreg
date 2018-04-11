@@ -30,10 +30,11 @@ getPoly(xydata, deg, maxInteractDeg = deg)
 }
 \value{
 The return value of \code{getPoly} is a \code{polyMatrix} 
-object.  This is an S3 class containing a dataframe of the generated 
-polynomial terms. The predictor variables have column 
-names V1, V2, etc. The object also contains a list, whose i-th 
-element is the end column of polynomial terms for i-th degree.
+object.  This is an S3 class containing a dataframe \code{
+xdata} of the generated polynomial terms. The predictor 
+variables have column names V1, V2, etc. The object also contains 
+a vector \code{endCols}, whose i-th element is the end column of polynomial 
+terms for i-th degree.
 }
 \examples{
 x1 <- 1:3
