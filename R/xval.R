@@ -29,12 +29,23 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
   tmp <- splitData(xy,nHoldout)
   training <- tmp$trainSet
   testing <- tmp$testSet
+  
+  polyMatTrain <- getPoly(training[,-ncol(training)], maxDeg, maxInteractDeg)
+  polyMatTest <- getPoly(testing[,-ncol(testing)], maxDeg, maxInteractDeg)
 
   error <- NULL
   for (i in 1:maxDeg) {  # for each degree
     m <- ifelse(i > maxInteractDeg, maxInteractDeg, i)
-    pol <- polyFit(training, i, m, use, pcaMethod, pcaPortion, glmMethod)
-    pred <- predict(pol, testing[,-ncol(testing)])
+    
+    endCol1 <- polyMatTrain$endCols[i]
+    polyMat1 <- polyMatTrain$xdata[,1:endCol1]
+    pol <- polyFit(training, i, m, use, pcaMethod, pcaPortion, glmMethod, 
+                   polyMat = polyMat1)
+    
+    endCol2 <- polyMatTest$endCols[i]
+    polyMat2 <- polyMatTest$xdata[,1:endCol2]
+    pred <- predict(pol, testing[,-ncol(testing)], polyMat2)
+    
     if (use == "lm") {
       # absolute mean error
       error[i] <- mean(abs(pred - testing[,ncol(testing)]))
