@@ -1,10 +1,4 @@
 
-# TODO:
-
-#    xval*() should take advantage of the endCols component in the
-#    polyMatrix class, in extending a lower-degree model to a
-#    higher-degree one
-
 ##################################################################
 # xvalPoly: generate mean absolute error of fitted models
 ##################################################################
@@ -15,15 +9,17 @@
 #   maxInteractDeg: the max degree of dummy and nondummy predictor variables
 #                   interaction terms
 #   use: can be "lm" for linear regreesion, and "glm" for logistic regression
-#   trnProp: the portion of data to be used as training set
 #   pcaMethod: whether to use PCA (can be TRUE or FALSE)
 #   pcaPortion: the portion of principal components to be used
 #   glmMethod: when the response variable has more than 2 classes, can be "all"
 #              for All-vs-All method, and "one" for One-vs-All method
+#   nHoldout: number of cases for the test set
+#   yCol: if not NULL, Y is in this column, and will be moved to last
 
-# return: a list of mean absolute error (for lm) or accuracy (for glm),
+# return: a vector of mean absolute error (for lm) or accuracy (for glm),
 #         the i-th element of the list is for degree = i
 #' @export
+
 xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
                      pcaMethod = FALSE,pcaPortion = 0.9, 
                      glmMethod = "all",nHoldout=10000,
@@ -52,6 +48,36 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
 ##################################################################
 # xvalNNet: generate mean absolute error of fitted models
 ##################################################################
+
+# arguments and value: 
+#    see xvalPoly() above for most
+#    scaleXMat: if TRUE, apply scale() to predictor matrix
+
+# return: a vector of mean absolute error (for lm) or accuracy (for glm),
+#         the i-th element of the list is for degree = i
+#' @export
+
+xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
+               scaleXMat = FALSE, nHoldout=10000, yCol = NULL)
+{
+   require(nnet)
+   ncxy <- ncol(xy)
+
+   if (!is.null(yCol)) xy <- moveY(xy,yCol)
+ 
+   if (scaleXMat) xy <- scaleX(xy)  # only Xs are scaled
+   tmp <- splitData(xy,nHoldout)
+   training <- tmp$trainSet
+   testingx <- tmp$testSet[,-ncxy]
+   testingy <- tmp$testSet[,ncxy]
+
+   yName <- names(xy)[ncol(xy)]
+   cmd <- paste0('nnout <- nnet(',yName,' ~ .,data=xy,size=')
+   cmd <- paste0(cmd,size,',linout=',linout,')')
+   eval(parse(text=cmd))
+   npred <- predict(nnout,testingx)
+   mean(abs(npred - testingy))
+}
 
 ######################  splitData() #################################
 # support function, to split into training and test sets
@@ -84,6 +110,14 @@ moveY <- function(xy,yCol)
 # support function, since NNs tend to like scaling
 ##################################################################
 
-# scaleX <- function() 
-# {
-# }
+scaleX <- function(xy) 
+{
+   ncxy <- ncol(xy)
+   nms <- names(xy)
+   x <- xy[,-ncxy]
+   x <- scale(x)
+   tmp <- as.data.frame(cbind(x,xy[,ncxy]))
+   names(tmp) <- nms
+   tmp
+}
+
