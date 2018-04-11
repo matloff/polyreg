@@ -1,0 +1,130 @@
+  V1 V2 V3 V4 V5 V6 V7 V8 V9 y
+1  1  2  3  1  4  9  2  3  6 1
+2  2  3  4  4  9 16  6  8 12 2
+3  3  4  5  9 16 25 12 15 20 4
+[1] "Error on combnDeg."
+debugging in: combnDeg(4, 2)
+debug at plm.R#14: {
+    if (n == 2) {
+        result <- matrix(0, nrow = deg - 1, ncol = 2)
+        for (i in 1:(deg - 1)) {
+            result[i, ] <- c(i, deg - i)
+        }
+        return(result)
+    }
+    else if (n > 2) {
+        mydata <- list()
+        for (i in 1:(deg - n + 1)) {
+            temp <- combnDeg(n - 1, deg - i)
+            mydata[[i]] <- matrix(i, nrow = nrow(temp), ncol = 1)
+            mydata[[i]] <- cbind(mydata[[i]], temp)
+        }
+        result <- mydata[[1]]
+        if (length(mydata) > 1) {
+            for (j in 2:(deg - n + 1)) {
+                result <- rbind(result, mydata[[j]])
+            }
+        }
+        return(result)
+    }
+    else {
+        print("Error on combnDeg.")
+    }
+}
+debug at plm.R#16: if (n == 2) {
+    result <- matrix(0, nrow = deg - 1, ncol = 2)
+    for (i in 1:(deg - 1)) {
+        result[i, ] <- c(i, deg - i)
+    }
+    return(result)
+} else if (n > 2) {
+    mydata <- list()
+    for (i in 1:(deg - n + 1)) {
+        temp <- combnDeg(n - 1, deg - i)
+        mydata[[i]] <- matrix(i, nrow = nrow(temp), ncol = 1)
+        mydata[[i]] <- cbind(mydata[[i]], temp)
+    }
+    result <- mydata[[1]]
+    if (length(mydata) > 1) {
+        for (j in 2:(deg - n + 1)) {
+            result <- rbind(result, mydata[[j]])
+        }
+    }
+    return(result)
+} else {
+    print("Error on combnDeg.")
+}
+debug at plm.R#16: if (n > 2) {
+    mydata <- list()
+    for (i in 1:(deg - n + 1)) {
+        temp <- combnDeg(n - 1, deg - i)
+        mydata[[i]] <- matrix(i, nrow = nrow(temp), ncol = 1)
+        mydata[[i]] <- cbind(mydata[[i]], temp)
+    }
+    result <- mydata[[1]]
+    if (length(mydata) > 1) {
+        for (j in 2:(deg - n + 1)) {
+            result <- rbind(result, mydata[[j]])
+        }
+    }
+    return(result)
+} else {
+    print("Error on combnDeg.")
+}
+debug at plm.R#34: mydata <- list()
+debug at plm.R#35: for (i in 1:(deg - n + 1)) {
+    temp <- combnDeg(n - 1, deg - i)
+    mydata[[i]] <- matrix(i, nrow = nrow(temp), ncol = 1)
+    mydata[[i]] <- cbind(mydata[[i]], temp)
+}
+function(pkg) 
+   cmd <- paste('ls(package:',pkg,')')
+ [1] "avalogpred"      "avalogtrn"       "classadjust"     "coef.lmac"      
+ [5] "kmin"            "knnest"          "knntrn"          "l1"             
+ [9] "l2"              "lmac"            "loclin"          "loglinac"       
+[13] "makeNA"          "meany"           "mm"              "nlshc"          
+[17] "nonparvarplot"   "nonparvsxplot"   "ovalogpred"      "ovalogtrn"      
+[21] "parvsnonparplot" "pcac"            "plot.rlm"        "predict.knn"    
+[25] "predict.ovaknn"  "predwrong"       "preprocessx"     "pwplot"         
+[29] "ridgelm"         "tbltofakedf"     "unscale"         "vary"           
+[33] "vcov.lmac"      
+
+rn(result)
+} else {
+    print("Error on combnDeg.")
+}
+debug at plm.R#16: if (n > 2) {
+    mydata <- list()
+    for (i in 1:(deg - n + 1)) {
+        temp <- combnDeg(n - 1, deg - i)
+        mydata[[i]] <- matrix(i, nrow = nrow(temp), ncol = 1)
+        mydata[[i]] <- cbind(mydata[[i]], temp)
+    }
+    result <- mydata[[1]]
+    if (length(mydata) > 1) {
+        for (j in 2:(deg - n + 1)) {
+            result <- rbind(result, mydata[[j]])
+        }
+    }
+    return(result)
+} else {
+    print("Error on combnDeg.")
+}
+debug at plm.R#34: mydata <- list()
+debug at plm.R#35: for (i in 1:(deg - n + 1)) {
+    temp <- combnDeg(n - 1, deg - i)
+    mydata[[i]] <- matrix(i, nrow = nrow(temp), ncol = 1)
+    mydata[[i]] <- cbind(mydata[[i]], temp)
+}
+function(pkg) 
+   cmd <- paste('ls(package:',pkg,')')
+ [1] "avalogpred"      "avalogtrn"       "classadjust"     "coef.lmac"      
+ [5] "kmin"            "knnest"          "knntrn"          "l1"             
+ [9] "l2"              "lmac"            "loclin"          "loglinac"       
+[13] "makeNA"          "meany"           "mm"              "nlshc"          
+[17] "nonparvarplot"   "nonparvsxplot"   "ovalogpred"      "ovalogtrn"      
+[21] "parvsnonparplot" "pcac"            "plot.rlm"        "predict.knn"    
+[25] "predict.ovaknn"  "predwrong"       "preprocessx"     "pwplot"         
+[29] "ridgelm"         "tbltofakedf"     "unscale"         "vary"           
+[33] "vcov.lmac"      
+
