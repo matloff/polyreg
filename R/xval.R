@@ -115,7 +115,7 @@ scaleX <- function(xy)
    ncxy <- ncol(xy)
    nms <- names(xy)
    x <- xy[,-ncxy]
-   x <- scale(x)
+   x <- scale(x,center=FALSE)
    tmp <- as.data.frame(cbind(x,xy[,ncxy]))
    names(tmp) <- nms
    tmp
