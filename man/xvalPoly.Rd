@@ -8,7 +8,8 @@ Cross validation on Polynomial regression
 Separate the dataset to training and test set, and obtain the mean absolute error (for linear regression) or accuracy (for logistic regression).
 }
 \usage{
-xvalPoly(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm", trnProp = 0.8, pcaMethod = FALSE, pcaPortion = 0.9, glmMethod = "all")
+xvalPoly(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm", pcaMethod =
+FALSE, pcaPortion = 0.9, glmMethod = "all",nHoldout=10000,yCol=NULL)
 }
 
 \arguments{
