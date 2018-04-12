@@ -51,7 +51,6 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
     pred <- predict(pol, testing[,-ncol(testing)], polyMat2)
     
     if (use == "lm") {
-      # absolute mean error
       acc[i] <- mean(abs(pred - testing[,ncol(testing)]))
     } else if (use == "glm")
       acc[i] <- mean(pred == testing[,ncol(testing)]) # accuracy
@@ -68,6 +67,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
 
 # arguments and value: 
 #    see xvalPoly() above for most
+#    classification is done if the Y variable is a factor
 #    scaleXMat: if TRUE, apply scale() to predictor matrix
 
 # return: a vector of mean absolute error (for lm) or accuracy (for glm),
@@ -93,7 +93,12 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
    cmd <- paste0(cmd,size,',linout=',linout,')')
    eval(parse(text=cmd))
    npred <- predict(nnout,testingx)
-   mean(abs(npred - testingy))
+   if (!is.factor(training[,ncxy]))  # regression case
+     return(mean(abs(npred - testingy)))
+   # classification case
+   stop('need to fix so that have the factor levels, not the col numbers')
+   preds <- apply(npred,1,which.max)
+   return(mean(preds == testingy))
 }
 
 ##################################################################
