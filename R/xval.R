@@ -64,6 +64,8 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
 # xvalNNet: generate mean absolute error of fitted models
 ##################################################################
 
+# xval for nnet package
+
 # arguments and value: 
 #    see xvalPoly() above for most
 #    scaleXMat: if TRUE, apply scale() to predictor matrix
@@ -87,10 +89,56 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
    testingy <- tmp$testSet[,ncxy]
 
    yName <- names(xy)[ncol(xy)]
-   cmd <- paste0('nnout <- nnet(',yName,' ~ .,data=xy,size=')
+   cmd <- paste0('nnout <- nnet(',yName,' ~ .,data=training,size=')
    cmd <- paste0(cmd,size,',linout=',linout,')')
    eval(parse(text=cmd))
    npred <- predict(nnout,testingx)
+   mean(abs(npred - testingy))
+}
+
+##################################################################
+# xvalDNet: generate mean absolute error of fitted models
+##################################################################
+
+# xval for deepnet package, nn.*()
+
+# arguments: 
+#    not all args of nn.train() are implemented here, e.g. dropout args
+#       are missing
+#    hidden: vector of number of units in each layer
+#    output: final layer feeds into this; double quoted;
+#            '"sig"m', '"linear"' or '"softmax"'
+#    numepochs: number of epochs
+#    xy,pca*, scaleXMat,nHoldout,yCol: as above
+
+# value: mean abs. error
+
+#' @export
+
+xvalDnet <- function(xy,hidden,output='sigm',numepochs=3,
+               pcaMethod = FALSE,pcaPortion = 0.9,
+               scaleXMat = TRUE, nHoldout=10000, yCol = NULL)
+{
+   require(deepnet)
+   ncxy <- ncol(xy)
+
+   if (!is.null(yCol)) xy <- moveY(xy,yCol)
+ 
+   if (scaleXMat) xy <- scaleX(xy)  # only Xs are scaled
+   tmp <- splitData(xy,nHoldout)
+   training <- tmp$trainSet
+   trainingx <- as.matrix(training[,-ncxy])
+   trainingy <- training[,ncxy]
+   testingx <- tmp$testSet[,-ncxy]
+   testingy <- tmp$testSet[,ncxy]
+
+   cmd <- paste0('nnout <- nn.train(trainingx,trainingy,')
+   cmd <- paste0(cmd,'hidden=',hidden,',') 
+   cmd <- paste0(cmd,'output=',output,',') 
+   cmd <- paste0(cmd,'numepochs=',numepochs) 
+   cmd <- paste0(cmd,')')
+   eval(parse(text=cmd))
+   npred <- nn.predict(nnout,testingx)
    mean(abs(npred - testingy))
 }
 
@@ -130,7 +178,7 @@ scaleX <- function(xy)
    ncxy <- ncol(xy)
    nms <- names(xy)
    x <- xy[,-ncxy]
-   x <- scale(x,center=FALSE)
+   x <- scale(x)
    tmp <- as.data.frame(cbind(x,xy[,ncxy]))
    names(tmp) <- nms
    tmp
