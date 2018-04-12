@@ -37,7 +37,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
         getPoly(testing[,-ncol(testing)], maxDeg, maxInteractDeg)})
   if (printTimes) cat('getPoly() time: ',tmp,'\n')
 
-  error <- NULL
+  acc <- NULL
   for (i in 1:maxDeg) {  # for each degree
     m <- ifelse(i > maxInteractDeg, maxInteractDeg, i)
     
@@ -52,12 +52,12 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
     
     if (use == "lm") {
       # absolute mean error
-      error[i] <- mean(abs(pred - testing[,ncol(testing)]))
+      acc[i] <- mean(abs(pred - testing[,ncol(testing)]))
     } else if (use == "glm")
-      error[i] <- mean(pred == testing[,ncol(testing)]) # accuracy
+      acc[i] <- mean(pred == testing[,ncol(testing)]) # accuracy
 
   }
-  return(error)
+  return(acc)
 }
 
 ##################################################################
