@@ -23,15 +23,19 @@
 xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
                      pcaMethod = FALSE,pcaPortion = 0.9, 
                      glmMethod = "all",nHoldout=10000,
-                     yCol = NULL) 
+                     yCol = NULL,printTimes=TRUE) 
 {
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
   tmp <- splitData(xy,nHoldout)
   training <- tmp$trainSet
   testing <- tmp$testSet
   
-  polyMatTrain <- getPoly(training[,-ncol(training)], maxDeg, maxInteractDeg)
-  polyMatTest <- getPoly(testing[,-ncol(testing)], maxDeg, maxInteractDeg)
+  tmp <- system.time(
+     {polyMatTrain <- 
+        getPoly(training[,-ncol(training)], maxDeg, maxInteractDeg);
+      polyMatTest <- 
+        getPoly(testing[,-ncol(testing)], maxDeg, maxInteractDeg)})
+  if (printTimes) cat('getPoly() time: ',tmp,'\n')
 
   error <- NULL
   for (i in 1:maxDeg) {  # for each degree
