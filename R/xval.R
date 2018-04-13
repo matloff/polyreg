@@ -92,12 +92,14 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
    cmd <- paste0('nnout <- nnet(',yName,' ~ .,data=training,size=')
    cmd <- paste0(cmd,size,',linout=',linout,')')
    eval(parse(text=cmd))
-   npred <- predict(nnout,testingx)
-   if (!is.factor(training[,ncxy]))  # regression case
-     return(mean(abs(npred - testingy)))
+   preds <- predict(nnout,testingx)
+   trainingy <- training[,ncxy]
+   if (!is.factor(trainingy))  # regression case
+     return(mean(abs(preds - testingy)))
    # classification case
-   stop('need to fix so that have the factor levels, not the col numbers')
-   preds <- apply(npred,1,which.max)
+   preds <- apply(preds,1,which.max)  # column numbers
+   # convert to levels of Y
+   preds <- levels(trainingy)[preds]
    return(mean(preds == testingy))
 }
 
