@@ -69,6 +69,8 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
 #    see xvalPoly() above for most
 #    classification is done if the Y variable is a factor
 #    scaleXMat: if TRUE, apply scale() to predictor matrix
+#    xy: as above, except that in classification case,
+#        Y column of xy (last one, or yCol) must be a factor
 
 # return: a vector of mean absolute error (for lm) or accuracy (for glm),
 #         the i-th element of the list is for degree = i
@@ -116,28 +118,28 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 #    output: final layer feeds into this; double quoted;
 #            '"sig"m', '"linear"' or '"softmax"'
 #    numepochs: number of epochs
-#    xy,pca*, scaleXMat,nHoldout,yCol: as above
+#    pca*, scaleXMat,nHoldout,yCol: as above
+#    x: predictor variables
+#    y: Y; in classification case, must be a matrix of dummies
 
 # value: mean abs. error
 
 #' @export
 
-xvalDnet <- function(xy,hidden,output='sigm',numepochs=3,
+xvalDnet <- function(x,y,hidden,output='"sigm"',numepochs=3,
                pcaMethod = FALSE,pcaPortion = 0.9,
-               scaleXMat = TRUE, nHoldout=10000, yCol = NULL)
+               scaleXMat = TRUE, nHoldout=10000)
 {
    require(deepnet)
-   ncxy <- ncol(xy)
 
-   if (!is.null(yCol)) xy <- moveY(xy,yCol)
- 
-   if (scaleXMat) xy <- scaleX(xy)  # only Xs are scaled
-   tmp <- splitData(xy,nHoldout)
-   training <- tmp$trainSet
-   trainingx <- as.matrix(training[,-ncxy])
-   trainingy <- training[,ncxy]
-   testingx <- tmp$testSet[,-ncxy]
-   testingy <- tmp$testSet[,ncxy]
+   if (scaleXMat) x <- scale(x)
+
+   tmp <- splitData(x,nHoldout,idxsOnly=TRUE)
+   trainingx <- x[-tmp,]
+   testingx <- x[tmp,]
+   ym <- as.matrix(y)
+   trainingy <- ym[-tmp,]
+   testingy <- ym[tmp,]
 
    cmd <- paste0('nnout <- nn.train(trainingx,trainingy,')
    cmd <- paste0(cmd,'hidden=',hidden,',') 
@@ -145,20 +147,28 @@ xvalDnet <- function(xy,hidden,output='sigm',numepochs=3,
    cmd <- paste0(cmd,'numepochs=',numepochs) 
    cmd <- paste0(cmd,')')
    eval(parse(text=cmd))
-   npred <- nn.predict(nnout,testingx)
-   mean(abs(npred - testingy))
+   preds <- nn.predict(nnout,testingx)
+   if (ncol(ym) == 1)  # regression case
+      return(mean(abs(preds - testingy)))
+   # else
+   preds <- apply(preds,1,which.max)  # column numbers
+   trueY <- apply(testingy,1,function(rw) which(rw == 1))
+   # convert to levels of Y
+   return(mean(preds == trueY))
+
 }
 
 ######################  splitData() #################################
 # support function, to split into training and test sets
 ##################################################################
 
-splitData <- function(xy,nHoldout) 
+splitData <- function(xy,nHoldout,idxsOnly=FALSE) 
 {
   n <- nrow(xy)
   set.seed(500)
   ntrain <- nHoldout
   testIdxs <- sample(1:n, ntrain, replace = FALSE)
+  if (idxsOnly) return(testIdxs)
   testSet <- xy[testIdxs,]
   trainSet <- xy[-testIdxs,]
   list(testSet=testSet,trainSet=trainSet)
@@ -180,14 +190,14 @@ moveY <- function(xy,yCol)
 # support function, since NNs tend to like scaling
 ##################################################################
 
+# xy consists of X columns followed by one Y column, maybe a factor,
+# unless xOnly is TRUE, in which case xy is just the X columns
 scaleX <- function(xy) 
-{
+{  
    ncxy <- ncol(xy)
-   nms <- names(xy)
    x <- xy[,-ncxy]
    x <- scale(x)
-   tmp <- as.data.frame(cbind(x,xy[,ncxy]))
-   names(tmp) <- nms
-   tmp
+   xy[,-ncxy] <- x
+   xy
 }
 
