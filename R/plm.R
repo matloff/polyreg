@@ -1,4 +1,3 @@
-
 ##################################################################
 # combnDeg: generate the degree distribution of different X's
 ##################################################################
@@ -342,7 +341,8 @@ polyOnevsAll <- function(plm.xy, classes) {
 #   use: can be "lm" for linear regreesion, and "glm" for logistic regression
 #   pcaMethod: whether to use PCA (can be TRUE or FALSE)
 #   pcaPortion: the portion of principal components to be used
-#   glmMethod: which method ("all" for all-vs-all, "one" for one-vs-all)
+#   glmMethod: which method ("all" for all-vs-all, "one" for one-vs-all, 
+#              "multlog" for multinomial logistic regression)
 #              to use for multi-class classification
 #   printTimes: whether to print the time of PCA, getPoly, lm, or glm.
 #   polyMat: if non-NULL, then polynomial matrix will be passed in
@@ -396,6 +396,7 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
     if (printTimes) cat('getPoly time: ',tmp,'\n')
   } # polynomial matrix is not provided
   
+  plm.xy <- as.data.frame(plm.xy)
 
   if (use == "lm") {
     tmp <- system.time(
@@ -425,6 +426,30 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
         ft <- polyOnevsAll(plm.xy, classes)
         )
         if (printTimes) cat('one-vs-all glm() time: ',tmp,'\n')
+      } else if (glmMethod == "multlog") { # multinomial logistics
+#        require(mlogit)
+#        require(mnlogit)
+#        fn <- colnames(plm.xy)
+#        ff <- paste("y ~ 0 |", fn[1])
+#        if (length(fn) > 2) {
+#          for (i in 2:(length(fn)-1)) {
+#            ff <- paste(ff, fn[i], sep = "+")
+#          }
+#        } # if have more than 1 predictor variable
+#        ff <- formula(ff)
+#        ww <- rep(1,nrow(plm.xy))
+#        ww[testIdx] <- 0
+#        tmp <- system.time(
+#          ft <- mnlogit(ff, 
+#                        mlogit.data(plm.xy, shape = "wide", choice = "y"),
+#                        weights = ww,
+#                        ncores = 2)
+#        )
+#        if (printTimes) cat('mnlogit time: ',tmp,'\n')
+        tmp <- system.time(
+        ft <- multinom(y~., plm.xy)
+        )
+        if (printTimes) cat('multinum time: ', tmp, '\n')
       }
     } # more than two classes
 
@@ -470,7 +495,6 @@ predict.polyFit <- function(object, newdata, polyMat = NULL) {
       plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
     }
   } # polynomial matrix is not provided
-  
 
   if (object$use == "lm") {
     pred <- predict(object$fit, plm.newdata)
@@ -480,7 +504,26 @@ predict.polyFit <- function(object, newdata, polyMat = NULL) {
       pred <- ifelse(pre > 0.5, object$classes[1], object$classes[2])
     } else { # more than two classes
       len <- length(object$classes)
-      if (object$glmMethod == "all") { # all-vs-all method
+      if (object$glmMethod == "multlog") { # multinomial logistics
+#        require(mlogit)
+#        require(mnlogit)
+#        rand <- sample(object$classes, nrow(plm.newdata), replace=TRUE)
+#        plm.newdata$y <- rand
+#        pr <- predict(object$fit) 
+#                      mlogit.data(plm.newdata, shape = "wide", choice = "y"))
+#        pr <- object$fit$probabilities[testIdx,]
+        pr <- predict(object$fit, plm.newdata, type="probs")
+        idx <- apply(pr,1, which.max)
+        col.name <- colnames(pr)
+        lc <- length(col.name)
+        tempM <- matrix(rep(col.name, length(idx)), ncol=lc, byrow = TRUE)
+        pred <- NULL
+        for (r in 1:nrow(tempM)) {
+          pred[r] <- tempM[r,idx[r]]
+        }
+        return(pred)
+      } # multinomial logistics
+      else if (object$glmMethod == "all") { # all-vs-all method
         votes <- matrix(0, nrow = nrow(plm.newdata), ncol = len)
         for (i in 1:len) {
           for (j in 1:len) {
@@ -498,11 +541,12 @@ predict.polyFit <- function(object, newdata, polyMat = NULL) {
           prob[,i] <- predict(object$fit[[i]], plm.newdata, type = "response")
         }
         winner <- apply(prob, 1, which.max)
-      }
+      } # one-vs-all method
+      # calculate pred for all-vs-all & one-vs-all
       pred <- NULL
       for (k in 1:nrow(plm.newdata)) {
         pred[k] <- object$classes[winner[k]]
-      }
+      } 
     } # more than two classes
   } # glm case
 
