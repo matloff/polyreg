@@ -427,7 +427,7 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
         )
         if (printTimes) cat('one-vs-all glm() time: ',tmp,'\n')
       } else if (glmMethod == "multlog") { # multinomial logistics
-#        require(mlogit)
+         require(nnet)
 #        require(mnlogit)
 #        fn <- colnames(plm.xy)
 #        ff <- paste("y ~ 0 |", fn[1])
@@ -449,7 +449,7 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
         tmp <- system.time(
         ft <- multinom(y~., plm.xy)
         )
-        if (printTimes) cat('multinum time: ', tmp, '\n')
+        if (printTimes) cat('multlog time: ', tmp, '\n')
       }
     } # more than two classes
 
