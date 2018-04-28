@@ -151,7 +151,8 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 #         the i-th element of the list is for degree = i
 #' @export
 
-xvalKf <- function(xy,nHoldout=10000, yCol = NULL, loss='"mean_squared_error"')
+xvalKf <- function(xy,nHoldout=10000,yCol=NULL,loss='"mean_squared_error"',
+   rmArgs=NULL)
 {
   require(kerasformula)
   ncxy <- ncol(xy)
@@ -169,15 +170,19 @@ xvalKf <- function(xy,nHoldout=10000, yCol = NULL, loss='"mean_squared_error"')
   cmd <- paste0('kfout <- kms(',yName,' ~ .,data=training,loss=')
   cmd <- paste0(cmd,loss,')')
   eval(parse(text=cmd))
-  preds <- predict(kfout,testing)
+  ## preds <- predict(kfout,testingx)
+  preds <- predict(kfout,testing)$fit
   trainingy <- training[,ncxy]
-  if (!is.factor(trainingy))  # regression case
+  ry <- range(trainingy)
+  preds <- ry[1] + (ry[2]-ry[1]) * preds
+  if (!is.factor(trainingy)) {  # regression case
     return(mean(abs(preds - testingy)))
-  # classification case
-  preds <- apply(preds,1,which.max)  # column numbers
-  # convert to levels of Y
-  preds <- levels(trainingy)[preds]
-  return(mean(preds == testingy))
+  } 
+  ## classification case
+  #preds <- apply(preds,1,which.max)  # column numbers
+  ## convert to levels of Y
+  #preds <- levels(trainingy)[preds]
+  #return(mean(preds == testingy))
 }
 
 ##################################################################
