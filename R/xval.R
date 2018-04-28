@@ -90,7 +90,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
 }
 
 ##################################################################
-# xvalNNet: generate mean absolute error of fitted models
+# xvalNnet: generate mean absolute error of fitted models
 ##################################################################
 
 # xval for nnet package
@@ -126,6 +126,50 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
   cmd <- paste0(cmd,size,',linout=',linout,')')
   eval(parse(text=cmd))
   preds <- predict(nnout,testingx)
+  trainingy <- training[,ncxy]
+  if (!is.factor(trainingy))  # regression case
+    return(mean(abs(preds - testingy)))
+  # classification case
+  preds <- apply(preds,1,which.max)  # column numbers
+  # convert to levels of Y
+  preds <- levels(trainingy)[preds]
+  return(mean(preds == testingy))
+}
+
+##################################################################
+# xvalKf: generate mean absolute error of fitted models
+##################################################################
+
+# xval for nnet package
+
+# arguments and value: 
+#    xy: as above, except that in classification case,
+#        Y column of xy (last one, or yCol) must be a factor
+# will add options
+
+# return: a vector of mean absolute error (for lm) or accuracy (for glm),
+#         the i-th element of the list is for degree = i
+#' @export
+
+xvalKf <- function(xy,nHoldout=10000, yCol = NULL, loss='"mean_squared_error"')
+{
+  require(kerasformula)
+  ncxy <- ncol(xy)
+  
+  if (!is.null(yCol)) xy <- moveY(xy,yCol)
+  
+  tmp <- splitData(xy,nHoldout)
+  training <- tmp$trainSet
+  testing <- tmp$testSet
+  testingx <- tmp$testSet[,-ncxy]
+  testingy <- tmp$testSet[,ncxy]
+  
+  
+  yName <- names(xy)[ncol(xy)]
+  cmd <- paste0('kfout <- kms(',yName,' ~ .,data=training,loss=')
+  cmd <- paste0(cmd,loss,')')
+  eval(parse(text=cmd))
+  preds <- predict(kfout,testing)
   trainingy <- training[,ncxy]
   if (!is.factor(trainingy))  # regression case
     return(mean(abs(preds - testingy)))
@@ -231,4 +275,3 @@ scaleX <- function(xy)
   xy[,-ncxy] <- x
   xy
 }
-
