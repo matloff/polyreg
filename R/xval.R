@@ -144,18 +144,19 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 
 # arguments and value: 
 #    xy: as above, except that in classification case,
-#        Y column of xy (last one, or yCol) must be a factor
+#        Y column of xy (last one, or yCol) must be a factor; otherwise
+#        must NOT be a factor
 #    nHoldout,yCol as above
-#    lost:  last-stage activation ftn, '"mean_squared_error"' for
-#           regression case
+#    scale_coninuous: "zero-one" for the classification case, otherwise NULL
+#    loss:  last-stage activation ftn, '"mean_squared_error"' for
+#           regression case, otherwise NULL
 #    rmArgs:  remaining optional arguments to kms()
 
 # return: a vector of mean absolute error (for lm) or accuracy (for glm),
 #         the i-th element of the list is for degree = i
 #' @export
 
-xvalKf <- function(xy,nHoldout=10000,yCol=NULL,loss='"mean_squared_error"',
-   rmArgs=NULL)
+xvalKf <- function(xy,nHoldout=10000,yCol=NULL,rmArgs=NULL)
 {
   require(kerasformula)
   ncxy <- ncol(xy)
@@ -170,22 +171,20 @@ xvalKf <- function(xy,nHoldout=10000,yCol=NULL,loss='"mean_squared_error"',
   
   
   yName <- names(xy)[ncol(xy)]
+  trainingy <- training[,ncxy]
+  classcase <- is.factor(trainingy)
+  loss <- if (classcase) 'NULL' else "mean_squared_error"
   cmd <- paste0('kfout <- kms(',yName,' ~ .,data=training,loss=')
   cmd <- paste0(cmd,loss,')')
   eval(parse(text=cmd))
-  ## preds <- predict(kfout,testingx)
-  predout <- predict(kfout,testingx)$fit
-  trainingy <- training[,ncxy]
-  ry <- range(trainingy)
-  preds <- ry[1] + (ry[2]-ry[1]) * predout
-  if (!is.factor(trainingy)) {  # regression case
-    return(mean(abs(preds - testingy)))
+  preds <- predict(kfout,testingx)$fit
+  if (!classcase) {  # regression case
+     ry <- range(trainingy)
+     preds <- ry[1] + (ry[2]-ry[1]) * preds
+     return(mean(abs(preds - testingy)))
   } 
-  # classification case; needs adapting to kms()
-  #preds <- apply(preds,1,which.max)  # column numbers
-  ## convert to levels of Y
-  #preds <- levels(trainingy)[preds]
-  #return(mean(preds == testingy))
+  # classification case
+  return(mean(preds == testingy))
 }
 
 ##################################################################
