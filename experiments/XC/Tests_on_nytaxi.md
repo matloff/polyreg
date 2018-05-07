@@ -99,36 +99,82 @@ t
     ## user   system  elapsed
     ## 627.854  268.115 1042.937
 
-Use nnet
+NN
 --------
 
 ``` r
-library(nnet)
-set.seed(500)
-n <- nrow(nytaxi)
-ntrain <- round(0.8*n)
-trainidxs <- sample(1:n, ntrain, replace = FALSE)
-nynn <- nnet(y~., data=nytaxi[trainidxs,],size=20,maxit=10000,decay=.001)
-npred <- predict(nynn, nytaxi[-trainidxs, ])
-mean(abs(nytaxi[-trainidxs,]$y - npred))
+xvalNnet(nytaxi, 10, FALSE)
 ```
 
-    ## # weights:  341
-    ## initial  value 29109540357252.925781 
-    ## final  value 29108245202694.953125 
+    ## # weights:  171
+    ## initial  value 41177886297900.554688 
+    ## final  value 41176425758745.000000 
     ## converged
-
-    ## [1] 962.2623
+    ## [1] 1024.766
 
 ``` r
-nynn1 <- nnet(y~., data=nytaxi[trainidxs,],size=30,maxit=10000,decay=.005)
-npred1 <- predict(nynn1, nytaxi[-trainidxs, ])
-mean(abs(nytaxi[-trainidxs,]$y - npred1))
+xvalNnet(nytaxi, 10, TRUE)
 ```
 
-    ## # weights:  511
-    ## initial  value 29109678474153.464844 
-    ## final  value 29108245203792.468750 
+    ## # weights:  171
+    ## initial  value 41179492639648.429688 
+    ## final  value 39846815903483.242188 
     ## converged
+    ## [1] 697.8903
 
-    ## [1] 962.2623
+``` r
+xvalNnet(nytaxi, 20, TRUE)
+```
+    ## # weights:  341
+    ## initial  value 41181754445990.875000 
+    ## final  value 39846815903465.554688 
+    ## converged
+    ## [1] 697.8905
+``` r
+xvalNnet(nytaxi, 10, TRUE, scaleXMat = TRUE)
+```
+    ## # weights:  171
+    ## initial  value 41178685261225.015625 
+    ## iter  10 value 39656113416532.195312
+    ## iter  20 value 39494341317865.414062
+    ## iter  30 value 39447970266546.703125
+    ## iter  40 value 39421261147416.734375
+    ## iter  50 value 39396487665756.843750
+    ## iter  60 value 39387215509856.609375
+    ## iter  70 value 39383057160969.226562
+    ## iter  80 value 39381409673662.734375
+    ## iter  90 value 39373094490773.351562
+    ## iter 100 value 39351902000363.765625
+    ## final  value 39351902000363.765625 
+    ## stopped after 100 iterations
+    ## [1] 572.457
+    
+``` r
+xvalDnet(nytaxi[,1:(ncol(nytaxi)-1)], nytaxi[,ncol(nytaxi)], hidden=c(5,5))
+```
+    ####loss on step 10000 is : 414133.440000
+    ####loss on step 20000 is : 329143.740000
+    ####loss on step 30000 is : 571835.260000
+    ####loss on step 40000 is : 37790387.760000
+    ####loss on step 10000 is : 572719.220000
+    ####loss on step 20000 is : 660127.845000
+    ####loss on step 30000 is : 669182.675000
+    ####loss on step 40000 is : 411117.860000
+    ## [1] 1024.766
+    
+``` r
+xvalDnet(nytaxi[,1:(ncol(nytaxi)-1)], nytaxi[,ncol(nytaxi)], hidden=c(2,2,2))
+```
+    ####loss on step 10000 is : 702229.290000
+    ####loss on step 20000 is : 583618.890000
+    ####loss on step 30000 is : 582522.900000
+    ####loss on step 40000 is : 573078.175000
+    ####loss on step 10000 is : 390625.595000
+    ####loss on step 20000 is : 669002.045000
+    ####loss on step 30000 is : 471985.960000
+    ####loss on step 40000 is : 523480.440000
+    ####loss on step 10000 is : 503311.300000
+    ####loss on step 20000 is : 482499.385000
+    ####loss on step 30000 is : 36635487.370000
+    ####loss on step 40000 is : 467624.255000
+    ## [1] 1024.766
