@@ -228,16 +228,20 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
   #xy <- xydata[,-ncol(xydata), drop=FALSE]
   #y <- xydata[,ncol(xydata)]
   n <- ncol(xdata)
-  # seperate dummy variables and continuous variables
-  is_dummy <- (lapply(lapply(xdata, table), length)==2)
-  dummy <-xdata[, is_dummy, drop = FALSE]
+  # separate dummy variables and continuous variables
+  # anticipating parallel verion: a chunk might have a nondummy with
+  # only 2 values in that chunk
+  # is_dummy <- (lapply(lapply(xdata, table), length)==2)
+  check_dummy <- function(xcol) 
+     identical(unique(xcol),0:1) || identical(unique(xcol),1:0)
+  is_dummy <- sapply(xdata, check_dummy)
+  dummy <- xdata[, is_dummy, drop = FALSE]
   nondummy <- xdata[, !is_dummy, drop = FALSE]
 
   result <- xdata
   endCols[1] <- ncol(xdata) # deg 1 starts at result[1] (first column)
 
   if (deg > 1) {
-
     for (m in 2:deg) {
       i <- ifelse(m > maxInteractDeg, maxInteractDeg, m)
 
@@ -284,7 +288,6 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
           result <- cbind(result, mix)
         }
       } # dummy & nondummy intersection
-
       endCols[m] <- ncol(result)
     } # loop 2:deg
   } # if deg > 1
@@ -297,8 +300,24 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
   return (polyMatrix(rt, endCols))
 }
 
+getPolyPar <- function(cls,xdata,deg,maxInteractDeg=deg)
+{
+   distribsplit(cls,'xdata')
+   cmd <- paste0('clusterEvalQ(cls,getPoly(xdata,', 
+             deg,',',
+             maxInteractDeg,'))')
+   # clusterExport(cls,c('deg_plm','combnDeg','getPoly'),envir=environment())
+   clusterEvalQ(cls,library(polyreg))
+   res <- eval(parse(text=cmd))
+   xd <- NULL
+   for (i in 1:length(cls)) {
+      xd <- rbind(xd,res[[i]]$xdata)
+   }
+   return (polyMatrix(xd, res[[1]]$endCols))
+}
 
-polyAllvsAll <- function(plm.xy, classes){
+
+polyallvsall <- function(plm.xy, classes){
   plm.xy <- as.data.frame(plm.xy)
   len <- length(classes)
   ft <- list()
@@ -315,36 +334,36 @@ polyAllvsAll <- function(plm.xy, classes){
   return(ft)
 }
 
-polyOnevsAll <- function(plm.xy, classes) {
+polyonevsall <- function(plm.xy, classes) {
   plm.xy <- as.data.frame(plm.xy)
   ft <- list()
   for (i in 1:length(classes)) {
-    oneClass <- plm.xy[plm.xy$y == classes[i],]
-    oneClass$y <- 1
-    allClass <- plm.xy[plm.xy$y != classes[i],]
-    allClass$y <- 0
-    new_xy <- rbind(oneClass, allClass)
+    oneclass <- plm.xy[plm.xy$y == classes[i],]
+    oneclass$y <- 1
+    allclass <- plm.xy[plm.xy$y != classes[i],]
+    allclass$y <- 0
+    new_xy <- rbind(oneclass, allclass)
     ft[[i]] <- glm(y~., family = binomial(link = "logit"), data = new_xy)
   }
   return(ft)
 }
 
 ##################################################################
-# polyFit: generate polynomial terms of data and fit models
+# polyfit: generate polynomial terms of data and fit models
 ##################################################################
 
 # arguments:
 #   xy: dataframe, response variable is in the last column
 #   deg: the degree of the polynomial terms
-#   maxInteractDeg: the max degree of dummy and nondummy predictor variables
+#   maxinteractdeg: the max degree of dummy and nondummy predictor variables
 #                   interaction terms
 #   use: can be "lm" for linear regreesion, and "glm" for logistic regression
-#   pcaMethod: whether to use PCA (can be TRUE or FALSE)
-#   pcaPortion: the portion of principal components to be used
-#   glmMethod: which method ("all" for all-vs-all, "one" for one-vs-all, 
+#   pcamethod: whether to use pca (can be true or false)
+#   pcaportion: the portion of principal components to be used
+#   glmmethod: which method ("all" for all-vs-all, "one" for one-vs-all, 
 #              "multlog" for multinomial logistic regression)
 #              to use for multi-class classification
-#   printTimes: whether to print the time of PCA, getPoly, lm, or glm.
+#   printtimes: whether to print the time of pca, getPoly, lm, or glm.
 #   polyMat: if non-NULL, then polynomial matrix will be passed in
 
 # return: the object of class polyFit
