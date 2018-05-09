@@ -495,9 +495,11 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
 # return: predicted values of newdata
 
 #' @export
-predict.polyFit <- function(object, newdata, polyMat = NULL) { 
-  # newdata doesn't have y column
+predict.polyFit <- function(object,newdata,polyMat=NULL,cls=NULL) { 
   
+  # newdata doesn't have y column
+  parCase <- (!is.null(cls))
+
   if (!is.null(polyMat)) { # polynomial matrix is provided
     if (object$PCA == TRUE) {
       plm.newdata <- predict(object$pca.xy, polyMat)[,1:object$pcaCol]
@@ -513,17 +515,20 @@ predict.polyFit <- function(object, newdata, polyMat = NULL) {
     } else {
       plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
     }
-  } # polynomial matrix is not provided
+  } # end polynomial matrix is not provided
 
   if (object$use == "lm") {
+    if (parCase) warning('cls argument not used in lm case')
     pred <- predict(object$fit, plm.newdata)
   } else { # glm case
     if (is.null(object$glmMethod)) { # only two classes
+      if (parCase) warning('cls argument not used in 2-class case')
       pre <- predict(object$fit, plm.newdata)
       pred <- ifelse(pre > 0.5, object$classes[1], object$classes[2])
     } else { # more than two classes
       len <- length(object$classes)
       if (object$glmMethod == "multlog") { # multinomial logistics
+         if (parCase) warning('cls argument not used in multlog case')
 #        require(mlogit)
 #        require(mnlogit)
 #        rand <- sample(object$classes, nrow(plm.newdata), replace=TRUE)
@@ -543,6 +548,7 @@ predict.polyFit <- function(object, newdata, polyMat = NULL) {
         return(pred)
       } # multinomial logistics
       else if (object$glmMethod == "all") { # all-vs-all method
+        if (parCase) warning('cls argument not used in all-v-all case')
         votes <- matrix(0, nrow = nrow(plm.newdata), ncol = len)
         for (i in 1:len) {
           for (j in 1:len) {
@@ -554,7 +560,9 @@ predict.polyFit <- function(object, newdata, polyMat = NULL) {
         } # for j
         winner <- apply(votes, 1, which.max)
 
-      } else if (object$glmMethod == "one") { # one-vs-all method
+      } else if (object$glmMethod == "one") { # one-vs-all method 
+        if (parCase) {
+        }
         prob <- matrix(0, nrow=nrow(plm.newdata), ncol=len)
         for (i in 1:len) {
           prob[,i] <- predict(object$fit[[i]], plm.newdata, type = "response")
