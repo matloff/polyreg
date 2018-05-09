@@ -287,10 +287,10 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
           }
           result <- cbind(result, mix)
         }
-      } # dummy & nondummy intersection
+      } # end dummy & nondummy intersection
       endCols[m] <- ncol(result)
-    } # loop 2:deg
-  } # if deg > 1
+    } # end loop 2:deg
+  } # end if deg > 1
 
   rt <- as.data.frame(result)
   for (i in 1:ncol(rt)) {
@@ -546,7 +546,7 @@ predict.polyFit <- function(object,newdata,polyMat=NULL,cls=NULL) {
           pred[r] <- tempM[r,idx[r]]
         }
         return(pred)
-      } # multinomial logistics
+      } # end multinomial logistics
       else if (object$glmMethod == "all") { # all-vs-all method
         if (parCase) warning('cls argument not used in all-v-all case')
         votes <- matrix(0, nrow = nrow(plm.newdata), ncol = len)
@@ -561,11 +561,18 @@ predict.polyFit <- function(object,newdata,polyMat=NULL,cls=NULL) {
         winner <- apply(votes, 1, which.max)
 
       } else if (object$glmMethod == "one") { # one-vs-all method 
-        if (parCase) {
-        }
-        prob <- matrix(0, nrow=nrow(plm.newdata), ncol=len)
-        for (i in 1:len) {
-          prob[,i] <- predict(object$fit[[i]], plm.newdata, type = "response")
+          predict1degree <- function(oneDegFit) <- 
+            predict(oneDegFit, plm.newdata, type = "response")
+          if (parCase) {
+             clusterExport(cls,'plm.newdata',envir=environment())
+             prob <- parSapplyLB(cls,object$fit)
+          } else {
+          prob <- matrix(0, nrow=nrow(plm.newdata), ncol=len)
+          for (i in 1:len) {
+            ### prob[,i] <- parSapplyLB(object$fit[[i]],
+            ###    plm.newdata, type = "response")
+            prob[,i] <- predict1degree(object$fit[[i]])
+          }
         }
         winner <- apply(prob, 1, which.max)
       } # one-vs-all method
@@ -574,8 +581,8 @@ predict.polyFit <- function(object,newdata,polyMat=NULL,cls=NULL) {
       for (k in 1:nrow(plm.newdata)) {
         pred[k] <- object$classes[winner[k]]
       } 
-    } # more than two classes
-  } # glm case
+    } # end more than two classes
+  } # end glm case
 
   return(pred)
 }
