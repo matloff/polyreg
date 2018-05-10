@@ -2,6 +2,6 @@
 
 S3method(predict,polyFit)
 export(getPoly,getPolyPar)
-export(polyFit)
+export(polyFit,deg_plm,combnDeg)
 export(polyMatrix)
 export(xvalPoly,xvalNnet,xvalDnet,xvalKf,splitData,scaleX,moveY)
