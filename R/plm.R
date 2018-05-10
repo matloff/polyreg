@@ -483,9 +483,9 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
 # return: predicted values of newdata, IN THE FORM OF NUMERICAL CLASS CODES
 
 #' @export
-predict.polyFit <- function(object,newdata,polyMat=NULL) { 
-  
-  # newdata doesn't have y column
+predict.polyFit <- function(object,newdata,polyMat=NULL) 
+{ 
+  # note: newdata doesn't have y column
 
   if (!is.null(polyMat)) { # polynomial matrix is provided
     if (object$PCA == TRUE) {
@@ -548,7 +548,8 @@ predict.polyFit <- function(object,newdata,polyMat=NULL) {
       } else if (object$glmMethod == "one") { # one-vs-all method 
           prob <- matrix(0, nrow=nrow(plm.newdata), ncol=len)
           for (i in 1:len) {
-            prob[,i] <- parSapplyLB(object$fit[[i]],
+            # prob[,i] <- parSapplyLB(object$fit[[i]],
+            prob[,i] <- predict(object$fit[[i]],
                plm.newdata, type = "response")
           }
         winner <- apply(prob, 1, which.max)

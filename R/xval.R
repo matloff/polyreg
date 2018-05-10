@@ -79,7 +79,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
       colnames(train1)[ncol(train1)] <- "y"
       test1 <- testing[,1:endCol]
       
-      pol <- polyFit(train1, i, m, use, pcaMethod = FALSE, pcaPortion, glmMethod,
+      pol <- polyFit(train1,i,m,use,pcaMethod=FALSE,pcaPortion,glmMethod,
                      polyMat = train1)
       pred <- predict(pol, test1, test1)
 #    }
@@ -88,6 +88,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
       acc[i] <- mean(abs(pred - test.y))
     } else
       acc[i] <- mean(pred == test.y) # accuracy
+    cat('accuracy: ',acc[i],'\n')
     
   } # for each degree
   return(acc)
