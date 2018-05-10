@@ -317,7 +317,7 @@ getPolyPar <- function(cls,xdata,deg,maxInteractDeg=deg)
 }
 
 
-polyallvsall <- function(plm.xy, classes){
+polyAllVsAll <- function(plm.xy, classes){
   plm.xy <- as.data.frame(plm.xy)
   len <- length(classes)
   ft <- list()
@@ -334,7 +334,7 @@ polyallvsall <- function(plm.xy, classes){
   return(ft)
 }
 
-polyonevsall <- function(plm.xy, classes) {
+polyOneVsAll <- function(plm.xy, classes) {
   plm.xy <- as.data.frame(plm.xy)
   ft <- list()
   for (i in 1:length(classes)) {
@@ -437,12 +437,12 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
     else { # more than two classes
       if (glmMethod == "all") { # all-vs-all
         tmp <- system.time(
-        ft <- polyAllvsAll(plm.xy, classes)
+        ft <- polyAllVsAll(plm.xy, classes)
         )
         if (printTimes) cat('all-vs-all glm() time: ',tmp,'\n')
       } else if (glmMethod == "one") { # one-vs-all
         tmp <- system.time(
-        ft <- polyOnevsAll(plm.xy, classes)
+        ft <- polyOneVsAll(plm.xy, classes)
         )
         if (printTimes) cat('one-vs-all glm() time: ',tmp,'\n')
       } else if (glmMethod == "multlog") { # multinomial logistics
@@ -495,10 +495,9 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
 # return: predicted values of newdata
 
 #' @export
-predict.polyFit <- function(object,newdata,polyMat=NULL,cls=NULL) { 
+predict.polyFit <- function(object,newdata,polyMat=NULL) { 
   
   # newdata doesn't have y column
-  parCase <- (!is.null(cls))
 
   if (!is.null(polyMat)) { # polynomial matrix is provided
     if (object$PCA == TRUE) {
@@ -511,24 +510,23 @@ predict.polyFit <- function(object,newdata,polyMat=NULL,cls=NULL) {
   else { # polynomial matrix is not provided
     if (object$PCA == TRUE) {
       new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
-      plm.newdata <- getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+      plm.newdata <- 
+         getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
     } else {
-      plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
+      plm.newdata <- 
+         getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
     }
   } # end polynomial matrix is not provided
 
   if (object$use == "lm") {
-    if (parCase) warning('cls argument not used in lm case')
     pred <- predict(object$fit, plm.newdata)
   } else { # glm case
     if (is.null(object$glmMethod)) { # only two classes
-      if (parCase) warning('cls argument not used in 2-class case')
       pre <- predict(object$fit, plm.newdata)
       pred <- ifelse(pre > 0.5, object$classes[1], object$classes[2])
     } else { # more than two classes
       len <- length(object$classes)
       if (object$glmMethod == "multlog") { # multinomial logistics
-         if (parCase) warning('cls argument not used in multlog case')
 #        require(mlogit)
 #        require(mnlogit)
 #        rand <- sample(object$classes, nrow(plm.newdata), replace=TRUE)
@@ -548,7 +546,6 @@ predict.polyFit <- function(object,newdata,polyMat=NULL,cls=NULL) {
         return(pred)
       } # end multinomial logistics
       else if (object$glmMethod == "all") { # all-vs-all method
-        if (parCase) warning('cls argument not used in all-v-all case')
         votes <- matrix(0, nrow = nrow(plm.newdata), ncol = len)
         for (i in 1:len) {
           for (j in 1:len) {
@@ -561,19 +558,11 @@ predict.polyFit <- function(object,newdata,polyMat=NULL,cls=NULL) {
         winner <- apply(votes, 1, which.max)
 
       } else if (object$glmMethod == "one") { # one-vs-all method 
-          predict1degree <- function(oneDegFit) <- 
-            predict(oneDegFit, plm.newdata, type = "response")
-          if (parCase) {
-             clusterExport(cls,'plm.newdata',envir=environment())
-             prob <- parSapplyLB(cls,object$fit)
-          } else {
           prob <- matrix(0, nrow=nrow(plm.newdata), ncol=len)
           for (i in 1:len) {
-            ### prob[,i] <- parSapplyLB(object$fit[[i]],
-            ###    plm.newdata, type = "response")
-            prob[,i] <- predict1degree(object$fit[[i]])
+            prob[,i] <- parSapplyLB(object$fit[[i]],
+               plm.newdata, type = "response")
           }
-        }
         winner <- apply(prob, 1, which.max)
       } # one-vs-all method
       # calculate pred for all-vs-all & one-vs-all
