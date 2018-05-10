@@ -300,6 +300,7 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
   return (polyMatrix(rt, endCols))
 }
 
+# parallel version of getPoly()
 getPolyPar <- function(cls,xdata,deg,maxInteractDeg=deg)
 {
    distribsplit(cls,'xdata')
@@ -315,7 +316,6 @@ getPolyPar <- function(cls,xdata,deg,maxInteractDeg=deg)
    }
    return (polyMatrix(xd, res[[1]]$endCols))
 }
-
 
 polyAllVsAll <- function(plm.xy, classes){
   plm.xy <- as.data.frame(plm.xy)
@@ -353,7 +353,9 @@ polyOneVsAll <- function(plm.xy, classes) {
 ##################################################################
 
 # arguments:
-#   xy: dataframe, response variable is in the last column
+#   xy: dataframe, response variable is in the last column; in
+#       classification case, this must be either an R factor or a
+#       numeric code for the various classes
 #   deg: the degree of the polynomial terms
 #   maxinteractdeg: the max degree of dummy and nondummy predictor variables
 #                   interaction terms
@@ -372,6 +374,10 @@ polyOneVsAll <- function(plm.xy, classes) {
 polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
      pcaPortion = 0.9, glmMethod = "all",printTimes=TRUE, polyMat = NULL) {
   y <- xy[,ncol(xy)]
+  if (is.factor(y)) {  # change to numeric code for the classes
+     y <- as.numeric(y)
+     xy[,ncol(xy)] <- y
+  }
   classes <- FALSE
   xy.pca <- NULL
   k <- 0
@@ -447,24 +453,6 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
         if (printTimes) cat('one-vs-all glm() time: ',tmp,'\n')
       } else if (glmMethod == "multlog") { # multinomial logistics
          require(nnet)
-#        require(mnlogit)
-#        fn <- colnames(plm.xy)
-#        ff <- paste("y ~ 0 |", fn[1])
-#        if (length(fn) > 2) {
-#          for (i in 2:(length(fn)-1)) {
-#            ff <- paste(ff, fn[i], sep = "+")
-#          }
-#        } # if have more than 1 predictor variable
-#        ff <- formula(ff)
-#        ww <- rep(1,nrow(plm.xy))
-#        ww[testIdx] <- 0
-#        tmp <- system.time(
-#          ft <- mnlogit(ff, 
-#                        mlogit.data(plm.xy, shape = "wide", choice = "y"),
-#                        weights = ww,
-#                        ncores = 2)
-#        )
-#        if (printTimes) cat('mnlogit time: ',tmp,'\n')
         tmp <- system.time(
         ft <- multinom(y~., plm.xy)
         )
@@ -492,7 +480,7 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
 #   newdata: a new dataframe, without response variable
 #   polyMat: if non-NULL, then polynomial matrix will be passed in
 
-# return: predicted values of newdata
+# return: predicted values of newdata, IN THE FORM OF NUMERICAL CLASS CODES
 
 #' @export
 predict.polyFit <- function(object,newdata,polyMat=NULL) { 

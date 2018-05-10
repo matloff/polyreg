@@ -28,6 +28,10 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
   
   y <- xy[,ncol(xy)]
+  if (is.factor(y)) {  # change to numeric code for the classes
+     y <- as.numeric(y)
+     xy[,ncol(xy)] <- y
+  }
   
   if (pcaMethod) {
     tmp <- system.time(
