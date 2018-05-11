@@ -423,10 +423,13 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
   
   plm.xy <- as.data.frame(plm.xy)
 
+  stage2fit <- NULL
   if (use == 'lmplus') {
+  browser()
     ft <- lm(y~., data = plm.xy)
     stage2xy <- cbind(ft$fitted.values,y)
-    stage2pf <- polyFit(stage2xy,deg)
+    names(stage2xy)[1] <- 'lmpredout'
+    stage2fit <- polyFit(stage2xy,deg)
   } else
 
   if (use == "lm") {
@@ -471,7 +474,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
   me <- list(xy = xy, degree = deg, maxInteractDeg = maxInteractDeg, use = use,
              poly.xy = plm.xy, fit = ft, PCA = pcaMethod, pca.portion = pcaPrn,
              pca.xy = xy.pca, pcaCol = k, glmMethod = glmMethod,
-             classes = classes)
+             classes = classes, stage2fit=stage2fit)
   class(me) <- "polyFit"
   return(me)
 
@@ -493,6 +496,12 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
 { 
   # note: newdata doesn't have y column
 
+  use <- object$use
+  if (object$use == "lmplus") {
+     if (!is.null(polyMat)) stop('cannot provide polyMat under lmplus')
+
+  }
+
   if (!is.null(polyMat)) { # polynomial matrix is provided
     if (object$PCA == TRUE) {
       plm.newdata <- predict(object$pca.xy, polyMat)[,1:object$pcaCol]
@@ -513,6 +522,9 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
   } # end polynomial matrix is not provided
 
   if (object$use == "lmplus") {
+    pred <- predict(object$fit, plm.newdata)
+    prgred <- getPoly(pred,object$degree)$xdata
+    pred <- predict(object$stage2fit$fit,pred)
   } else
   
   if (object$use == "lm") {
