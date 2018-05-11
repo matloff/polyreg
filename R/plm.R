@@ -371,8 +371,8 @@ polyOneVsAll <- function(plm.xy, classes) {
 # return: the object of class polyFit
 
 #' @export
-polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
-     pcaPortion = 0.9, glmMethod = "all",printTimes=TRUE, polyMat = NULL) {
+polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
+     pcaPortion=0.9,glmMethod="all",printTimes=TRUE,polyMat=NULL) {
   y <- xy[,ncol(xy)]
   if (is.factor(y)) {  # change to numeric code for the classes
      y <- as.numeric(y)
@@ -422,6 +422,12 @@ polyFit <- function(xy, deg, maxInteractDeg, use = "lm", pcaMethod = FALSE,
   } # polynomial matrix is not provided
   
   plm.xy <- as.data.frame(plm.xy)
+
+  if (use == 'lmplus') {
+    ft <- lm(y~., data = plm.xy)
+    stage2xy <- cbind(ft$fitted.values,y)
+    stage2pf <- polyFit(stage2xy,deg)
+  } else
 
   if (use == "lm") {
     tmp <- system.time(
@@ -506,6 +512,9 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
     }
   } # end polynomial matrix is not provided
 
+  if (object$use == "lmplus") {
+  } else
+  
   if (object$use == "lm") {
     pred <- predict(object$fit, plm.newdata)
   } else { # glm case
@@ -515,13 +524,6 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
     } else { # more than two classes
       len <- length(object$classes)
       if (object$glmMethod == "multlog") { # multinomial logistics
-#        require(mlogit)
-#        require(mnlogit)
-#        rand <- sample(object$classes, nrow(plm.newdata), replace=TRUE)
-#        plm.newdata$y <- rand
-#        pr <- predict(object$fit) 
-#                      mlogit.data(plm.newdata, shape = "wide", choice = "y"))
-#        pr <- object$fit$probabilities[testIdx,]
         pr <- predict(object$fit, plm.newdata, type="probs")
         idx <- apply(pr,1, which.max)
         col.name <- colnames(pr)
