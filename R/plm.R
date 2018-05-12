@@ -2,7 +2,7 @@
 # combnDeg: generate the degree distribution of different X's
 ##################################################################
 
-# arguments:
+# arguments: 
 
 #   n: number of X's
 #   deg: total degrees
@@ -359,7 +359,10 @@ polyOneVsAll <- function(plm.xy, classes) {
 #   deg: the degree of the polynomial terms
 #   maxinteractdeg: the max degree of dummy and nondummy predictor variables
 #                   interaction terms
-#   use: can be "lm" for linear regreesion, and "glm" for logistic regression
+#   use: can be "lm" for linear regreesion, and "glm" for logistic
+#        regression; 'lmplus' specifies a 2-stage approach, first
+#        fitting lm() on poly X but then fitting regressing Y against
+#        the predicted values from Stage 1
 #   pcamethod: whether to use pca (can be true or false)
 #   pcaportion: the portion of principal components to be used
 #   glmmethod: which method ("all" for all-vs-all, "one" for one-vs-all, 
@@ -367,12 +370,14 @@ polyOneVsAll <- function(plm.xy, classes) {
 #              to use for multi-class classification
 #   printtimes: whether to print the time of pca, getPoly, lm, or glm.
 #   polyMat: if non-NULL, then polynomial matrix will be passed in
+#   stage2deg:  polynomial degree to use in Stage 2 (if use = 'lmplus')
 
 # return: the object of class polyFit
 
 #' @export
 polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
-     pcaPortion=0.9,glmMethod="all",printTimes=TRUE,polyMat=NULL) {
+     pcaPortion=0.9,glmMethod="all",printTimes=TRUE,polyMat=NULL,
+     stage2deg=NULL) {
   y <- xy[,ncol(xy)]
   if (is.factor(y)) {  # change to numeric code for the classes
      y <- as.numeric(y)
@@ -425,21 +430,18 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
 
   stage2fit <- NULL
   if (use == 'lmplus') {
-  browser()
+    stop('lmplus not implemented yet')
     ft <- lm(y~., data = plm.xy)
     stage2xy <- cbind(ft$fitted.values,y)
     names(stage2xy)[1] <- 'lmpredout'
-    stage2fit <- polyFit(stage2xy,deg)
-  } else
-
-  if (use == "lm") {
+    stage2fit <- polyFit(stage2xy,stage2deg)
+  } else if (use == "lm") {
     tmp <- system.time(
-    ft <- lm(y~., data = plm.xy)
+       ft <- lm(y~., data = plm.xy)
     )
     if (printTimes) cat('lm() time: ',tmp,'\n')
     glmMethod <- NULL
-  }
-  else if (use == "glm") {
+  } else if (use == "glm") {
     classes <- unique(y)
     if (length(classes) == 2) {
       plm.xy$y <- as.numeric(ifelse(plm.xy$y == classes[1], 1, 0))
@@ -471,10 +473,10 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
 
   }
   pcaPrn <- ifelse(pcaMethod == TRUE, pcaPortion, 0)
-  me <- list(xy = xy, degree = deg, maxInteractDeg = maxInteractDeg, use = use,
-             poly.xy = plm.xy, fit = ft, PCA = pcaMethod, pca.portion = pcaPrn,
-             pca.xy = xy.pca, pcaCol = k, glmMethod = glmMethod,
-             classes = classes, stage2fit=stage2fit)
+  me<-list(xy=xy,degree=deg,maxInteractDeg=maxInteractDeg,use=use,
+    poly.xy=plm.xy,fit=ft,PCA=pcaMethod,pca.portion=pcaPrn,
+    pca.xy=xy.pca,pcaCol=k,glmMethod=glmMethod,
+    classes=classes,stage2fit=stage2fit,stage2deg=stage2deg)
   class(me) <- "polyFit"
   return(me)
 
@@ -497,10 +499,6 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
   # note: newdata doesn't have y column
 
   use <- object$use
-  if (object$use == "lmplus") {
-     if (!is.null(polyMat)) stop('cannot provide polyMat under lmplus')
-
-  }
 
   if (!is.null(polyMat)) { # polynomial matrix is provided
     if (object$PCA == TRUE) {
@@ -522,7 +520,9 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
   } # end polynomial matrix is not provided
 
   if (object$use == "lmplus") {
+    stop('lmplus not implemented yet')
     pred <- predict(object$fit, plm.newdata)
+    pred <- data.frame(lmpredout=pred)
     prgred <- getPoly(pred,object$degree)$xdata
     pred <- predict(object$stage2fit$fit,pred)
   } else
