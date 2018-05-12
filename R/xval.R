@@ -13,10 +13,9 @@
 #' @export
 
 xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
-                     pcaMethod = FALSE,pcaPortion = 0.9,
-                     glmMethod = "all",
+                     pcaMethod = FALSE,pcaPortion = 0.9, glmMethod = "one",
                      nHoldout=10000,stage2deg=NULL,
-                     yCol = NULL,printTimes=TRUE)
+                     yCol = NULL,printTimes=TRUE,cls=NULL)
 {
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
 
@@ -69,7 +68,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
       test1 <- testing[,1:endCol]
 
       pol <- polyFit(train1,i,m,use,pcaMethod=FALSE,pcaPortion,glmMethod,
-                     polyMat = train1,stage2deg=stage2deg)
+                     polyMat = train1,stage2deg=stage2deg,cls=cls)
       pred <- predict(pol, test1, test1)
 
     if (use == "lm") {

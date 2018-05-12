@@ -334,16 +334,31 @@ polyAllVsAll <- function(plm.xy, classes){
   return(ft)
 }
 
-polyOneVsAll <- function(plm.xy, classes) {
+polyOneVsAll <- function(plm.xy, classes,cls=NULL) {
   plm.xy <- as.data.frame(plm.xy)
   ft <- list()
-  for (i in 1:length(classes)) {
+  predClassi <- function(i) 
+  {
     oneclass <- plm.xy[plm.xy$y == classes[i],]
     oneclass$y <- 1
     allclass <- plm.xy[plm.xy$y != classes[i],]
     allclass$y <- 0
     new_xy <- rbind(oneclass, allclass)
-    ft[[i]] <- glm(y~., family = binomial(link = "logit"), data = new_xy)
+    glm(y~., family = binomial(link = "logit"), data = new_xy)
+  }
+  if (is.null(cls)) {
+  for (i in 1:length(classes)) {
+#     oneclass <- plm.xy[plm.xy$y == classes[i],]
+#     oneclass$y <- 1
+#     allclass <- plm.xy[plm.xy$y != classes[i],]
+#     allclass$y <- 0
+#     new_xy <- rbind(oneclass, allclass)
+#     ft[[i]] <- glm(y~., family = binomial(link = "logit"), data = new_xy)
+    ft[[i]] <- predClassi(i)
+  }
+  } else {
+     clusterExport(cls,c('plm.xy','predClassi'),envir=environment())
+     ft <- clusterApply(cls,1:length(classes),predClassi)
   }
   return(ft)
 }
@@ -376,8 +391,8 @@ polyOneVsAll <- function(plm.xy, classes) {
 
 #' @export
 polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
-     pcaPortion=0.9,glmMethod="all",printTimes=TRUE,polyMat=NULL,
-     stage2deg=NULL) {
+     pcaPortion=0.9,glmMethod="one",printTimes=TRUE,polyMat=NULL,
+     stage2deg=NULL,cls=NULL) {
   y <- xy[,ncol(xy)]
   if (is.factor(y)) {  # change to numeric code for the classes
      y <- as.numeric(y)
@@ -450,7 +465,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
       )
       if (printTimes) cat('2-class glm() time: ',tmp,'\n')
       glmMethod <- NULL
-    }
+    }  # end 2-class case
     else { # more than two classes
       if (glmMethod == "all") { # all-vs-all
         tmp <- system.time(
@@ -459,7 +474,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
         if (printTimes) cat('all-vs-all glm() time: ',tmp,'\n')
       } else if (glmMethod == "one") { # one-vs-all
         tmp <- system.time(
-        ft <- polyOneVsAll(plm.xy, classes)
+           ft <- polyOneVsAll(plm.xy, classes,cls)
         )
         if (printTimes) cat('one-vs-all glm() time: ',tmp,'\n')
       } else if (glmMethod == "multlog") { # multinomial logistics
