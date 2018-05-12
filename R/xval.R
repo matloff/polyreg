@@ -4,16 +4,8 @@
 ##################################################################
 
 # arguments:
-#   xy: dataframe, response variable is in the last column
-#   maxDeg: the max degree of the polynomial terms
-#   maxInteractDeg: the max degree of dummy and nondummy predictor variables
-#                   interaction terms
-#   use: can be "lm" for linear regreesion, and "glm" for logistic regression
-#   pcaMethod: whether to use PCA (can be TRUE or FALSE)
-#   pcaPortion: the portion of principal components to be used
-#   glmMethod: when the response variable has more than 2 classes, can be "all"
-#              for All-vs-All method, and "one" for One-vs-All method
-#   nHoldout: number of cases for the test set. Defaults to 10000 (or 20% of N if N < 10000).
+#   for most args, see the comments for polyFit()
+#   nHoldout: number of cases for the test set
 #   yCol: if not NULL, Y is in this column, and will be moved to last
 
 # return: a vector of mean absolute error (for lm) or accuracy (for glm),
@@ -22,7 +14,8 @@
 
 xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
                      pcaMethod = FALSE,pcaPortion = 0.9,
-                     glmMethod = "all",nHoldout=10000,
+                     glmMethod = "all",
+                     nHoldout=10000,stage2deg=NULL,
                      yCol = NULL,printTimes=TRUE)
 {
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
@@ -71,21 +64,13 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
 
     endCol <- poly.xy$endCols[i]
 
-#    if (use == "glm" & glmMethod == "multlog" & length(unique(y)) > 2) {
-#      # multinomial logistic
-#      dat <- cbind(xy[,1:endCol], y)
-#      pol <- polyFit(dat, i, m, use, pcaMethod = FALSE, pcaPortion, glmMethod,
-#                     polyMat = dat, testIdx = testIdx)
-#      pred <- predict(pol, test1, test1, testIdx)
-#    } else {
       train1 <- cbind(training[,1:endCol], train.y)
       colnames(train1)[ncol(train1)] <- "y"
       test1 <- testing[,1:endCol]
 
       pol <- polyFit(train1,i,m,use,pcaMethod=FALSE,pcaPortion,glmMethod,
-                     polyMat = train1)
+                     polyMat = train1,stage2deg=stage2deg)
       pred <- predict(pol, test1, test1)
-#    }
 
     if (use == "lm") {
       acc[i] <- mean(abs(pred - test.y))
