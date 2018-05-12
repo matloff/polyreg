@@ -170,7 +170,7 @@ xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,
   yName <- names(xy)[ncol(xy)]
   trainingy <- training[,ncxy]
   classcase <- is.factor(trainingy)
-  loss <- if (classcase) 'NULL' else "mean_squared_error"
+  loss <- 'NULL' 
   cmd <- paste0('kfout <- kms(',yName,' ~ .,data=training,loss=')
   cmd <- paste0(cmd,loss,')')
   eval(parse(text=cmd))
