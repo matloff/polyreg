@@ -14,13 +14,13 @@
 
 xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
                      pcaMethod = FALSE,pcaPortion = 0.9, glmMethod = "one",
-                     nHoldout=10000,stage2deg=NULL,
+                     nHoldout=min(10000,round(0.2*nrow(xy))),stage2deg=NULL,
                      yCol = NULL,printTimes=TRUE,cls=NULL)
 {
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
 
   if(nHoldout > nrow(xy))
-    nHoldout <- round(.2*nrow(xy))
+    nHoldout <- round(0.2*nrow(xy))
 
   y <- xy[,ncol(xy)]
   if (is.factor(y)) {  # change to numeric code for the classes
@@ -99,10 +99,14 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
 #' @export
 
 xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
-                     scaleXMat = FALSE, nHoldout=10000, yCol = NULL)
+                     scaleXMat=FALSE,nHoldout=min(10000,round(0.2*nrow(xy))), 
+                     yCol = NULL)
 {
   require(nnet)
   ncxy <- ncol(xy)
+
+  if(nHoldout > nrow(xy))
+    nHoldout <- round(0.2*nrow(xy))
 
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
 
@@ -148,7 +152,8 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 #         the i-th element of the list is for degree = i
 #' @export
 
-xvalKf <- function(xy,nHoldout=10000,yCol=NULL,rmArgs=NULL)
+xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,
+             rmArgs=NULL)
 {
   require(kerasformula)
   ncxy <- ncol(xy)
@@ -202,7 +207,8 @@ xvalKf <- function(xy,nHoldout=10000,yCol=NULL,rmArgs=NULL)
 
 xvalDnet <- function(x,y,hidden,output='"sigm"',numepochs=3,
                      pcaMethod = FALSE,pcaPortion = 0.9,
-                     scaleXMat = TRUE, nHoldout=10000)
+                     scaleXMat = TRUE, 
+                     nHoldout=min(10000,round(0.2*nrow(xy))))
 {
   require(deepnet)
 
