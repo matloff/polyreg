@@ -208,7 +208,7 @@ xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,
 xvalDnet <- function(x,y,hidden,output='"sigm"',numepochs=3,
                      pcaMethod = FALSE,pcaPortion = 0.9,
                      scaleXMat = TRUE, 
-                     nHoldout=min(10000,round(0.2*nrow(xy))))
+                     nHoldout=min(10000,round(0.2*nrow(x))))
 {
   require(deepnet)
 
@@ -245,7 +245,6 @@ xvalDnet <- function(x,y,hidden,output='"sigm"',numepochs=3,
 splitData <- function(xy,nHoldout,idxsOnly=FALSE)
 {
   n <- nrow(xy)
-  set.seed(500)
   ntrain <- nHoldout
   testIdxs <- sample(n, ntrain, replace = FALSE)
   if (idxsOnly) return(testIdxs)
