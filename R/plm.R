@@ -252,7 +252,7 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
         result <- cbind(result, only_dummy(dummy,m))
 
       # for dummy & nondummy intersection
-      if (ncol(nondummy) > 0 && ncol(dummy) > 0) {
+      if (ncol(nondummy) > 0 && ncol(dummy) > 0 && maxInteractDeg > 1) {
         for (j in 1:(i-1)) {
           if (j == 1 && i - j == 1) {
             r_dummy <- dummy
