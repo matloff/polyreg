@@ -408,6 +408,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
       )
       if (printTimes) cat('PCA time: ',tmp,'\n')
       pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
+      if (printTimes) cat(pcNo,' principal comps used\n')
       for (k in 1:length(pcNo)) {
         if (pcNo[k] >= pcaPortion)
           break
@@ -426,6 +427,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
       )
       if (printTimes) cat('PCA time: ',tmp,'\n')
       pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
+      if (printTimes) cat(pcNo,' principal comps used\n')
       for (k in 1:length(pcNo)) {
         if (pcNo[k] >= pcaPortion)
           break
