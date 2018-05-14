@@ -38,6 +38,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
       if (pcNo[k] >= pcaPortion)
         break
     }
+    if (printTimes) cat(k,' principal comps used\n')
     xdata <- xy.pca$x[,1:k, drop=FALSE]
   } else {
     xdata <- xy[,-ncol(xy), drop=FALSE]
