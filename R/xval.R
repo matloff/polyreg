@@ -65,7 +65,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
 
       train1 <- cbind(training[,1:endCol], train.y)
       colnames(train1)[ncol(train1)] <- "y"
-      test1 <- testing[,1:endCol]
+      test1 <- testing[,1:endCol, drop=FALSE]
 
       pol <- polyFit(train1,i,m,use,pcaMethod=FALSE,pcaPortion,glmMethod,
                      polyMat = train1,stage2deg=stage2deg,cls=cls)
