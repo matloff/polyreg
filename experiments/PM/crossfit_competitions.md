@@ -12,6 +12,8 @@ Men 2018 Competition
 ====================
 
 ``` r
+MAE_results <- matrix(nrow=2, ncol=4, dimnames=list(c("kms", "xvalPoly"), c("m2018", "m2017", "w2018", "w2017")))
+
 Rx <- read.csv("Men_Rx_2018.csv")
 ```
 
@@ -78,12 +80,12 @@ Rx_complete_z <- as.data.frame(lapply(Rx_complete, kerasformula:::z))
 xval.out <- xvalPoly(Rx_complete_z, maxDeg = 3, maxInteractDeg = 2)
 ```
 
-    getPoly time in xvalPoly:  0.813 0.154 0.974 0 0 
-    lm() time:  0.078 0.009 0.087 0 0 
+    getPoly time in xvalPoly:  0.826 0.15 1 0 0 
+    lm() time:  0.082 0.008 0.091 0 0 
     accuracy:  0.4026333 
-    lm() time:  0.13 0.027 0.158 0 0 
+    lm() time:  0.124 0.025 0.15 0 0 
     accuracy:  0.4012934 
-    lm() time:  0.472 0.065 0.541 0 0 
+    lm() time:  0.484 0.065 0.556 0 0 
     accuracy:  0.3996115 
 
 ``` r
@@ -96,7 +98,12 @@ xval.out
 Rx_kms_out$MAE_predictions
 ```
 
-    [1] 0.1098492
+    [1] 0.1131168
+
+``` r
+MAE_results[1,1] <- Rx_kms_out$MAE_predictions
+MAE_results[2,1] <- min(xval.out)
+```
 
 Men 2017 Competition
 ====================
@@ -154,12 +161,12 @@ Rx_complete_z <- as.data.frame(lapply(Rx_complete, kerasformula:::z))
 xval.out <- xvalPoly(Rx_complete_z, maxDeg = 3, maxInteractDeg = 1)
 ```
 
-    getPoly time in xvalPoly:  0.227 0.063 0.303 0 0 
-    lm() time:  0.025 0.004 0.029 0 0 
+    getPoly time in xvalPoly:  0.231 0.061 0.298 0 0 
+    lm() time:  0.027 0.003 0.032 0 0 
     accuracy:  0.4962781 
-    lm() time:  0.038 0.008 0.047 0 0 
+    lm() time:  0.042 0.009 0.052 0 0 
     accuracy:  0.4948952 
-    lm() time:  0.089 0.018 0.108 0 0 
+    lm() time:  0.097 0.02 0.117 0 0 
     accuracy:  0.5094317 
 
 ``` r
@@ -172,7 +179,12 @@ xval.out
 Rx_kms_out$MAE_predictions
 ```
 
-    [1] 0.1482394
+    [1] 0.148042
+
+``` r
+MAE_results[1,2] <- Rx_kms_out$MAE_predictions
+MAE_results[2,2] <- min(xval.out)
+```
 
 Women 2018 Competition
 ======================
@@ -233,12 +245,12 @@ Rx_complete_z <- as.data.frame(lapply(Rx_complete, kerasformula:::z))
 xval.out <- xvalPoly(Rx_complete_z, maxDeg = 3, maxInteractDeg = 1)
 ```
 
-    getPoly time in xvalPoly:  0.216 0.059 0.287 0 0 
-    lm() time:  0.03 0.004 0.035 0 0 
+    getPoly time in xvalPoly:  0.225 0.063 0.3 0 0 
+    lm() time:  0.032 0.004 0.036 0 0 
     accuracy:  0.436813 
-    lm() time:  0.046 0.01 0.056 0 0 
+    lm() time:  0.045 0.009 0.054 0 0 
     accuracy:  0.4345446 
-    lm() time:  0.116 0.027 0.144 0 0 
+    lm() time:  0.126 0.027 0.156 0 0 
     accuracy:  0.4339059 
 
 ``` r
@@ -251,7 +263,12 @@ xval.out
 Rx_kms_out$MAE_predictions
 ```
 
-    [1] 0.1224316
+    [1] 0.122345
+
+``` r
+MAE_results[1,3] <- Rx_kms_out$MAE_predictions
+MAE_results[2,3] <- min(xval.out)
+```
 
 Women 2017
 ==========
@@ -309,12 +326,12 @@ Rx_complete_z <- as.data.frame(lapply(Rx_complete, kerasformula:::z))
 xval.out <- xvalPoly(Rx_complete_z, maxDeg = 3, maxInteractDeg = 1)
 ```
 
-    getPoly time in xvalPoly:  0.054 0.012 0.067 0 0 
-    lm() time:  0.007 0 0.008 0 0 
+    getPoly time in xvalPoly:  0.054 0.012 0.066 0 0 
+    lm() time:  0.007 0.001 0.007 0 0 
     accuracy:  0.5422355 
-    lm() time:  0.017 0.001 0.019 0 0 
+    lm() time:  0.013 0.001 0.013 0 0 
     accuracy:  0.5667926 
-    lm() time:  0.027 0.004 0.031 0 0 
+    lm() time:  0.029 0.005 0.034 0 0 
     accuracy:  1.611625 
 
 ``` r
@@ -327,4 +344,22 @@ xval.out
 Rx_kms_out$MAE_predictions
 ```
 
-    [1] 0.1660116
+    [1] 0.166333
+
+``` r
+MAE_results[1,4] <- Rx_kms_out$MAE_predictions
+MAE_results[2,4] <- min(xval.out)
+```
+
+The results
+===========
+
+Out-of-sample mean absolute error (MAE) for `kms` vs. `xvalPoly` (for the latter, the lowest MAE for the models corresponding to the three polynomial degrees is selected).
+
+``` r
+MAE_results
+```
+
+                 m2018     m2017     w2018     w2017
+    kms      0.1131168 0.1480420 0.1223450 0.1663330
+    xvalPoly 0.3996115 0.4948952 0.4339059 0.5422355
