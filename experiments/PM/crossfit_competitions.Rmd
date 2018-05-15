@@ -22,6 +22,9 @@ Below find publically-available data from the Crossfit annual open, an amateur a
 # Men 2018 Competition
 
 ```{r}
+
+MAE_results <- matrix(nrow=2, ncol=4, dimnames=list(c("kms", "xvalPoly"), c("m2018", "m2017", "w2018", "w2017")))
+
 Rx <- read.csv("Men_Rx_2018.csv")
 ```
 ```{r}
@@ -54,7 +57,8 @@ Rx_complete_z <- as.data.frame(lapply(Rx_complete, kerasformula:::z))
 xval.out <- xvalPoly(Rx_complete_z, maxDeg = 3, maxInteractDeg = 2)
 xval.out
 Rx_kms_out$MAE_predictions
-
+MAE_results[1,1] <- Rx_kms_out$MAE_predictions
+MAE_results[2,1] <- min(xval.out)
 ```
 
 # Men 2017 Competition
@@ -90,6 +94,8 @@ Rx_complete_z <- as.data.frame(lapply(Rx_complete, kerasformula:::z))
 xval.out <- xvalPoly(Rx_complete_z, maxDeg = 3, maxInteractDeg = 1)
 xval.out
 Rx_kms_out$MAE_predictions
+MAE_results[1,2] <- Rx_kms_out$MAE_predictions
+MAE_results[2,2] <- min(xval.out)
 ```
 
 # Women 2018 Competition
@@ -125,6 +131,8 @@ Rx_complete_z <- as.data.frame(lapply(Rx_complete, kerasformula:::z))
 xval.out <- xvalPoly(Rx_complete_z, maxDeg = 3, maxInteractDeg = 1)
 xval.out
 Rx_kms_out$MAE_predictions
+MAE_results[1,3] <- Rx_kms_out$MAE_predictions
+MAE_results[2,3] <- min(xval.out)
 ```
 
 # Women 2017
@@ -160,7 +168,14 @@ Rx_complete_z <- as.data.frame(lapply(Rx_complete, kerasformula:::z))
 xval.out <- xvalPoly(Rx_complete_z, maxDeg = 3, maxInteractDeg = 1)
 xval.out
 Rx_kms_out$MAE_predictions
-
+MAE_results[1,4] <- Rx_kms_out$MAE_predictions
+MAE_results[2,4] <- min(xval.out)
 ```
 
+# The results
 
+Out-of-sample mean absolute error (MAE) for `kms` vs. `xvalPoly` (for the latter, the lowest MAE for the models corresponding to the three polynomial degrees is selected).
+```{r}
+MAE_results
+
+```
