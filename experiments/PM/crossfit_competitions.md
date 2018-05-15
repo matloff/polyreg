@@ -78,12 +78,12 @@ Rx_complete_z <- as.data.frame(lapply(Rx_complete, kerasformula:::z))
 xval.out <- xvalPoly(Rx_complete_z, maxDeg = 3, maxInteractDeg = 2)
 ```
 
-    getPoly time in xvalPoly:  0.806 0.155 0.965 0 0 
-    lm() time:  0.077 0.01 0.088 0 0 
+    getPoly time in xvalPoly:  0.813 0.154 0.974 0 0 
+    lm() time:  0.078 0.009 0.087 0 0 
     accuracy:  0.4026333 
-    lm() time:  0.129 0.026 0.156 0 0 
+    lm() time:  0.13 0.027 0.158 0 0 
     accuracy:  0.4012934 
-    lm() time:  0.487 0.066 0.556 0 0 
+    lm() time:  0.472 0.065 0.541 0 0 
     accuracy:  0.3996115 
 
 ``` r
@@ -96,7 +96,7 @@ xval.out
 Rx_kms_out$MAE_predictions
 ```
 
-    [1] 0.1134672
+    [1] 0.1098492
 
 Men 2017 Competition
 ====================
@@ -118,26 +118,34 @@ dim(Rx_complete)
     [1] 41896     5
 
 ``` r
-Rx_kms_out <- kms(overallpercentile ~ ., 
-                  Rx_complete, seed=777, Nepochs=5, 
+Rx_kms_out <- kms(overallpercentile ~ ., Rx_complete, 
+                  layers = list(units = c(P, P, NA), 
+                                activation = c("relu", "relu", "linear"), 
+                                dropout = c(0.4, 0.3, NA), 
+                                use_bias = TRUE, 
+                                kernel_initializer = NULL, 
+                                kernel_regularizer = "regularizer_l1_l2", 
+                                bias_regularizer = "regularizer_l1_l2", 
+                                activity_regularizer = "regularizer_l1_l2"),
+                  seed=77777, Nepochs=5, 
                   validation_split = 0, pTraining = 0.9)
 ```
 
     ___________________________________________________________________________
     Layer (type)                     Output Shape                  Param #     
     ===========================================================================
-    dense_1 (Dense)                  (None, 256)                   1280        
+    dense_1 (Dense)                  (None, 5)                     25          
     ___________________________________________________________________________
-    dropout_1 (Dropout)              (None, 256)                   0           
+    dropout_1 (Dropout)              (None, 5)                     0           
     ___________________________________________________________________________
-    dense_2 (Dense)                  (None, 128)                   32896       
+    dense_2 (Dense)                  (None, 5)                     30          
     ___________________________________________________________________________
-    dropout_2 (Dropout)              (None, 128)                   0           
+    dropout_2 (Dropout)              (None, 5)                     0           
     ___________________________________________________________________________
-    dense_3 (Dense)                  (None, 1)                     129         
+    dense_3 (Dense)                  (None, 1)                     6           
     ===========================================================================
-    Total params: 34,305
-    Trainable params: 34,305
+    Total params: 61
+    Trainable params: 61
     Non-trainable params: 0
     ___________________________________________________________________________
 
@@ -146,25 +154,25 @@ Rx_complete_z <- as.data.frame(lapply(Rx_complete, kerasformula:::z))
 xval.out <- xvalPoly(Rx_complete_z, maxDeg = 3, maxInteractDeg = 1)
 ```
 
-    getPoly time in xvalPoly:  0.218 0.056 0.275 0 0 
+    getPoly time in xvalPoly:  0.227 0.063 0.303 0 0 
     lm() time:  0.025 0.004 0.029 0 0 
-    accuracy:  0.4981946 
-    lm() time:  0.039 0.008 0.047 0 0 
-    accuracy:  0.4973153 
-    lm() time:  0.09 0.018 0.109 0 0 
-    accuracy:  0.4944461 
+    accuracy:  0.4962781 
+    lm() time:  0.038 0.008 0.047 0 0 
+    accuracy:  0.4948952 
+    lm() time:  0.089 0.018 0.108 0 0 
+    accuracy:  0.5094317 
 
 ``` r
 xval.out
 ```
 
-    [1] 0.4981946 0.4973153 0.4944461
+    [1] 0.4962781 0.4948952 0.5094317
 
 ``` r
 Rx_kms_out$MAE_predictions
 ```
 
-    [1] 0.1349026
+    [1] 0.1482394
 
 Women 2018 Competition
 ======================
@@ -186,26 +194,34 @@ dim(Rx_complete)
     [1] 49853     5
 
 ``` r
-Rx_kms_out <- kms(overallpercentile ~ ., 
-                  Rx_complete, seed=777, Nepochs=5, 
+Rx_kms_out <- kms(overallpercentile ~ ., Rx_complete, 
+                  layers = list(units = c(P, P, NA), 
+                                activation = c("relu", "relu", "linear"), 
+                                dropout = c(0.4, 0.3, NA), 
+                                use_bias = TRUE, 
+                                kernel_initializer = NULL, 
+                                kernel_regularizer = "regularizer_l1_l2", 
+                                bias_regularizer = "regularizer_l1_l2", 
+                                activity_regularizer = "regularizer_l1_l2"),
+                  seed=77777, Nepochs=5, 
                   validation_split = 0, pTraining = 0.9)
 ```
 
     ___________________________________________________________________________
     Layer (type)                     Output Shape                  Param #     
     ===========================================================================
-    dense_1 (Dense)                  (None, 256)                   1280        
+    dense_1 (Dense)                  (None, 5)                     25          
     ___________________________________________________________________________
-    dropout_1 (Dropout)              (None, 256)                   0           
+    dropout_1 (Dropout)              (None, 5)                     0           
     ___________________________________________________________________________
-    dense_2 (Dense)                  (None, 128)                   32896       
+    dense_2 (Dense)                  (None, 5)                     30          
     ___________________________________________________________________________
-    dropout_2 (Dropout)              (None, 128)                   0           
+    dropout_2 (Dropout)              (None, 5)                     0           
     ___________________________________________________________________________
-    dense_3 (Dense)                  (None, 1)                     129         
+    dense_3 (Dense)                  (None, 1)                     6           
     ===========================================================================
-    Total params: 34,305
-    Trainable params: 34,305
+    Total params: 61
+    Trainable params: 61
     Non-trainable params: 0
     ___________________________________________________________________________
 
@@ -217,25 +233,25 @@ Rx_complete_z <- as.data.frame(lapply(Rx_complete, kerasformula:::z))
 xval.out <- xvalPoly(Rx_complete_z, maxDeg = 3, maxInteractDeg = 1)
 ```
 
-    getPoly time in xvalPoly:  0.213 0.059 0.274 0 0 
+    getPoly time in xvalPoly:  0.216 0.059 0.287 0 0 
     lm() time:  0.03 0.004 0.035 0 0 
-    accuracy:  0.4366127 
-    lm() time:  0.047 0.01 0.057 0 0 
-    accuracy:  0.4347103 
-    lm() time:  0.113 0.025 0.138 0 0 
-    accuracy:  0.449277 
+    accuracy:  0.436813 
+    lm() time:  0.046 0.01 0.056 0 0 
+    accuracy:  0.4345446 
+    lm() time:  0.116 0.027 0.144 0 0 
+    accuracy:  0.4339059 
 
 ``` r
 xval.out
 ```
 
-    [1] 0.4366127 0.4347103 0.4492770
+    [1] 0.4368130 0.4345446 0.4339059
 
 ``` r
 Rx_kms_out$MAE_predictions
 ```
 
-    [1] 0.110857
+    [1] 0.1224316
 
 Women 2017
 ==========
@@ -257,26 +273,34 @@ dim(Rx_complete)
     [1] 13104     5
 
 ``` r
-Rx_kms_out <- kms(overallpercentile ~ ., 
-                  Rx_complete, seed=777, Nepochs=5, 
+Rx_kms_out <- kms(overallpercentile ~ ., Rx_complete, 
+                  layers = list(units = c(P, P, NA), 
+                                activation = c("relu", "relu", "linear"), 
+                                dropout = c(0.4, 0.3, NA), 
+                                use_bias = TRUE, 
+                                kernel_initializer = NULL, 
+                                kernel_regularizer = "regularizer_l1_l2", 
+                                bias_regularizer = "regularizer_l1_l2", 
+                                activity_regularizer = "regularizer_l1_l2"),
+                  seed=77777, Nepochs=5, 
                   validation_split = 0, pTraining = 0.9)
 ```
 
     ___________________________________________________________________________
     Layer (type)                     Output Shape                  Param #     
     ===========================================================================
-    dense_1 (Dense)                  (None, 256)                   1280        
+    dense_1 (Dense)                  (None, 5)                     25          
     ___________________________________________________________________________
-    dropout_1 (Dropout)              (None, 256)                   0           
+    dropout_1 (Dropout)              (None, 5)                     0           
     ___________________________________________________________________________
-    dense_2 (Dense)                  (None, 128)                   32896       
+    dense_2 (Dense)                  (None, 5)                     30          
     ___________________________________________________________________________
-    dropout_2 (Dropout)              (None, 128)                   0           
+    dropout_2 (Dropout)              (None, 5)                     0           
     ___________________________________________________________________________
-    dense_3 (Dense)                  (None, 1)                     129         
+    dense_3 (Dense)                  (None, 1)                     6           
     ===========================================================================
-    Total params: 34,305
-    Trainable params: 34,305
+    Total params: 61
+    Trainable params: 61
     Non-trainable params: 0
     ___________________________________________________________________________
 
@@ -285,22 +309,22 @@ Rx_complete_z <- as.data.frame(lapply(Rx_complete, kerasformula:::z))
 xval.out <- xvalPoly(Rx_complete_z, maxDeg = 3, maxInteractDeg = 1)
 ```
 
-    getPoly time in xvalPoly:  0.048 0.008 0.058 0 0 
-    lm() time:  0.007 0 0.007 0 0 
-    accuracy:  0.5351013 
-    lm() time:  0.012 0 0.012 0 0 
-    accuracy:  0.5598741 
-    lm() time:  0.03 0.006 0.036 0 0 
-    accuracy:  0.8890716 
+    getPoly time in xvalPoly:  0.054 0.012 0.067 0 0 
+    lm() time:  0.007 0 0.008 0 0 
+    accuracy:  0.5422355 
+    lm() time:  0.017 0.001 0.019 0 0 
+    accuracy:  0.5667926 
+    lm() time:  0.027 0.004 0.031 0 0 
+    accuracy:  1.611625 
 
 ``` r
 xval.out
 ```
 
-    [1] 0.5351013 0.5598741 0.8890716
+    [1] 0.5422355 0.5667926 1.6116251
 
 ``` r
 Rx_kms_out$MAE_predictions
 ```
 
-    [1] 0.1536684
+    [1] 0.1660116

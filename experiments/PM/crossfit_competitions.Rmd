@@ -72,8 +72,16 @@ Rx_tmp <- dplyr::select(Rx, heightm, weightkg, age, open1percentile, overallperc
 Rx_complete <- Rx_tmp[complete.cases(Rx_tmp), ]
 dim(Rx_complete)
 
-Rx_kms_out <- kms(overallpercentile ~ ., 
-                  Rx_complete, seed=777, Nepochs=5, 
+Rx_kms_out <- kms(overallpercentile ~ ., Rx_complete, 
+                  layers = list(units = c(P, P, NA), 
+                                activation = c("relu", "relu", "linear"), 
+                                dropout = c(0.4, 0.3, NA), 
+                                use_bias = TRUE, 
+                                kernel_initializer = NULL, 
+                                kernel_regularizer = "regularizer_l1_l2", 
+                                bias_regularizer = "regularizer_l1_l2", 
+                                activity_regularizer = "regularizer_l1_l2"),
+                  seed=77777, Nepochs=5, 
                   validation_split = 0, pTraining = 0.9)
 ```
 
@@ -99,8 +107,16 @@ Rx_tmp <- dplyr::select(Rx, heightm, weightkg, age, open1percentile, overallperc
 Rx_complete <- Rx_tmp[complete.cases(Rx_tmp), ]
 dim(Rx_complete)
 
-Rx_kms_out <- kms(overallpercentile ~ ., 
-                  Rx_complete, seed=777, Nepochs=5, 
+Rx_kms_out <- kms(overallpercentile ~ ., Rx_complete, 
+                  layers = list(units = c(P, P, NA), 
+                                activation = c("relu", "relu", "linear"), 
+                                dropout = c(0.4, 0.3, NA), 
+                                use_bias = TRUE, 
+                                kernel_initializer = NULL, 
+                                kernel_regularizer = "regularizer_l1_l2", 
+                                bias_regularizer = "regularizer_l1_l2", 
+                                activity_regularizer = "regularizer_l1_l2"),
+                  seed=77777, Nepochs=5, 
                   validation_split = 0, pTraining = 0.9)
 
 Rx_complete_z <- as.data.frame(lapply(Rx_complete, kerasformula:::z))
@@ -126,8 +142,16 @@ Rx_tmp <- dplyr::select(Rx, heightm, weightkg, age, open1percentile, overallperc
 Rx_complete <- Rx_tmp[complete.cases(Rx_tmp), ]
 dim(Rx_complete)
 
-Rx_kms_out <- kms(overallpercentile ~ ., 
-                  Rx_complete, seed=777, Nepochs=5, 
+Rx_kms_out <- kms(overallpercentile ~ ., Rx_complete, 
+                  layers = list(units = c(P, P, NA), 
+                                activation = c("relu", "relu", "linear"), 
+                                dropout = c(0.4, 0.3, NA), 
+                                use_bias = TRUE, 
+                                kernel_initializer = NULL, 
+                                kernel_regularizer = "regularizer_l1_l2", 
+                                bias_regularizer = "regularizer_l1_l2", 
+                                activity_regularizer = "regularizer_l1_l2"),
+                  seed=77777, Nepochs=5, 
                   validation_split = 0, pTraining = 0.9)
 ```
 
