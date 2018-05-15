@@ -144,17 +144,13 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 #        Y column of xy (last one, or yCol) must be a factor; otherwise
 #        must NOT be a factor
 #    nHoldout,yCol as above
-#    scale_coninuous: "zero-one" for the classification case, otherwise NULL
-#    loss:  last-stage activation ftn, '"mean_squared_error"' for
-#           regression case, otherwise NULL
 #    rmArgs:  remaining optional arguments to kms()
 
 # return: a vector of mean absolute error (for lm) or accuracy (for glm),
 #         the i-th element of the list is for degree = i
 #' @export
 
-xvalKf <- function(xy,nHoldout=10000,yCol=NULL,
-             rmArgs=NULL)
+xvalKf <- function(xy,nHoldout=10000,yCol=NULL,rmArgs=NULL)
 {
   require(kerasformula)
 
@@ -168,9 +164,11 @@ xvalKf <- function(xy,nHoldout=10000,yCol=NULL,
   yName <- names(xy)[yCol]
   trainingy <- training[,yCol]
   classcase <- is.factor(trainingy)
-  loss <- 'NULL' 
-  cmd <- paste0('kfout <- kms(',yName,' ~ .,data=training,loss=')
-  cmd <- paste0(cmd,loss,')')
+  # loss <- 'NULL' 
+  cmd <- paste0('kfout <- kms(',yName,' ~ .,data=training')
+  # cmd <- paste0(cmd,loss,')')
+  if (!is.null(rmArgs)) cmd <- paste0(cmd,',rmArgs=',rmArgs)
+  cmd <- paste0(cmd,')')
   eval(parse(text=cmd))
   preds <- predict(kfout,testingx)$fit
   if (!classcase) {  # regression case
