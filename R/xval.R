@@ -153,23 +153,20 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 #         the i-th element of the list is for degree = i
 #' @export
 
-xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,
+xvalKf <- function(xy,nHoldout=10000,yCol=NULL,
              rmArgs=NULL)
 {
   require(kerasformula)
-  ncxy <- ncol(xy)
-
-  if (!is.null(yCol)) xy <- moveY(xy,yCol)
 
   tmp <- splitData(xy,nHoldout)
   training <- tmp$trainSet
   testing <- tmp$testSet
-  testingx <- tmp$testSet[,-ncxy]
-  testingy <- tmp$testSet[,ncxy]
+  testingx <- tmp$testSet[,-yCol]
+  testingy <- tmp$testSet[,yCol]
 
 
-  yName <- names(xy)[ncol(xy)]
-  trainingy <- training[,ncxy]
+  yName <- names(xy)[yCol]
+  trainingy <- training[,yCol]
   classcase <- is.factor(trainingy)
   loss <- 'NULL' 
   cmd <- paste0('kfout <- kms(',yName,' ~ .,data=training,loss=')
