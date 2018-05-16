@@ -5,7 +5,7 @@ Crossfit Data
 library(kerasformula)
 library(polyreg)
 library(ggplot2)
-seed <- 1234
+seed <- 54321
 pTraining <- 0.9
 ```
 
@@ -78,6 +78,8 @@ for(i in 1:4){
 
 MAE_results$openA <- gsub("percentile", " ", MAE_results$openA)
 MAE_results$openB <- gsub("percentile", " ", MAE_results$openB)
+
+write.csv(MAE_results, file=paste0("MAE_results_seed_", seed, ".csv"))
 ```
 
 The results
@@ -86,8 +88,9 @@ The results
 Out-of-sample mean absolute error (MAE) for `kms` vs. `xvalPoly` (for the latter, the lowest MAE for the models corresponding to the three polynomial degrees is selected).
 
 ``` r
-ggplot(MAE_results, aes(x = N, y  = MAE, color = model, pch=competition)) + geom_point() + 
-  labs(title="Predicting Crossfit", y="MAE (out-of-sample)", x="N (training data)")
+ggplot(MAE_results, aes(x = MAE, y  = paste0(openA, ", ", openB), color = model, pch=competition, size=N)) + geom_point() + 
+  labs(title="Predicting Crossfit Percentile", 
+       y="Competitions used as Features", x="Mean Absolute Error (out-of-sample)") + theme_minimal()
 ```
 
-![](fcrossfit_competitions_sims2_files/figure-markdown_github/unnamed-chunk-4-1.png)
+![](fcrossfit_competitions_sims2_files/figure-markdown_github/unnamed-chunk-5-1.png)
