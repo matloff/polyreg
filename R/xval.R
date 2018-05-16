@@ -154,6 +154,7 @@ xvalKf <- function(xy,nHoldout=10000,yCol=NULL,rmArgs=NULL)
 {
   require(kerasformula)
 
+  if (is.null(yCol)) yCol <- ncol(xy)
   tmp <- splitData(xy,nHoldout)
   training <- tmp$trainSet
   testing <- tmp$testSet
