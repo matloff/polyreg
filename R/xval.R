@@ -168,7 +168,7 @@ xvalKf <- function(xy,nHoldout=10000,yCol=NULL,rmArgs=NULL)
   # loss <- 'NULL' 
   cmd <- paste0('kfout <- kms(',yName,' ~ .,data=training')
   # cmd <- paste0(cmd,loss,')')
-  if (!is.null(rmArgs)) cmd <- paste0(cmd,',rmArgs=',rmArgs)
+  if (!is.null(rmArgs)) cmd <- paste0(cmd,',rmArgs=\"',rmArgs,'\"')
   cmd <- paste0(cmd,')')
   eval(parse(text=cmd))
   preds <- predict(kfout,testingx)$fit
