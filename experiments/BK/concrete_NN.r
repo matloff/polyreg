@@ -37,3 +37,35 @@ model_results <- compute(concrete_model, concrete_test[1:8])
 predicted_concrete_compressive_strength <- model_results$net.result
 cor(predicted_concrete_compressive_strength, concrete_test$concrete_compressive_strength)
 ### --- correlation is 0.6078374271 for five hidden nodes --- ###
+
+
+
+MAE <- matrix(nrow=5, ncol=5)
+rownames(MAE) <- c("neuralnet", paste0("polyFit", 1:5))
+set.seed(123)
+
+for(i in 1:5){
+
+  train <- sample(c(TRUE, FALSE), size=nrow(concrete_normalized), replace=TRUE, prob = c(.9,.1))
+
+  concrete_train <- concrete_normalized[train, ]
+  concrete_test <- concrete_normalized[!train, ]
+
+  ### Train multilayer feedforward neural net with five hidden nodes
+  concrete_model <- neuralnet(concrete_compressive_strength ~ cement + blast_furnace_slag
+                              + fly_ash + water + superplasticizer + coarse_aggregate + fine_aggregate + age,
+                              data = concrete_train, hidden = 5)
+
+  ## Evaluate model performance on test data
+  model_results <- compute(concrete_model, concrete_test[1:8])
+  predicted_concrete_compressive_strength <- model_results$net.result
+  MAE[1,i] <- mean(abs(predicted_concrete_compressive_strength -
+                       concrete_test$concrete_compressive_strength))
+
+  ## moment of truth...
+  MAE[2:5,i] <- xvalPoly(concrete_normalized,4,2, "lm", nHoldout = .1*nrow(concrete_normalized),)
+
+  print(MAE)
+}
+
+apply(MAE, 1, median)
