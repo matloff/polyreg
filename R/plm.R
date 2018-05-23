@@ -293,6 +293,7 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
   } # end if deg > 1
 
   rt <- as.data.frame(result)
+  
   for (i in 1:ncol(rt)) {
     colnames(rt)[i] <- paste("V", i, sep = "")
   }
@@ -392,7 +393,7 @@ polyOneVsAll <- function(plm.xy, classes,cls=NULL) {
 #' @export
 polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
      pcaPortion=0.9,glmMethod="one",printTimes=TRUE,polyMat=NULL,
-     stage2deg=NULL,cls=NULL) {
+     stage2deg=NULL,cls=NULL,dropout=0) {
   y <- xy[,ncol(xy)]
   if (is.factor(y)) {  # change to numeric code for the classes
      y <- as.numeric(y)
@@ -444,6 +445,17 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
   } # polynomial matrix is not provided
   
   plm.xy <- as.data.frame(plm.xy)
+  
+  if (dropout != 0) {
+    cols <- ncol(plm.xy) - 1
+    ndropout <- floor(cols * dropout)
+    dropoutIdx <- sample(cols, ndropout, replace = FALSE)
+    print(dropoutIdx)
+    plm.xy <- plm.xy[, -dropoutIdx, drop=FALSE]
+  }
+  else {
+    dropoutIdx <- NULL
+  }
 
   stage2fit <- NULL
   if (use == 'lmplus') {
@@ -493,7 +505,8 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
   me<-list(xy=xy,degree=deg,maxInteractDeg=maxInteractDeg,use=use,
     poly.xy=plm.xy,fit=ft,PCA=pcaMethod,pca.portion=pcaPrn,
     pca.xy=xy.pca,pcaCol=k,glmMethod=glmMethod,
-    classes=classes,stage2fit=stage2fit,stage2deg=stage2deg)
+    classes=classes,stage2fit=stage2fit,stage2deg=stage2deg,
+    dropout=dropoutIdx)
   class(me) <- "polyFit"
   return(me)
 
@@ -535,6 +548,10 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
          getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
     }
   } # end polynomial matrix is not provided
+  
+  if (!is.null(object$dropout)) {
+    plm.newdata <- plm.newdata[,-object$dropout, drop=FALSE]
+  }
 
   if (object$use == "lmplus") {
     stop('lmplus not implemented yet')
