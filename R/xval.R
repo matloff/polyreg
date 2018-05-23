@@ -7,6 +7,8 @@
 #   for most args, see the comments for polyFit()
 #   nHoldout: number of cases for the test set
 #   yCol: if not NULL, Y is in this column, and will be moved to last
+#   dropout: the proportion of columns of the polynomial matrix would be
+#            randomly delected
 
 # return: a vector of mean absolute error (for lm) or accuracy (for glm),
 #         the i-th element of the list is for degree = i
@@ -15,8 +17,10 @@
 xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
                      pcaMethod = FALSE,pcaPortion = 0.9, glmMethod = "one",
                      nHoldout=min(10000,round(0.2*nrow(xy))),stage2deg=NULL,
-                     yCol = NULL,printTimes=TRUE,cls=NULL)
+                     yCol = NULL,printTimes=TRUE,cls=NULL,dropout=0,startDeg=1)
 {
+  if (dropout >= 1) stop("dropout should be less than 1.")
+  
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
 
   if(nHoldout > nrow(xy))
@@ -63,13 +67,24 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
     m <- ifelse(i > maxInteractDeg, maxInteractDeg, i)
 
     endCol <- poly.xy$endCols[i]
-
+    
+    if (dropout != 0 && startDeg <= i) { 
+      ndropout <- floor(endCol * dropout)
+      dropoutIdx <- sample(endCol, ndropout, replace = FALSE)
+      train1 <- cbind(training[,-dropoutIdx, drop=FALSE], train.y)
+      test1 <- testing[,-dropoutIdx, drop=FALSE]
+    }
+    else {
       train1 <- cbind(training[,1:endCol], train.y)
-      colnames(train1)[ncol(train1)] <- "y"
       test1 <- testing[,1:endCol, drop=FALSE]
+    }
+
+      colnames(train1)[ncol(train1)] <- "y"
+      
 
       pol <- polyFit(train1,i,m,use,pcaMethod=FALSE,pcaPortion,glmMethod,
-                     polyMat = train1,stage2deg=stage2deg,cls=cls)
+                     polyMat = train1,stage2deg=stage2deg,cls=cls,
+                     dropout=0)
       pred <- predict(pol, test1, test1)
 
     if (use == "lm") {
@@ -150,7 +165,7 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 #         the i-th element of the list is for degree = i
 #' @export
 
-xvalKf <- function(xy,nHoldout=10000,yCol=NULL,rmArgs=NULL)
+xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,rmArgs=NULL)
 {
   require(kerasformula)
 
