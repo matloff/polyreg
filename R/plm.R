@@ -450,7 +450,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
     cols <- ncol(plm.xy) - 1
     ndropout <- floor(cols * dropout)
     dropoutIdx <- sample(cols, ndropout, replace = FALSE)
-    print(dropoutIdx)
+    # print(dropoutIdx)
     plm.xy <- plm.xy[, -dropoutIdx, drop=FALSE]
   }
   else {
