@@ -196,6 +196,53 @@ xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,rmArgs=N
   return(mean(preds == testingy))
 }
 
+
+##################################################################
+# kmswrapper: generate outputs/VIFs for each NNs layer
+##################################################################
+
+# arguments and value:
+#     kmsObj: the kms_fit object returned from kms()
+
+# return: a list. Each element of the list is the output and VIF values
+#         of each layer.
+
+kmswrapper <- function(kmsObj) {
+  result <- list()
+  y <- apply(kmsObj$y_test, 1, which.max) # y_test has been to_categorical
+  n <- length(kmsObj$model$layers)
+  for (i in 1:n) {
+    layer_model <- keras_model(inputs = kmsObj$model$input,
+                               outputs = get_layer(model, index = i)$output)
+    output <- predict(layer_model, x_test)
+    df <- as.data.frame(cbind(y, output))
+    vars <- paste(colnames(df)[-1], collapse = " + ")
+    ff <- as.formula(paste("y", vars, sep = " ~ "))
+    mod <- lm(ff, data=df)
+    
+    # check for perfect multicollinearity (exact linear relationship)
+    # if perfect multicollinearity, vif() would cause error
+    ld.vars <- attributes(alias(mod)$Complete)$dimnames[[1]]
+    if (!is.null(ld.vars)) {
+      print("Perfect Multicollinearity occurs! Following variables are omitted:")
+      print(ld.vars)
+      formula.new <- as.formula(
+        paste(
+          paste(deparse(ff), collapse=""), 
+          paste(ld.vars, collapse="-"),
+          sep="-"
+        )
+      )
+      mod <- lm(formula.new,data = df)
+    }
+    
+    vifs <- vif(mod)
+    result[[i]] <- list(output = output, vif = vifs)
+
+  }
+  return(result)
+}
+
 ##################################################################
 # xvalDNet: generate mean absolute error of fitted models
 ##################################################################
