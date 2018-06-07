@@ -2,7 +2,7 @@
 # combnDeg: generate the degree distribution of different X's
 ##################################################################
 
-# arguments: 
+# arguments:
 
 #   n: number of X's
 #   deg: total degrees
@@ -232,7 +232,7 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
   # anticipating parallel verion: a chunk might have a nondummy with
   # only 2 values in that chunk
   # is_dummy <- (lapply(lapply(xdata, table), length)==2)
-  check_dummy <- function(xcol) 
+  check_dummy <- function(xcol)
      identical(unique(xcol),0:1) || identical(unique(xcol),1:0)
   is_dummy <- sapply(xdata, check_dummy)
   dummy <- xdata[, is_dummy, drop = FALSE]
@@ -293,7 +293,7 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
   } # end if deg > 1
 
   rt <- as.data.frame(result)
-  
+
   for (i in 1:ncol(rt)) {
     colnames(rt)[i] <- paste("V", i, sep = "")
   }
@@ -305,7 +305,7 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
 getPolyPar <- function(cls,xdata,deg,maxInteractDeg=deg)
 {
    distribsplit(cls,'xdata')
-   cmd <- paste0('clusterEvalQ(cls,getPoly(xdata,', 
+   cmd <- paste0('clusterEvalQ(cls,getPoly(xdata,',
              deg,',',
              maxInteractDeg,'))')
    # clusterExport(cls,c('deg_plm','combnDeg','getPoly'),envir=environment())
@@ -338,7 +338,7 @@ polyAllVsAll <- function(plm.xy, classes){
 polyOneVsAll <- function(plm.xy, classes,cls=NULL) {
   plm.xy <- as.data.frame(plm.xy)
   ft <- list()
-  predClassi <- function(i) 
+  predClassi <- function(i)
   {
     oneclass <- plm.xy[plm.xy$y == classes[i],]
     oneclass$y <- 1
@@ -380,8 +380,8 @@ polyOneVsAll <- function(plm.xy, classes,cls=NULL) {
 #        fitting lm() on poly X but then fitting regressing Y against
 #        the predicted values from Stage 1
 #   pcamethod: whether to use pca (can be true or false)
-#   pcaportion: the portion of principal components to be used
-#   glmmethod: which method ("all" for all-vs-all, "one" for one-vs-all, 
+#   pcaportion: the portion of principal components to be used; default == 0.9.
+#   glmmethod: which method ("all" for all-vs-all, "one" for one-vs-all,
 #              "multlog" for multinomial logistic regression)
 #              to use for multi-class classification
 #   printtimes: whether to print the time of pca, getPoly, lm, or glm.
@@ -415,7 +415,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
       }
       if (printTimes) cat(k,' principal comps used\n')
       xdata <- xy.pca$x[,1:k, drop=FALSE]
-      
+
     } else {
       xdata <- polyMat
     }
@@ -434,7 +434,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
       }
       if (printTimes) cat(k,' principal comps used\n')
       xdata <- xy.pca$x[,1:k, drop=FALSE]
-      
+
     } else {
       xdata <- xy[,-ncol(xy), drop=FALSE]
     }
@@ -443,9 +443,9 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
     )
     if (printTimes) cat('getPoly time: ',tmp,'\n')
   } # polynomial matrix is not provided
-  
+
   plm.xy <- as.data.frame(plm.xy)
-  
+
   if (dropout != 0) {
     cols <- ncol(plm.xy) - 1
     ndropout <- floor(cols * dropout)
@@ -524,8 +524,8 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
 # return: predicted values of newdata, IN THE FORM OF NUMERICAL CLASS CODES
 
 #' @export
-predict.polyFit <- function(object,newdata,polyMat=NULL) 
-{ 
+predict.polyFit <- function(object,newdata,polyMat=NULL)
+{
   # note: newdata doesn't have y column
 
   use <- object$use
@@ -537,18 +537,18 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
       plm.newdata <- polyMat
     }
     plm.newdata <- as.data.frame(plm.newdata)
-  } 
+  }
   else { # polynomial matrix is not provided
     if (object$PCA == TRUE) {
       new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
-      plm.newdata <- 
+      plm.newdata <-
          getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
     } else {
-      plm.newdata <- 
+      plm.newdata <-
          getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
     }
   } # end polynomial matrix is not provided
-  
+
   if (!is.null(object$dropout)) {
     plm.newdata <- plm.newdata[,-object$dropout, drop=FALSE]
   }
@@ -560,7 +560,7 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
     prgred <- getPoly(pred,object$degree)$xdata
     pred <- predict(object$stage2fit$fit,pred)
   } else
-  
+
   if (object$use == "lm") {
     pred <- predict(object$fit, plm.newdata)
   } else { # glm case
@@ -593,7 +593,7 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
         } # for j
         winner <- apply(votes, 1, which.max)
 
-      } else if (object$glmMethod == "one") { # one-vs-all method 
+      } else if (object$glmMethod == "one") { # one-vs-all method
           prob <- matrix(0, nrow=nrow(plm.newdata), ncol=len)
           for (i in 1:len) {
             # prob[,i] <- parSapplyLB(object$fit[[i]],
@@ -606,7 +606,7 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
       pred <- NULL
       for (k in 1:nrow(plm.newdata)) {
         pred[k] <- object$classes[winner[k]]
-      } 
+      }
     } # end more than two classes
   } # end glm case
 
