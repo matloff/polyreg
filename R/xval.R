@@ -20,7 +20,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
                      yCol = NULL,printTimes=TRUE,cls=NULL,dropout=0,startDeg=1)
 {
   if (dropout >= 1) stop("dropout should be less than 1.")
-  
+
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
 
   if(nHoldout > nrow(xy))
@@ -67,8 +67,8 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
     m <- ifelse(i > maxInteractDeg, maxInteractDeg, i)
 
     endCol <- poly.xy$endCols[i]
-    
-    if (dropout != 0 && startDeg <= i) { 
+
+    if (dropout != 0 && startDeg <= i) {
       ndropout <- floor(endCol * dropout)
       dropoutIdx <- sample(endCol, ndropout, replace = FALSE)
       train1 <- cbind(training[,-dropoutIdx, drop=FALSE], train.y)
@@ -80,7 +80,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
     }
 
       colnames(train1)[ncol(train1)] <- "y"
-      
+
 
       pol <- polyFit(train1,i,m,use,pcaMethod=FALSE,pcaPortion,glmMethod,
                      polyMat = train1,stage2deg=stage2deg,cls=cls,
@@ -115,7 +115,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
 #' @export
 
 xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
-                     scaleXMat=FALSE,nHoldout=min(10000,round(0.2*nrow(xy))), 
+                     scaleXMat=FALSE,nHoldout=min(10000,round(0.2*nrow(xy))),
                      yCol = NULL)
 {
   require(nnet)
@@ -180,7 +180,7 @@ xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,rmArgs=N
   yName <- names(xy)[yCol]
   trainingy <- training[,yCol]
   classcase <- is.factor(trainingy)
-  # loss <- 'NULL' 
+  # loss <- 'NULL'
   cmd <- paste0('kfout <- kms(',yName,' ~ .,data=training')
   # cmd <- paste0(cmd,loss,')')
   if (!is.null(rmArgs)) cmd <- paste0(cmd,',rmArgs=\"',rmArgs,'\"')
@@ -219,7 +219,7 @@ kmswrapper <- function(kmsObj) {
     vars <- paste(colnames(df)[-1], collapse = " + ")
     ff <- as.formula(paste("y", vars, sep = " ~ "))
     mod <- lm(ff, data=df)
-    
+
     # check for perfect multicollinearity (exact linear relationship)
     # if perfect multicollinearity, vif() would cause error
     ld.vars <- attributes(alias(mod)$Complete)$dimnames[[1]]
@@ -228,14 +228,14 @@ kmswrapper <- function(kmsObj) {
       print(ld.vars)
       formula.new <- as.formula(
         paste(
-          paste(deparse(ff), collapse=""), 
+          paste(deparse(ff), collapse=""),
           paste(ld.vars, collapse="-"),
           sep="-"
         )
       )
       mod <- lm(formula.new,data = df)
     }
-    
+
     vifs <- vif(mod)
     result[[i]] <- list(output = output, vif = vifs)
 
@@ -266,7 +266,8 @@ kmswrapper <- function(kmsObj) {
 
 xvalDnet <- function(x,y,hidden,output='"sigm"',numepochs=3,
                      pcaMethod = FALSE,pcaPortion = 0.9,
-                     scaleXMat = TRUE, 
+                     scaleXMat = TRUE,
+                     output="'sigm'", # function of output unit, can be "sigm","linear" or "softmax". Default is "sigm".
                      nHoldout=min(10000,round(0.2*nrow(x))))
 {
   require(deepnet)
@@ -287,13 +288,22 @@ xvalDnet <- function(x,y,hidden,output='"sigm"',numepochs=3,
   cmd <- paste0(cmd,')')
   eval(parse(text=cmd))
   preds <- nn.predict(nnout,testingx)
-  if (ncol(ym) == 1)  # regression case
+  if (ncol(ym) == 1 & length(unique(ym)) > 2){  # regression case
     return(mean(abs(preds - testingy)))
-  # else
-  preds <- apply(preds,1,which.max)  # column numbers
-  trueY <- apply(testingy,1,function(rw) which(rw == 1))
-  # convert to levels of Y
-  return(mean(preds == trueY))
+  }else{
+    if(length(unique(ym)) == 1){
+
+      preds <- preds > mean(testingy) # assume mean(testingy) better latent threshold than 0.5
+      return(mean(preds == testingy))
+
+    }else{
+      preds <- apply(preds,1,which.max)  # column numbers
+      trueY <- apply(testingy,1,function(rw) which(rw == 1))
+    }
+    # convert to levels of Y
+    return(mean(preds == trueY))
+  }
+
 
 }
 
