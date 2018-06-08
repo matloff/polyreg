@@ -290,7 +290,7 @@ xvalDnet <- function(x,y,hidden,output='"sigm"',numepochs=3,
   if (ncol(ym) == 1 & length(unique(ym)) > 2){  # regression case
     return(mean(abs(preds - testingy)))
   }else{
-    if(length(unique(ym)) == 1){
+    if(length(unique(ym)) == 2){
 
       preds <- preds > mean(testingy) # assume mean(testingy) better latent threshold than 0.5
       return(mean(preds == testingy))
