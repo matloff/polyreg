@@ -267,7 +267,6 @@ kmswrapper <- function(kmsObj) {
 xvalDnet <- function(x,y,hidden,output='"sigm"',numepochs=3,
                      pcaMethod = FALSE,pcaPortion = 0.9,
                      scaleXMat = TRUE,
-                     output="'sigm'", # function of output unit, can be "sigm","linear" or "softmax". Default is "sigm".
                      nHoldout=min(10000,round(0.2*nrow(x))))
 {
   require(deepnet)
