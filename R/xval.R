@@ -59,7 +59,9 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
   training <- tmp$trainSet
   testing <- tmp$testSet
   train.y <- training[,ncol(training)]
+  train.x <- training[,-ncol(training)]
   test.y <- testing[,ncol(testing)]
+  test.x <- testing[,-ncol(testing)]
 #  testIdx <- splitData(xy, nHoldout,TRUE)
 
   acc <- NULL
@@ -71,8 +73,8 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
     if (dropout != 0 && startDeg <= i) {
       ndropout <- floor(endCol * dropout)
       dropoutIdx <- sample(endCol, ndropout, replace = FALSE)
-      train1 <- cbind(training[,-dropoutIdx, drop=FALSE], train.y)
-      test1 <- testing[,-dropoutIdx, drop=FALSE]
+      train1 <- cbind(train.x[,-dropoutIdx, drop=FALSE], train.y)
+      test1 <- test.x[,-dropoutIdx, drop=FALSE]
     }
     else {
       train1 <- cbind(training[,1:endCol], train.y)
