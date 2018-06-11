@@ -204,18 +204,26 @@ xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,rmArgs=N
 ##################################################################
 
 # arguments and value:
-#     kmsObj: the kms_fit object returned from kms()
+#     model: the object returned from keras_model_sequential()
+#     x_test: the predictor variables of test set
+#     y_test: the response variable of test set
 
 # return: a list. Each element of the list is the output and VIF values
 #         of each layer.
 
-kmswrapper <- function(kmsObj) {
+kmswrapper <- function(model, x_test, y_test) {
+  require(car)
   result <- list()
-  y <- apply(kmsObj$y_test, 1, which.max) # y_test has been to_categorical
-  n <- length(kmsObj$model$layers)
+  if (!is.null(dim(y_test))) {
+    y <- apply(y_test, 1, which.max) # y_test has been to_categorical
+  } else {
+    y <- y_test
+  }
+    
+  n <- length(model$layers)
   for (i in 1:n) {
-    layer_model <- keras_model(inputs = kmsObj$model$input,
-                               outputs = get_layer(model, index = i)$output)
+    layer_model <- keras_model(inputs = model$input,
+                               outputs = get_layer(model, index = i-1)$output)
     output <- predict(layer_model, x_test)
     df <- as.data.frame(cbind(y, output))
     vars <- paste(colnames(df)[-1], collapse = " + ")
