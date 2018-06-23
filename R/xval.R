@@ -161,15 +161,34 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 #        Y column of xy (last one, or yCol) must be a factor; otherwise
 #        must NOT be a factor
 #    nHoldout,yCol as above
-#    rmArgs:  remaining optional arguments to kms()
+#    units,activation,dropout: as in kms()
 
 # return: a vector of mean absolute error (for lm) or accuracy (for glm),
 #         the i-th element of the list is for degree = i
 #' @export
 
-xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,rmArgs=NULL)
+xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,
+   units,activation,dropout)
 {
   require(kerasformula)
+
+  # build up the 'layers' argument for kms()
+  u <- paste0('units=c(',paste0(units,collapse=','),')')
+  a <- 'activation=c('
+  for (i in 1:length(activation)) {
+     ia <- activation[i]
+     a <- paste0(a,'"',ia,'"')
+     if (i < length(activation)) a <- paste0(a,',')
+  }
+  a <- paste0(a,')')
+  d <- paste0('c(',paste0(dropout,collapse=','),')')
+  layers <- paste0('layers=list(',u,',')
+  layers <- paste0(layers,a,',')
+  layers <- paste0(layers,d,',')
+  layers <- paste0(layers,'use_bias = TRUE, kernel_initializer = NULL,')
+  layers <- paste0(layers,'kernel_regularizer = "regularizer_l1",')
+  layers <- paste0(layers,'bias_regularizer = "regularizer_l1",')
+  layers <- paste0(layers,'activity_regularizer = "regularizer_l1")')
 
   if (is.null(yCol)) yCol <- ncol(xy)
   tmp <- splitData(xy,nHoldout)
@@ -178,16 +197,12 @@ xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,rmArgs=N
   testingx <- tmp$testSet[,-yCol]
   testingy <- tmp$testSet[,yCol]
 
-
   yName <- names(xy)[yCol]
   trainingy <- training[,yCol]
   classcase <- is.factor(trainingy)
   # loss <- 'NULL'
-  cmd <- paste0('kfout <- kms(',yName,' ~ .,data=training')
-  # cmd <- paste0(cmd,loss,')')
-  if (!is.null(rmArgs)) 
-     cmd <- paste0(cmd,',',rmArgs)
-  cmd <- paste0(cmd,')')
+  cmd <- 
+     paste0('kfout <- kms(',yName,' ~ .,data=training,',layers,')')
   eval(parse(text=cmd))
   preds <- predict(kfout,testingx)$fit
   if (!classcase) {  # regression case
