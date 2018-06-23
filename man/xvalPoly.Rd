@@ -1,5 +1,6 @@
-\name{xvalPoly}
+\name{xvalPoly,xvalKf}
 \alias{xvalPoly}
+\alias{xvalKf}
 
 \title{
 Cross validation on Polynomial regression
@@ -25,6 +26,7 @@ FALSE, pcaPortion = 0.9, glmMethod = "all",nHoldout=10000,yCol=NULL)
   \item{glmMethod}{For classification problems.  If there are more than
                    two classes, this can be "all" for All-vs-All method,
                    or "one" for One-vs-All method.}
+  \item{nHoldout}{Size of test test.}
 }
 
 \details{
