@@ -163,9 +163,17 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 #    nHoldout,yCol as above
 #    units,activation,dropout: as in kms()
 
-# return: a vector of mean absolute error (for lm) or accuracy (for glm),
-#         the i-th element of the list is for degree = i
-#' @export
+# examples:
+
+# classification, 2 hidden layers, with 3rd layer for forming the
+# predictions
+# xvalKf(pe,units=c(15,15,NA),activation=c('relu','relu','softmax'),
+#    dropout=c(0.1,0.1,NA)) 
+
+# regression, 3 hidden layers, with 4th layer for forming the
+# predictions
+# xvalKf(pe,units=c(25,25,5,NA),activation=c('relu','relu','relu','linear'),
+#    dropout=c(0.4,0.3,0.3,NA))
 
 xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,
    units,activation,dropout)
