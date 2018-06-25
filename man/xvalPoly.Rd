@@ -1,6 +1,7 @@
-\name{xvalPoly,xvalKf}
+\name{xvalPoly,xvalKf,xvalDnet}
 \alias{xvalPoly}
 \alias{xvalKf}
+\alias{xvalDnet}
 
 \title{
 Cross validation on Polynomial regression
@@ -13,6 +14,9 @@ xvalPoly(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm", pcaMethod =
    FALSE, pcaPortion = 0.9, glmMethod = "all",nHoldout=10000,yCol=NULL)
 xvalKf(xy, nHoldout = min(10000, round(0.2 * nrow(xy))), yCol = NULL, 
     units, activation, dropout) 
+xvalDnet(x,y,hidden,output="\\"sigm\\"",numepochs=3,pcaMethod = FALSE, 
+    pcaPortion=0.9,scaleXMat=TRUE,nHoldout=min(10000, 
+    round(0.2*nrow(x)))) 
 }
 
 \arguments{
@@ -37,6 +41,11 @@ xvalKf(xy, nHoldout = min(10000, round(0.2 * nrow(xy))), yCol = NULL,
      final prediction, e.g. \code{'linear'} for regression and
      \code{'softmax'} for classification.}
   \item{units}{Vector specifying number of units per layer.}
+  \item{x}{Numerical matrix of predictor values.}
+  \item{y}{Numerical vector (regression case) or matrix (classification
+     case) of response values.  In the classification, if there are
+     \code{q} classes then the matrix will have \code{q} columns,
+     exactly one 1 per row.}
 }
 
 \details{
