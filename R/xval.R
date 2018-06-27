@@ -36,13 +36,13 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
     tmp <- system.time(
       xy.pca <- prcomp(xy[,-ncol(xy)])
     )
-    if (printTimes) cat('PCA time in xvalPoly: ',tmp,'\n')
+    if (printTimes) message('PCA time in xvalPoly: ',tmp,'\n')
     pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
     for (k in 1:length(pcNo)) {
       if (pcNo[k] >= pcaPortion)
         break
     }
-    if (printTimes) cat(k,' principal comps used\n')
+    if (printTimes) message(k,' principal comps used\n')
     xdata <- xy.pca$x[,1:k, drop=FALSE]
   } else {
     xdata <- xy[,-ncol(xy), drop=FALSE]
@@ -51,7 +51,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
   tmp <- system.time(
     poly.xy <- getPoly(xdata, maxDeg, maxInteractDeg)
   )
-  if (printTimes) cat('getPoly time in xvalPoly: ',tmp,'\n')
+  if (printTimes) message('getPoly time in xvalPoly: ',tmp,'\n')
 
   xy <- cbind(poly.xy$xdata, y)
 
@@ -93,7 +93,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
       acc[i] <- mean(abs(pred - test.y))
     } else
       acc[i] <- mean(pred == test.y) # accuracy
-    cat('accuracy: ',acc[i],'\n')
+    message('accuracy: ',acc[i],'\n')
 
   } # for each degree
   return(acc)
@@ -168,7 +168,7 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 # classification, 2 hidden layers, with 3rd layer for forming the
 # predictions
 # xvalKf(pe,units=c(15,15,NA),activation=c('relu','relu','softmax'),
-#    dropout=c(0.1,0.1,NA)) 
+#    dropout=c(0.1,0.1,NA))
 
 # regression, 3 hidden layers, with 4th layer for forming the
 # predictions
@@ -209,7 +209,7 @@ xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,
   trainingy <- training[,yCol]
   classcase <- is.factor(trainingy)
   # loss <- 'NULL'
-  cmd <- 
+  cmd <-
      paste0('kfout <- kms(',yName,' ~ .,data=training,',layers,')')
   eval(parse(text=cmd))
   preds <- predict(kfout,testingx)$fit
@@ -243,7 +243,7 @@ kmswrapper <- function(model, x_test, y_test) {
   } else {
     y <- y_test
   }
-    
+
   n <- length(model$layers)
   for (i in 1:n) {
     layer_model <- keras_model(inputs = model$input,
@@ -258,8 +258,10 @@ kmswrapper <- function(model, x_test, y_test) {
     # if perfect multicollinearity, vif() would cause error
     ld.vars <- attributes(alias(mod)$Complete)$dimnames[[1]]
     if (!is.null(ld.vars)) {
-      print("Perfect Multicollinearity occurs! Following variables are omitted:")
-      print(ld.vars)
+      warning(
+        "Perfect Multicollinearity occurs! Following variables are omitted:\n",
+        paste0(ld.vars, "\n")
+      )
       formula.new <- as.formula(
         paste(
           paste(deparse(ff), collapse=""),

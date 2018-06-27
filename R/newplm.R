@@ -49,7 +49,7 @@ combnDeg <- function(n, deg) { # distribute (deg) degrees to (n) different X's
     return (result)
   }
   else {
-    print("Error on combnDeg.")
+    warning("Error on combnDeg.")
   }
 }
 

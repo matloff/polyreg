@@ -66,7 +66,7 @@ combnDeg <- function(n, deg) { # distribute (deg) degrees to (n) different X's
     return (result)
   }
   else {
-    print("Error on combnDeg.")
+    warning("Error on combnDeg.")
   }
 }
 
@@ -407,13 +407,13 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
       tmp <- system.time(
         xy.pca <- prcomp(polyMat[,-ncol(xy)])
       )
-      if (printTimes) cat('PCA time: ',tmp,'\n')
+      if (printTimes) message('PCA time: ',tmp,'\n')
       pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
       for (k in 1:length(pcNo)) {
         if (pcNo[k] >= pcaPortion)
           break
       }
-      if (printTimes) cat(k,' principal comps used\n')
+      if (printTimes) message(k,' principal comps used\n')
       xdata <- xy.pca$x[,1:k, drop=FALSE]
 
     } else {
@@ -426,13 +426,13 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
       tmp <- system.time(
         xy.pca <- prcomp(xy[,-ncol(xy)])
       )
-      if (printTimes) cat('PCA time: ',tmp,'\n')
+      if (printTimes) message('PCA time: ',tmp,'\n')
       pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
       for (k in 1:length(pcNo)) {
         if (pcNo[k] >= pcaPortion)
           break
       }
-      if (printTimes) cat(k,' principal comps used\n')
+      if (printTimes) message(k,' principal comps used\n')
       xdata <- xy.pca$x[,1:k, drop=FALSE]
 
     } else {
@@ -441,7 +441,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
     tmp <- system.time(
       plm.xy <- cbind(getPoly(xdata, deg, maxInteractDeg)$xdata,y)
     )
-    if (printTimes) cat('getPoly time: ',tmp,'\n')
+    if (printTimes) message('getPoly time: ',tmp,'\n')
   } # polynomial matrix is not provided
 
   plm.xy <- as.data.frame(plm.xy)
@@ -468,7 +468,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
     tmp <- system.time(
        ft <- lm(y~., data = plm.xy)
     )
-    if (printTimes) cat('lm() time: ',tmp,'\n')
+    if (printTimes) message('lm() time: ',tmp,'\n')
     glmMethod <- NULL
   } else if (use == "glm") {
     classes <- unique(y)
@@ -477,7 +477,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
       tmp <- system.time(
       ft <- glm(y~., family = binomial(link = "logit"), data = plm.xy)
       )
-      if (printTimes) cat('2-class glm() time: ',tmp,'\n')
+      if (printTimes) message('2-class glm() time: ',tmp,'\n')
       glmMethod <- NULL
     }  # end 2-class case
     else { # more than two classes
@@ -485,18 +485,18 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
         tmp <- system.time(
         ft <- polyAllVsAll(plm.xy, classes)
         )
-        if (printTimes) cat('all-vs-all glm() time: ',tmp,'\n')
+        if (printTimes) message('all-vs-all glm() time: ',tmp,'\n')
       } else if (glmMethod == "one") { # one-vs-all
         tmp <- system.time(
            ft <- polyOneVsAll(plm.xy, classes,cls)
         )
-        if (printTimes) cat('one-vs-all glm() time: ',tmp,'\n')
+        if (printTimes) message('one-vs-all glm() time: ',tmp,'\n')
       } else if (glmMethod == "multlog") { # multinomial logistics
          require(nnet)
         tmp <- system.time(
         ft <- multinom(y~., plm.xy)
         )
-        if (printTimes) cat('multlog time: ', tmp, '\n')
+        if (printTimes) message('multlog time: ', tmp, '\n')
       }
     } # more than two classes
 
