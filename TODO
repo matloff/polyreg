@@ -1,9 +1,11 @@
 
-1.  Option to use orthogonal polynomials.  Other ways to deal with
-multicollinearity, e.g. ridge.
+1.  Ways to deal with multicollinearity, e.g. ridge.
 
 2.  Handling large-p problems, e.g. with LASSO preprocessing on the
 original data.
 
 3.  Adapting PR to the 'C' in CNNs etc.
+
+4.  Find poly terms first, then compute PCA from them.
+
 
