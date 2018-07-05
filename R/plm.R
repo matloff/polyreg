@@ -404,17 +404,23 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
   k <- 0
   if (!is.null(polyMat)) { # polynomial matrix is provided
     if (pcaMethod == TRUE) {
+      xyscale <- scale(polyMat[,-ncol(polyMat)], center = TRUE, scale = FALSE)
+      xy.cov <- cov(xyscale)
       tmp <- system.time(
-        xy.pca <- prcomp(polyMat[,-ncol(xy)])
+        #xy.pca <- prcomp(polyMat[,-ncol(xy)])
+        xy.pca <- eigen(xy.cov) 
       )
-      if (printTimes) cat('PCA time: ',tmp,'\n')
-      pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
+      #if (printTimes) cat('PCA time: ',tmp,'\n')
+      if (printTimes) cat('eigen time in xvalPoly: ',tmp,'\n')
+      #pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
+      pcNo = cumsum(xy.pca$values)/sum(xy.pca$values)
       for (k in 1:length(pcNo)) {
         if (pcNo[k] >= pcaPortion)
           break
       }
       if (printTimes) cat(k,' principal comps used\n')
-      xdata <- xy.pca$x[,1:k, drop=FALSE]
+      #xdata <- xy.pca$x[,1:k, drop=FALSE]
+      xdata <- as.matrix(xy[,-ncol(xy)]) %*% xy.pca$vectors[,1:k]
 
     } else {
       xdata <- polyMat
@@ -423,17 +429,23 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=FALSE,
   } # polynomial matrix is provided
   else { # polynomial matrix is not provided
     if (pcaMethod == TRUE) {
+      xyscale <- scale(xy[,-ncol(xy)], center = TRUE, scale = FALSE)
+      xy.cov <- cov(xyscale)
       tmp <- system.time(
-        xy.pca <- prcomp(xy[,-ncol(xy)])
+        #xy.pca <- prcomp(xy[,-ncol(xy)])
+        xy.pca <- eigen(xy.cov)
       )
-      if (printTimes) cat('PCA time: ',tmp,'\n')
-      pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
+      #if (printTimes) cat('PCA time: ',tmp,'\n')
+      if (printTimes) cat('eigen time in xvalPoly: ',tmp,'\n')
+      #pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
+      pcNo = cumsum(xy.pca$values)/sum(xy.pca$values)
       for (k in 1:length(pcNo)) {
         if (pcNo[k] >= pcaPortion)
           break
       }
       if (printTimes) cat(k,' principal comps used\n')
-      xdata <- xy.pca$x[,1:k, drop=FALSE]
+      #xdata <- xy.pca$x[,1:k, drop=FALSE]
+      xdata <- as.matrix(xy[,-ncol(xy)]) %*% xy.pca$vectors[,1:k]
 
     } else {
       xdata <- xy[,-ncol(xy), drop=FALSE]
