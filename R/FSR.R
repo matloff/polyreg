@@ -261,7 +261,7 @@ FSR <- function(Xy,
         if(noisy) cat("Model ", m, ": ", out[[mod(m)]][[paste0("R2_", cor_type)]], "\n", sep="")
 
       }else{
-        if(noisy) cat("unable to estimate Model", m, "\n")
+        if(noisy) cat("unable to estimate Model", m, " due to (near) singularity\n")
       }
     }
 
