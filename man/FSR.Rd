@@ -6,12 +6,12 @@
 \title{FSR}
 \usage{
 FSR(Xy, max_poly_degree = 4, max_interaction_degree = 2,
-  cor_type = "kendall", threshold = 0.001, pTraining = 0.8,
+  cor_type = "kendall", threshold = -1.001, pTraining = 0.8,
   pValidation = 0.2, max_block_size = 250, noisy = TRUE, seed = NULL,
   model = "lm")
 
 FSR(Xy, max_poly_degree = 4, max_interaction_degree = 2,
-  cor_type = "kendall", threshold = 0.001, pTraining = 0.8,
+  cor_type = "kendall", threshold = -1.001, pTraining = 0.8,
   pValidation = 0.2, max_block_size = 250, noisy = TRUE, seed = NULL,
   model = "lm")
 }
@@ -46,7 +46,7 @@ FSR(Xy, max_poly_degree = 4, max_interaction_degree = 2,
 
 \item{cor_type}{correlation to be used for pseudo R^2. Default Kendall's (robust).}
 
-\item{threshold}{minimum improvement to keep estimating.}
+\item{threshold}{minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). Default -1.001 means 'estimate all'.}
 
 \item{pTraining}{portion of data for training}
 
