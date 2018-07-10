@@ -124,7 +124,19 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, recursive=TRU
 # continues making the model more complicated (adding interactions, polynomials, etc.)
 # until either max_poly_degree and max_interaction_degree are reached or
 # improvements do not add at least threshold (default 0.01) to explained variance (of validation data).
-# returns list with slope coefficients, model details, and fit vs. the test data of the final model
+#' FSR
+#' @param Xy matrix or data.frame; outcome must be in final column.
+#' @param max_poly_degree highest power to raise continuous features; default 4.
+#' @param max_interaction_degree highest interaction order; default 2. Also interacts each level of factors with continuous features.
+#' @param cor_type correlation to be used for pseudo R^2. Default Kendall's (robust).
+#' @param threshold minimum improvement to keep estimating.
+#' @param pTraining portion of data for training
+#' @param pValidation portion of data for validation
+#' @param pTesting portion of data for final test
+#' @param max_block_size Most of the linear algebra is done recursively in blocks to ease memory managment. Default 250. Changing up or down may slow things...
+#' @param noisy display measures of fit, progress, etc. Recommended.
+#' @param seed Automatically set but can also be passed as paramater.
+#' @return list with slope coefficients, model details, and fit vs. the test data of the final model
 #' @export
 FSR <- function(Xy,
                 max_poly_degree = 4, max_interaction_degree = 2,
