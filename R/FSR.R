@@ -253,12 +253,15 @@ FSR <- function(Xy,
                                                  Xy[out$split == "validate", ]) %*% out[[mod(m)]][["est"]]
 
         out[[mod(m)]][[paste0("R2_", cor_type)]] <- cor(out[[mod(m)]][["y_hat"]], y_validate, method=cor_type)^2
+        out[[mod(m)]][["MAPE"]] <- mean(abs(out[[mod(m)]][["y_hat"]] - y_validate))
 
         improvement <- if(m == 1) out[[mod(m)]][[paste0("R2_", cor_type)]] else out[[mod(m)]][[paste0("R2_", cor_type)]] - out[[mod(m - 1)]][[paste0("R2_", cor_type)]]
 
         out$estimated[m] <- TRUE
-        if(m == 1 && noisy) cat("\tpseudo R^2 (", cor_type, ")\n", sep="")
-        if(noisy) cat("Model ", m, ": ", out[[mod(m)]][[paste0("R2_", cor_type)]], "\n", sep="")
+        if(m == 1 && noisy) cat("\tpseudo R^2 (", cor_type, ")\tMAPE\n", sep="")
+        if(noisy) cat("Model ", m, ": ", out[[mod(m)]][[paste0("R2_", cor_type)]],
+                      "\t\t", out[[mod(m)]][["MAPE"]], "\n", sep="")
+
 
       }else{
 
