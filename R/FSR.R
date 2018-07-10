@@ -249,6 +249,8 @@ FSR <- function(Xy,
         out[[mod(m)]][["est"]] <- tcrossprod(XtX_inv, X_train) %*% y_train
         remove(XtX_inv)
 
+        out[[mod(m)]][["poly_degree"]] <- poly_degree
+
         out[[mod(m)]][["y_hat"]] <- model.matrix(out[[mod(m)]][["formula"]],
                                                  Xy[out$split == "validate", ]) %*% out[[mod(m)]][["est"]]
 
@@ -261,6 +263,7 @@ FSR <- function(Xy,
         if(m == 1 && noisy) cat("\tpseudo R^2 (", cor_type, ")\tMAPE\n", sep="")
         if(noisy) cat("Model ", m, ": ", out[[mod(m)]][[paste0("R2_", cor_type)]],
                       "\t\t", out[[mod(m)]][["MAPE"]], "\n", sep="")
+
 
 
       }else{
