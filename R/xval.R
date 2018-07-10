@@ -15,7 +15,7 @@
 #' @export
 
 xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
-                     pcaMethod = FALSE,pcaPortion = 0.9, glmMethod = "one",
+                     pcaMethod = NULL,pcaPortion = 0.9, glmMethod = "one",
                      nHoldout=min(10000,round(0.2*nrow(xy))),stage2deg=NULL,
                      yCol = NULL,printTimes=TRUE,cls=NULL,dropout=0,startDeg=1)
 {
@@ -32,24 +32,35 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
      xy[,ncol(xy)] <- y
   }
 
-  if (pcaMethod) {
-    xyscale <- scale(xy[,-ncol(xy)], center=TRUE, scale=FALSE)
-    xy.cov <- cov(xyscale)
+  if (pcaMethod == "prcomp") {
+    
     tmp <- system.time(
-      #xy.pca <- prcomp(xy[,-ncol(xy)])
-      xy.pca <- eigen(xy.cov)
+      xy.pca <- prcomp(xy[,-ncol(xy)])
     )
-    #if (printTimes) cat('PCA time in xvalPoly: ',tmp,'\n')
-    if (printTimes) cat('eigen time in xvalPoly: ',tmp,'\n')
-    #pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
-    pcNo = cumsum(xy.pca$values)/sum(xy.pca$values)
+    if (printTimes) cat('PCA time in xvalPoly: ',tmp,'\n')
+    pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
     for (k in 1:length(pcNo)) {
       if (pcNo[k] >= pcaPortion)
         break
     }
     if (printTimes) cat(k,' principal comps used\n')
-    #xdata <- xy.pca$x[,1:k, drop=FALSE]
-    xdata <- as.matrix(xy[,-ncol(xy)]) %*% xy.pca$vectors[,1:k]
+    xdata <- xy.pca$x[,1:k, drop=FALSE]
+  } else if (pcaMethod == "RSpectra") {
+    require(Matrix)
+    require(RSpectra)
+    xyscale <- scale(xy[,-ncol(xy)], center=TRUE, scale=FALSE)
+    xy.cov <- cov(xyscale)
+    sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
+    class(sparse) <- "dgCMatrix"
+    xy.eig <- eigs(sparse, ncol(sparse))
+    pcNo <- cumsum(xy.eig$values)/sum(xy.eig$values)
+    for (k in 1:length(pcNo)) {
+      if (pcNo[k] >= pcaPortion)
+        break
+    }
+    if (printTimes) cat(k,' principal comps used\n')
+    xdata <- as.matrix(xy[,-ncol(xy)]) %*% xy.eig$vectors[,1:k]
+    
   } else {
     xdata <- xy[,-ncol(xy), drop=FALSE]
   }
@@ -90,7 +101,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
       colnames(train1)[ncol(train1)] <- "y"
 
 
-      pol <- polyFit(train1,i,m,use,pcaMethod=FALSE,pcaPortion,glmMethod,
+      pol <- polyFit(train1,i,m,use,pcaMethod=NULL,pcaPortion,glmMethod,
                      polyMat = train1,stage2deg=stage2deg,cls=cls,
                      dropout=0)
       pred <- predict(pol, test1, test1)
