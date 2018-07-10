@@ -132,16 +132,15 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, recursive=TRU
 #' @param threshold minimum improvement to keep estimating.
 #' @param pTraining portion of data for training
 #' @param pValidation portion of data for validation
-#' @param pTesting portion of data for final test
 #' @param max_block_size Most of the linear algebra is done recursively in blocks to ease memory managment. Default 250. Changing up or down may slow things...
 #' @param noisy display measures of fit, progress, etc. Recommended.
 #' @param seed Automatically set but can also be passed as paramater.
-#' @return list with slope coefficients, model details, and fit vs. the test data of the final model
+#' @return list with slope coefficients, model details, and measures of fit
 #' @export
 FSR <- function(Xy,
                 max_poly_degree = 4, max_interaction_degree = 2,
                 cor_type = "kendall", threshold = 0.001,
-                pTraining = 0.7, pValidation = 0.2, pTesting = 0.1, max_block_size = 250,
+                pTraining = 0.8, pValidation = 0.2, max_block_size = 250,
                 noisy = TRUE, seed = NULL,
                 model = "lm"){
 
@@ -156,8 +155,8 @@ FSR <- function(Xy,
 
   if(!is.matrix(Xy) && !is.data.frame(Xy))
     stop("Xy must be a matrix or data.frame. Either way, y must be the final column.")
-  if(min(pTraining, pTesting, pValidation) < 0 || max(pTraining, pTesting, pValidation) > 1)
-    stop("pTraining, pTesting, and pValidation should all be between 0 and 1 and sum to 1.")
+  if(min(pTraining, pValidation) < 0 || max(pTraining, pValidation) > 1)
+    stop("pTraining and pValidation should all be between 0 and 1 and sum to 1.")
   stopifnot(is.numeric(threshold))
 
   n <- nrow(Xy)
@@ -194,11 +193,10 @@ FSR <- function(Xy,
   set.seed(out$seed)
   if(noisy) message("set seed to ", out$seed, ".\n")
 
-  out[["split"]] <- sample(c("train", "validate", "test"), n, replace=TRUE,
-                  prob = c(pTraining, pValidation, pTesting))
+  out[["split"]] <- sample(c("train", "validate"), n, replace=TRUE,
+                  prob = c(pTraining, pValidation))
   y_train <- Xy[out$split == "train", ncol(Xy)]
   y_validate <- Xy[out$split == "validate", ncol(Xy)]
-  y_test <- Xy[out$split == "test", ncol(Xy)]
 
   increment <- "neither"
   for(i in 1:min(max_poly_degree, max_interaction_degree))
@@ -275,44 +273,13 @@ FSR <- function(Xy,
 
   } # end WHILE loop
 
+
   if(sum(out$estimated) == 0){
 
     if(noisy) message("No models could be estimated, likely due to (near) singularity; returning NULL. Check for highly correlated features or factors with rarely observed levels. (Increasing pTraining may help.)\n")
     return(NULL)
 
   }else{
-
-    # X_test used only once; if performance is much worse than on X_validate, sign of overfitting
-
-    if(sum(out$estimated) == 1){
-
-      selected <- which(out$estimated)
-
-    }else{
-
-      last_fit <- max(which(out$estimated))
-      second_to_last <- max(which(out$estimated[-last_fit]))
-      selected <- if(out[[mod(last_fit)]][[paste0("R2_", cor_type)]] > out[[mod(second_to_last)]][[paste0("R2_", cor_type)]]) last_fit else second_to_last
-      if(sum(increment[1:selected] == "poly") < sum(increment[1:m] == "poly"))
-        Xy <- Xy[, -match(paste0(continuous_features, "_deg_", sum(increment[1:m] == "poly") + 1), colnames(Xy))]
-
-    }
-
-    out[["test"]][["y_hat"]] <- model.matrix(out[[mod(selected)]][["formula"]],
-                                             Xy[out$split == "test", ]) %*% out[[mod(selected)]][["est"]]
-    out[["test"]][[paste0("R2_", cor_type)]] <- cor(out[["test"]][["y_hat"]], y_test, method=cor_type)^2
-    out$MAPE <- mean(abs(out$test$y_hat - y_test))
-
-    if(noisy) cat("\n\nModel ", selected,
-                  " (polynomial degree ", sum(increment[1:selected] == "poly") + 1,
-                  ", interactions of order ", sum(increment[1:selected] == "interactions"),
-                  ") was chosen since it had the highest Pseudo R^2 (", cor_type,
-                  ") on the validation data (",
-                  out[[mod(selected)]][[paste0("R2_", cor_type)]],
-                  "). The model has Mean Absolute Predicted Error on the test data of ",
-                  out$MAPE, " (Pseudo R^2 ",  cor_type,
-                  " on the test data: ", out[["test"]][[paste0("R2_", cor_type)]], ").", sep="")
-
     return(out)
   }
 }
