@@ -213,8 +213,9 @@ FSR <- function(Xy,
   interaction_degree <- 0
   out[[mod(m)]][["formula"]] <- formula(paste(colnames(Xy)[ncol(Xy)], "~ ."))
   N_train <- sum(out$split == "train")
+  unable_to_estimate <- 0
 
-  while((m <= length(increment)) && (improvement > threshold) && (P_features < N_train)){
+  while((m <= length(increment)) && (improvement > threshold) && (P_features < N_train) && unable_to_estimate < 2){
 
     if(increment[m] == "poly"){
 
@@ -238,6 +239,7 @@ FSR <- function(Xy,
     if(out[[mod(m)]][["p"]] >= nrow(X_train)){
 
       if(noisy) message("There are too few training observations to estimate model ",  m, ". Skipping.")
+      unable_to_estimate <- unable_to_estimate + 1
 
     }else{
 
@@ -261,7 +263,10 @@ FSR <- function(Xy,
         if(noisy) cat("Model ", m, ": ", out[[mod(m)]][[paste0("R2_", cor_type)]], "\n", sep="")
 
       }else{
-        if(noisy) cat("unable to estimate Model", m, " due to (near) singularity\n")
+
+        if(noisy) cat("unable to estimate Model", m, "due to (near) singularity.\n")
+        unable_to_estimate <- unable_to_estimate + 1
+
       }
     }
 
