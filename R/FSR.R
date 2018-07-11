@@ -43,7 +43,7 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, recursive=TRU
 
   }
 
-  solvable <- function(A, noisy=noisy){
+  solvable <- function(A, noisy=TRUE){
 
     tried <- try(solve(A), silent = TRUE)
     if(noisy) cat(".")
@@ -53,7 +53,7 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, recursive=TRU
 
   invert <- if(recursive && (k > max_block_size)) block_solve else solvable
 
-  A_inv <- invert(A)
+  A_inv <- invert(A, noisy=noisy)
   remove(A)
 
   if(!is.null(A_inv)){
@@ -92,7 +92,7 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, recursive=TRU
 
         if(exists("S")) remove(S)
 
-        schur_inv <- invert(D - C.A_inv %*% B)
+        schur_inv <- invert(D - C.A_inv %*% B, noisy=noisy)
         remove(D)
 
         S_inv <- matrix(nrow=n, ncol=n)
@@ -153,6 +153,15 @@ FSR <- function(Xy,
     colnames(X) <- paste0(colnames(X), "_deg_", degree)
     return(X)    # ensure unique column names
   }
+  model_matrix <- function(f, d){
+    tried <- try(model.matrix(f, d), silent=TRUE)
+    if(inherits(tried, "try-error")){
+      cat("model.matrix() reported the following error:\n", tried, "\n\n")
+      return(NULL)
+    } else {
+      return(tried)
+    }
+  }
 
   if(!is.matrix(Xy) && !is.data.frame(Xy))
     stop("Xy must be a matrix or data.frame. Either way, y must be the final column.")
@@ -160,7 +169,8 @@ FSR <- function(Xy,
     stop("pTraining and pValidation should all be between 0 and 1 and sum to 1.")
   stopifnot(is.numeric(threshold))
 
-  n <- nrow(Xy)
+  out <- list()
+  out[["n"]] <- n <- nrow(Xy)
 
   Xy <- as.data.frame(Xy)
   N_factor_columns <- 0
@@ -174,6 +184,11 @@ FSR <- function(Xy,
   continuous_features <- colnames(Xy)[-ncol(Xy)][unlist(lapply(Xy[-ncol(Xy)], is_continuous))]
   P_features <- length(continuous_features) + N_factor_columns # columns without intercept...
   out[["continuous_features"]] <- continuous_features
+
+  if(noisy) cat("The data contains", n, "observations,", length(continuous_features),
+                "continuous features, and", ncol(Xy) - length(continuous_features) - 1,
+                "features that will be treated as factors (which will become",
+                N_factor_columns, "columns in the model matrix).\n\n")
 
   if(is.null(model)){
     model <- if(is.factor(Xy[,ncol(Xy)])) "glm" else "lm"
@@ -190,7 +205,6 @@ FSR <- function(Xy,
     }
   }
 
-  out <- list()
   out[["seed"]] <- if(is.null(seed)) as.integer(runif(1, 0, 10000000)) else seed
   set.seed(out$seed)
   if(noisy) message("set seed to ", out$seed, ".\n")
@@ -200,12 +214,17 @@ FSR <- function(Xy,
   y_train <- Xy[out$split == "train", ncol(Xy)]
   y_validate <- Xy[out$split == "validate", ncol(Xy)]
 
+  if(noisy) cat("N training:", length(y_train), "\nN validation:", length(y_validate), "\n\n")
+
   increment <- "neither"
   for(i in 1:min(max_poly_degree, max_interaction_degree))
     increment <- c(increment, "poly", "interaction")
   increment <- c(increment, rep("poly", max_poly_degree - min(max_poly_degree, max_interaction_degree)))
   increment <- c(increment, rep("interaction", max_interaction_degree - min(max_poly_degree, max_interaction_degree)))
   out[["estimated"]] <- rep(FALSE, length(increment)) # will be updated based on whether successful ...
+  out[["fit"]] <- matrix(ncol=2, nrow=length(increment))
+  colnames(out$fit) <- c(paste0("pseudo R2 (", cor_type, ")"), "MAPE")
+  rownames(out$fit) <- paste0("model", 1:length(increment))
 
   m <- 1            # counts which model
   improvement <- threshold + 1  # not meaningful; just initializing ...
@@ -233,47 +252,60 @@ FSR <- function(Xy,
 
     }
 
-    X_train <- model.matrix(out[[mod(m)]][["formula"]], Xy[out$split == "train", ])
-    out[[mod(m)]][["p"]] <- ncol(X_train)
+    X_train <- model_matrix(out[[mod(m)]][["formula"]], Xy[out$split == "train", ])
 
-    if(out[[mod(m)]][["p"]] >= nrow(X_train)){
+    if(!exists("X_train")){
 
-      if(noisy) message("There are too few training observations to estimate model ",  m, ". Skipping.")
+      if(noisy) message("Unable to construct model.matrix for model ",  m, ". Skipping.")
       unable_to_estimate <- unable_to_estimate + 1
 
     }else{
 
-      XtX_inv <- block_solve(X = X_train,  # passing X takes crossproduct first
-                             max_block_size)
+      out[[mod(m)]][["p"]] <- ncol(X_train)
 
-      if(!is.null(XtX_inv)){
+      if(out[[mod(m)]][["p"]] >= nrow(X_train)){
 
-        out[[mod(m)]][["est"]] <- tcrossprod(XtX_inv, X_train) %*% y_train
-        remove(XtX_inv)
-
-        out[[mod(m)]][["poly_degree"]] <- poly_degree
-
-        out[[mod(m)]][["y_hat"]] <- model.matrix(out[[mod(m)]][["formula"]],
-                                                 Xy[out$split == "validate", ]) %*% out[[mod(m)]][["est"]]
-
-        out[[mod(m)]][[paste0("R2_", cor_type)]] <- cor(out[[mod(m)]][["y_hat"]], y_validate, method=cor_type)^2
-        out[[mod(m)]][["MAPE"]] <- mean(abs(out[[mod(m)]][["y_hat"]] - y_validate))
-
-        improvement <- if(m == 1) out[[mod(m)]][[paste0("R2_", cor_type)]] else out[[mod(m)]][[paste0("R2_", cor_type)]] - out[[mod(m - 1)]][[paste0("R2_", cor_type)]]
-
-        out$estimated[m] <- TRUE
-        if(m == 1 && noisy) cat("\tpseudo R^2 (", cor_type, ")\tMAPE\n", sep="")
-        if(noisy) cat("Model ", m, ": ", out[[mod(m)]][[paste0("R2_", cor_type)]],
-                      "\t\t", out[[mod(m)]][["MAPE"]], "\n", sep="")
-
-
+        if(noisy) message("There are too few training observations to estimate model ",  m, ". Skipping.")
+        unable_to_estimate <- unable_to_estimate + 1
 
       }else{
 
-        if(noisy) cat("unable to estimate Model", m, "due to (near) singularity.\n")
-        unable_to_estimate <- unable_to_estimate + 1
+        XtX_inv <- block_solve(X = X_train,  # passing X takes crossproduct first
+                               max_block_size)
 
+        if(!is.null(XtX_inv)){
+
+          out[[mod(m)]][["est"]] <- tcrossprod(XtX_inv, X_train) %*% y_train
+          remove(XtX_inv)
+
+          out[[mod(m)]][["poly_degree"]] <- poly_degree
+
+          out[[mod(m)]][["y_hat"]] <- model_matrix(out[[mod(m)]][["formula"]],
+                                                   Xy[out$split == "validate", ]) %*% out[[mod(m)]][["est"]]
+
+          out[[mod(m)]][[paste0("R2_", cor_type)]] <- cor(out[[mod(m)]][["y_hat"]], y_validate, method=cor_type)^2
+          out[[mod(m)]][["MAPE"]] <- mean(abs(out[[mod(m)]][["y_hat"]] - y_validate))
+
+          improvement <- if(m == 1) out[[mod(m)]][[paste0("R2_", cor_type)]] else out[[mod(m)]][[paste0("R2_", cor_type)]] - out[[mod(m - 1)]][[paste0("R2_", cor_type)]]
+
+          out$estimated[m] <- TRUE
+          out$fit[m, 1] <- out[[mod(m)]][[paste0("R2_", cor_type)]]
+          out$fit[m, 2] <- out[[mod(m)]][["MAPE"]]
+          if(noisy){
+            cat("\n\n")
+            print(out$fit[1:m,])
+            cat("\n\n")
+          }
+
+
+        }else{
+
+          if(noisy) cat("\nunable to estimate Model", m, "due to (near) singularity.\n")
+          unable_to_estimate <- unable_to_estimate + 1
+
+        }
       }
+
     }
 
     m <- m + 1
@@ -284,7 +316,7 @@ FSR <- function(Xy,
 
   if(sum(out$estimated) == 0){
 
-    if(noisy) message("No models could be estimated, likely due to (near) singularity; returning NULL. Check for highly correlated features or factors with rarely observed levels. (Increasing pTraining may help.)\n")
+    if(noisy) message("\nNo models could be estimated, likely due to (near) singularity; returning NULL. Check for highly correlated features or factors with rarely observed levels. (Increasing pTraining may help.)\n")
     return(NULL)
 
   }else{
