@@ -46,6 +46,7 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, recursive=TRU
   solvable <- function(A, noisy=noisy){
 
     tried <- try(solve(A), silent = TRUE)
+    if(noisy) cat(".")
     if(inherits(tried, "try-error")) return(NULL) else return(tried)
 
   }
@@ -172,6 +173,7 @@ FSR <- function(Xy,
   }
   continuous_features <- colnames(Xy)[-ncol(Xy)][unlist(lapply(Xy[-ncol(Xy)], is_continuous))]
   P_features <- length(continuous_features) + N_factor_columns # columns without intercept...
+  out[["continuous_features"]] <- continuous_features
 
   if(is.null(model)){
     model <- if(is.factor(Xy[,ncol(Xy)])) "glm" else "lm"
