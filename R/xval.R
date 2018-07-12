@@ -31,8 +31,10 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
      y <- as.numeric(y)
      xy[,ncol(xy)] <- y
   }
-
-  if (pcaMethod == "prcomp") {
+  
+  if (is.null(pcaMethod)) {
+    xdata <- xy[,-ncol(xy), drop=FALSE]
+  } else if (pcaMethod == "prcomp") {
     
     tmp <- system.time(
       xy.pca <- prcomp(xy[,-ncol(xy)])
@@ -62,8 +64,8 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
     xdata <- as.matrix(xy[,-ncol(xy)]) %*% xy.eig$vectors[,1:k]
     
   } else {
-    xdata <- xy[,-ncol(xy), drop=FALSE]
-  }
+    stop("pcaMethod should be either NULL, prcomp, or RSpectra")
+  } 
 
   tmp <- system.time(
     poly.xy <- getPoly(xdata, maxDeg, maxInteractDeg)
