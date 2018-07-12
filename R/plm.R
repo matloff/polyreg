@@ -396,6 +396,7 @@ polyOneVsAll <- function(plm.xy, classes,cls=NULL) {
 polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
      pcaPortion=0.9,glmMethod="one",printTimes=TRUE,polyMat=NULL,
      stage2deg=NULL,cls=NULL,dropout=0) {
+  
   y <- xy[,ncol(xy)]
   if (is.factor(y)) {  # change to numeric code for the classes
      y <- as.numeric(y)
@@ -439,7 +440,9 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
       if (printTimes) cat(k,' principal comps used\n')
       xdata <- as.matrix(polyMat[,-ncol(polyMat)]) %*% xy.eig$vectors[,1:k]
       
-    } 
+    } else {
+      stop("pcaMethod should be either NULL, prcomp, or RSpectra")
+    }  
     
     plm.xy <- cbind(xdata,y)
   } # polynomial matrix is provided
@@ -476,7 +479,9 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
       }
       if (printTimes) cat(k,' principal comps used\n')
       xdata <- as.matrix(xy[,-ncol(xy)]) %*% xy.eig$vectors[,1:k]
-    }
+    } else {
+      stop("pcaMethod should be either NULL, prcomp, or RSpectra")
+    } 
     
     tmp <- system.time(
       plm.xy <- cbind(getPoly(xdata, deg, maxInteractDeg)$xdata,y)
