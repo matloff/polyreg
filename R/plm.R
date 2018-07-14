@@ -388,14 +388,13 @@ polyOneVsAll <- function(plm.xy, classes,cls=NULL) {
 #              to use for multi-class classification
 #   printtimes: whether to print the time of pca, getPoly, lm, or glm.
 #   polyMat: if non-NULL, then polynomial matrix will be passed in
-#   stage2deg:  polynomial degree to use in Stage 2 (if use = 'lmplus')
 
 # return: the object of class polyFit
 
 #' @export
 polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
      pcaPortion=0.9,glmMethod="one",printTimes=TRUE,polyMat=NULL,
-     stage2deg=NULL,cls=NULL,dropout=0) {
+     cls=NULL,dropout=0) {
   
   y <- xy[,ncol(xy)]
   if (is.factor(y)) {  # change to numeric code for the classes
@@ -502,13 +501,8 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
     dropoutIdx <- NULL
   }
 
-  stage2fit <- NULL
   if (use == 'lmplus') {
     stop('lmplus not implemented yet')
-    ft <- lm(y~., data = plm.xy)
-    stage2xy <- cbind(ft$fitted.values,y)
-    names(stage2xy)[1] <- 'lmpredout'
-    stage2fit <- polyFit(stage2xy,stage2deg)
   } else if (use == "lm") {
     tmp <- system.time(
        ft <- lm(y~., data = plm.xy)
@@ -550,8 +544,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   me<-list(xy=xy,degree=deg,maxInteractDeg=maxInteractDeg,use=use,
     poly.xy=plm.xy,fit=ft,PCA=pcaMethod,pca.portion=pcaPrn,
     pca.xy=xy.pca,pcaCol=k,glmMethod=glmMethod,
-    classes=classes,stage2fit=stage2fit,stage2deg=stage2deg,
-    dropout=dropoutIdx)
+    classes=classes, dropout=dropoutIdx)
   class(me) <- "polyFit"
   return(me)
 
