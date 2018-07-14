@@ -8,4 +8,5 @@ original data.
 
 4.  Find poly terms first, then compute PCA from them.
 
+5.  Allow Poisson regression in glm().
 
