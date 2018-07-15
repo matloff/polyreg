@@ -46,3 +46,30 @@ newx
 # 1  40   1      52  0   0
 predict(pfout,newx)  # about $68K
 ```
+
+*Example:* Vertebral Column data from the [UC Irvine Machine
+Learning Repository](https://archive.ics.uci.edu/ml/datasets/Vertebral+Column).
+Various spinal measurements, with three conditions, Normal, 
+Disk Hernia and Spondylolisthesis.  Let's predict the conditions.
+
+``` r
+# vert <- read.table('~/Research/DataSets/Vertebrae/column_3C.dat',header=FALSE)
+vert$V7 <- as.character(vert$V7)  # Y must be a vector, not a factor
+head(vert)
+#      V1    V2    V3    V4     V5    V6 V7
+# 1 63.03 22.55 39.61 40.48  98.67 -0.25 DH
+# 2 39.06 10.06 25.02 29.00 114.41  4.56 DH
+# 3 68.83 22.22 50.09 46.61 105.99 -3.53 DH
+# 4 69.30 24.65 44.31 44.64 101.87 11.21 DH
+# 5 49.71  9.65 28.32 40.06 108.17  7.92 DH
+# 6 40.25 13.92 25.12 26.33 130.33  2.23 DH
+pfout <- polyFit(vert,2,use='glm')
+newx <- vert[1,-7]
+newx[1] <- 30  # what if V1 were only 30 for case 1?
+newx
+#   V1    V2    V3    V4    V5    V6
+# 1 30 22.55 39.61 40.48 98.67 -0.25
+predict(pfout,newx)
+# [1] "NO"
+```
+
