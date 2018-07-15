@@ -16,7 +16,8 @@ predict.polyFit(object, newdata)
 
 \arguments{
   \item{xy}{Data frame with response variable in the last 
-     column.  In the classification case, response is class ID.}
+     column.  In the classification case, response is class ID, stored
+     in a vector, not a factor.}
   \item{maxDeg}{The max degree for polynomial terms.}
   \item{maxInteractDeg}{The max degree of interaction  terms}
   \item{use}{Set to lm for linear regression or 'glm' for 
@@ -40,22 +41,30 @@ predict.polyFit(object, newdata)
 
 \details{
 
-   The \code{polyFit} function calls \code{getPoly}
-   to generate polynomial terms from predictor variables, then fits
-   the generated data to a linear or logistic regression model. 
-   (Powers of dummy variables will not be generated, other than degree
-   1, but interaction terms will calculated.
+   The \code{polyFit} function calls \code{getPoly} to generate
+   polynomial terms from predictor variables, then fits the generated
+   data to a linear or logistic regression model.  (Powers of dummy
+   variables will not be generated, other than degree 1, but interaction
+   terms will calculated.
    
-   If \code{pcaMethod} is not \code{NULL}, a principal component analysis 
-   is performed before fitting the models. The argument \code{pcaPortion}
-   determines how many principal components to be used, according to
-   proportion of total variance.  When logistic regression for 
-   classification is indicated, All-vs-All or One-vs-All methods can 
-   be applied to deal with multiclass problem.
+   If \code{pcaMethod} is not \code{NULL}, a principal component
+   analysis is performed before fitting the models. The argument
+   \code{pcaPortion} determines how many principal components to be
+   used, according to proportion of total variance.  
+   
+   When logistic regression for classification is indicated, with more
+   than two classes, All-vs-All or One-vs-All methods, coded
+   \code{'all'} and \code{'one'}, can be applied to deal with multiclass
+   problem.  Multinomial logit (\code{'multilog'} is also available.
+
 }
 \value{
 The return value of \code{polyFit()} is an \code{polyFit} object.  The
-orginal arguments are retained, 
+orginal arguments are retained, along with the fitted models and so on.
+
+The prediction function \code{predict.polyFit} returns the predicted
+value(s) for \code{newdata}. In the classification case, these will be
+the predicted class(es).
 }
 \examples{
 y <- mtcars[,1]
