@@ -393,8 +393,8 @@ polyOneVsAll <- function(plm.xy, classes,cls=NULL) {
 
 #' @export
 polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
-     pcaPortion=0.9,glmMethod="one",printTimes=TRUE,polyMat=NULL,
-     cls=NULL,dropout=0) {
+     pcaLocation=NULL,pcaPortion=0.9,glmMethod="one",printTimes=TRUE,
+     polyMat=NULL,cls=NULL,dropout=0) {
   
   y <- xy[,ncol(xy)]
   if (is.factor(y)) {  # change to numeric code for the classes
@@ -404,14 +404,15 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   classes <- FALSE
   xy.pca <- NULL
   k <- 0
-  
-  if (!is.null(polyMat)) { # polynomial matrix is provided
-    if (is.null(pcaMethod)) {
-      xdata <- polyMat
-    } else if (pcaMethod == "prcomp") {
+
+  applyPCA <- function(x, pcaMethod=NULL) {
+    if (is.null(pcaMethod)) { # do not use pca
+      xdata <- x
+      xy.pca <- NULL
+    } else if (pcaMethod == "prcomp") { # use prcomp for pca
       
       tmp <- system.time(
-        xy.pca <- prcomp(polyMat[,-ncol(xy)])
+        xy.pca <- prcomp(x[,-ncol(xy)])
       )
       if (printTimes) cat('PCA time: ',tmp,'\n')
       pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
@@ -422,10 +423,10 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
       if (printTimes) cat(k,' principal comps used\n')
       xdata <- xy.pca$x[,1:k, drop=FALSE]
 
-    } else if (pcaMethod == "RSpectra") {
+    } else if (pcaMethod == "RSpectra") { # use RSpectra for pca
       require(Matrix)
       require(RSpectra)
-      xyscale <- scale(polyMat[,-ncol(polyMat)], center=TRUE, scale=FALSE)
+      xyscale <- scale(x[,-ncol(x)], center=TRUE, scale=FALSE)
       xy.cov <- cov(xyscale)
       sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
       class(sparse) <- "dgCMatrix"
@@ -437,59 +438,50 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
           break
       }
       if (printTimes) cat(k,' principal comps used\n')
-      xdata <- as.matrix(polyMat[,-ncol(polyMat)]) %*% xy.eig$vectors[,1:k]
+      xdata <- as.matrix(x[,-ncol(x)]) %*% xy.eig$vectors[,1:k]
       
-    } else {
+    } else { # invalid argument
       stop("pcaMethod should be either NULL, prcomp, or RSpectra")
-    }  
-    
-    plm.xy <- cbind(xdata,y)
-  } # polynomial matrix is provided
-  else { # polynomial matrix is not provided
-    if (is.null(pcaMethod)) {
+    }
+    return(list(xdata=xdata,xy.pca=xy.pca,k=k))
+  }
+
+  # get (dimensionally reduced) polynomially expanded input data
+  if (is.null(pcaLocation)) { # no pca
+    if (is.null(polyMat)) { # polynomial matrix is not provided
       xdata <- xy[,-ncol(xy), drop=FALSE]
-    } else if (pcaMethod == "prcomp") {
-      
       tmp <- system.time(
-        xy.pca <- prcomp(xy[,-ncol(xy)])
+        polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
       )
-      if (printTimes) cat('PCA time: ',tmp,'\n')
-      pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
-      for (k in 1:length(pcNo)) {
-        if (pcNo[k] >= pcaPortion)
-          break
-      }
-      if (printTimes) cat(k,' principal comps used\n')
-      xdata <- xy.pca$x[,1:k, drop=FALSE]
-      
-    } else if (pcaMethod == "RSpectra") {
-      require(Matrix)
-      require(RSpectra)
-      xyscale <- scale(xy[,-ncol(xy)], center=TRUE, scale=FALSE)
-      xy.cov <- cov(xyscale)
-      sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
-      class(sparse) <- "dgCMatrix"
-      xy.pca <- NULL
-      xy.eig <- eigs(sparse, ncol(sparse))
-      pcNo <- cumsum(xy.eig$values)/sum(xy.eig$values)
-      for (k in 1:length(pcNo)) {
-        if (pcNo[k] >= pcaPortion)
-          break
-      }
-      if (printTimes) cat(k,' principal comps used\n')
-      xdata <- as.matrix(xy[,-ncol(xy)]) %*% xy.eig$vectors[,1:k]
-    } else {
-      stop("pcaMethod should be either NULL, prcomp, or RSpectra")
-    } 
-    
+      if (printTimes) cat('getPoly time: ',tmp,'\n')
+    }
+  } else if (pcaLocation == "front") { # we apply pca to input data
+    applyPCAOutputs <- applyPCA(xy[,-ncol(xy), drop=FALSE],pcaMethod)
+    xdata <- applyPCAOutputs$xdata
+    xy.pca <- applyPCAOutputs$xy.pca
+    k <- applyPCAOutputs$k
     tmp <- system.time(
-      plm.xy <- cbind(getPoly(xdata, deg, maxInteractDeg)$xdata,y)
+      polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
     )
     if (printTimes) cat('getPoly time: ',tmp,'\n')
-  } # polynomial matrix is not provided
+  } else if (pcaLocation == "back") { # we apply pca to polynomial data
+    if (is.null(polyMat)) { # polynomial matrix is not provided
+      xdata <- xy[,-ncol(xy), drop=FALSE]
+      tmp <- system.time(
+        polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
+      )
+      if (printTimes) cat('getPoly time: ',tmp,'\n')
+    }
+    applyPCAOutputs <- applyPCA(polyMat[,-ncol(xy)],pcaMethod)
+    polyMat <- applyPCAOutputs$xdata
+    xy.pca <- applyPCAOutputs$xy.pca
+    k <- applyPCAOutputs$k
+  } else { # invalid argument
+    stop("pcaLocation should be either NULL, front, or back")
+  }
+  plm.xy <- as.data.frame(cbind(polyMat,y))
 
-  plm.xy <- as.data.frame(plm.xy)
-
+  # fit
   if (dropout != 0) {
     cols <- ncol(plm.xy) - 1
     ndropout <- floor(cols * dropout)
@@ -543,7 +535,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   pcaPrn <- ifelse(pcaMethod == TRUE, pcaPortion, 0)
   me<-list(xy=xy,degree=deg,maxInteractDeg=maxInteractDeg,use=use,
     poly.xy=plm.xy,fit=ft,PCA=pcaMethod,pca.portion=pcaPrn,
-    pca.xy=xy.pca,pcaCol=k,glmMethod=glmMethod,
+    pca.xy=xy.pca,pcaCol=k,pcaLocation=pcaLocation,glmMethod=glmMethod,
     classes=classes, dropout=dropoutIdx)
   class(me) <- "polyFit"
   return(me)
@@ -589,18 +581,37 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
       plm.newdata <-
         getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
     } else if (object$PCA == "prcomp") {
-      new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
-      plm.newdata <-
-         getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+      if (object$pcaLocation == "front") {
+        new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
+        plm.newdata <-
+           getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+      } else if (object$pcaLocation == "back") {
+        new_data <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
+        plm.newdata <- predict(object$pca.xy, new_data)[,1:object$pcaCol]
+        plm.newdata <- as.data.frame(plm.newdata)
+      }
     } else if (object$PCA == "RSpectra") {
-      xyscale <- scale(newdata[,-ncol(newdata)], center = TRUE, scale = FALSE)
-      xy.cov <- cov(xyscale)
-      sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
-      class(sparse) <- "dgCMatrix"
-      xy.eig <- eigs(sparse, ncol(sparse))
-      new_data <- as.matrix(newdata[,-ncol(newdata)]) %*% xy.eig$vectors[,1:object$pcaCol]
-      plm.newdata <-
-        getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+      if (object$pcaLocation == "front") {
+        xyscale <- scale(newdata[,-ncol(newdata)], center = TRUE, scale = FALSE)
+        xy.cov <- cov(xyscale)
+        sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
+        class(sparse) <- "dgCMatrix"
+        xy.eig <- eigs(sparse, ncol(sparse))
+        new_data <- as.matrix(newdata[,-ncol(newdata)]) %*% xy.eig$vectors[,1:object$pcaCol]
+        plm.newdata <-
+          getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+      } else if (object$pcaLocation == "back") {
+        # stop("RSpectra + back pca not implemented")
+        new_data <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
+        xyscale <- scale(new_data[,-ncol(new_data)], center = TRUE, scale = FALSE)
+        xy.cov <- cov(xyscale)
+        sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
+        class(sparse) <- "dgCMatrix"
+        xy.eig <- eigs(sparse, ncol(sparse))
+        plm.newdata <-
+          as.matrix(new_data[,-ncol(new_data)]) %*% xy.eig$vectors[,1:object$pcaCol]
+        plm.newdata <- as.data.frame(plm.newdata)
+      }
     } 
   } # end polynomial matrix is not provided
 
