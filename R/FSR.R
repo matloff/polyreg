@@ -128,7 +128,7 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, recursive=TRU
 #' FSR
 #' @param Xy matrix or data.frame; outcome must be in final column.
 #' @param max_poly_degree highest power to raise continuous features; default 4.
-#' @param max_interaction_degree highest interaction order; default 2. Also interacts each level of factors with continuous features.
+#' @param max_interaction_degree highest interaction order; default 1. Also interacts each level of factors with continuous features.
 #' @param cor_type correlation to be used for pseudo R^2. Default Kendall's (robust).
 #' @param threshold minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). Default -1.001 means 'estimate all'.
 #' @param pTraining portion of data for training
@@ -139,7 +139,7 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, recursive=TRU
 #' @return list with slope coefficients, model details, and measures of fit
 #' @export
 FSR <- function(Xy,
-                max_poly_degree = 4, max_interaction_degree = 2,
+                max_poly_degree = 3, max_interaction_degree = 1,
                 cor_type = "kendall", threshold = -1.001,
                 pTraining = 0.8, pValidation = 0.2, max_block_size = 250,
                 noisy = TRUE, seed = NULL,
