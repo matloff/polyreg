@@ -5,12 +5,12 @@
 \alias{FSR}
 \title{FSR}
 \usage{
-FSR(Xy, max_poly_degree = 4, max_interaction_degree = 2,
+FSR(Xy, max_poly_degree = 3, max_interaction_degree = 1,
   cor_type = "kendall", threshold = -1.001, pTraining = 0.8,
   pValidation = 0.2, max_block_size = 250, noisy = TRUE, seed = NULL,
   model = "lm")
 
-FSR(Xy, max_poly_degree = 4, max_interaction_degree = 2,
+FSR(Xy, max_poly_degree = 3, max_interaction_degree = 1,
   cor_type = "kendall", threshold = -1.001, pTraining = 0.8,
   pValidation = 0.2, max_block_size = 250, noisy = TRUE, seed = NULL,
   model = "lm")
@@ -40,9 +40,9 @@ FSR(Xy, max_poly_degree = 4, max_interaction_degree = 2,
 
 \item{Xy}{matrix or data.frame; outcome must be in final column.}
 
-\item{max_poly_degree}{highest power to raise continuous features; default 4.}
+\item{max_poly_degree}{highest power to raise continuous features; default 3 (cubic).}
 
-\item{max_interaction_degree}{highest interaction order; default 2. Also interacts each level of factors with continuous features.}
+\item{max_interaction_degree}{highest interaction order; default 1. Also interacts each level of factors with continuous features.}
 
 \item{cor_type}{correlation to be used for pseudo R^2. Default Kendall's (robust).}
 

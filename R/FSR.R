@@ -127,7 +127,7 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, recursive=TRU
 # improvements do not add at least threshold (default 0.01) to explained variance (of validation data).
 #' FSR
 #' @param Xy matrix or data.frame; outcome must be in final column.
-#' @param max_poly_degree highest power to raise continuous features; default 4.
+#' @param max_poly_degree highest power to raise continuous features; default 3 (cubic).
 #' @param max_interaction_degree highest interaction order; default 1. Also interacts each level of factors with continuous features.
 #' @param cor_type correlation to be used for pseudo R^2. Default Kendall's (robust).
 #' @param threshold minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). Default -1.001 means 'estimate all'.
@@ -253,6 +253,11 @@ FSR <- function(Xy,
     }
 
     X_train <- model_matrix(out[[mod(m)]][["formula"]], Xy[out$split == "train", ])
+
+    X_train_names <- colnames(X_train)
+    X_train_names <- X_train_names[-1]
+    out[[mod(m)]][["formula_with_names"]] <- formula(paste(colnames(Xy)[ncol(Xy)], "~",
+                                                   paste(X_train_names, collapse="+")))
 
     if(!exists("X_train")){
 
