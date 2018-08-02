@@ -11,7 +11,7 @@
 # for full expressions used below: https://en.wikipedia.org/wiki/Invertible_matrix#Blockwise_inversion
 # returns NULL if inversion fails either due to collinearity or memory exhaustion
 
-block_solve  <- function(S = NULL, X = NULL, A_inv = NULL, max_block_size = 250, recursive=TRUE, noisy=TRUE){
+block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, A_inv = NULL, recursive=TRUE, noisy=TRUE){
 
   if(is.null(S) == is.null(X))
     stop("Please provide either rectangular matrix as X or a square matrix as S to be inverted by block_solve(). (If X is provided, (X'X)^{-1} is returned but in a more memory efficient manner than providing S = X'X directly).")
@@ -281,13 +281,15 @@ FSR <- function(Xy,
 
       }else{
 
-        XtX_inv <- block_solve(X = X_train,  # passing X takes crossproduct first
-                               max_block_size)
+        XtX_inv <- if(exists("XtX_inv")) block_solve(X = X_train, A_inv = XtX_inv, max_block_size = max_block_size) else block_solve(X = X_train,  max_block_size = max_block_size)
+        # passing X takes crossproduct first
+        # starting with second iteration, XtX_inv is taken as the inverse of the first block
 
         if(!is.null(XtX_inv)){
 
           out[[mod(m)]][["est"]] <- tcrossprod(XtX_inv, X_train) %*% y_train
-          remove(XtX_inv)
+          if(m == length(increment))
+            remove(XtX_inv)
 
           out[[mod(m)]][["poly_degree"]] <- poly_degree
 
