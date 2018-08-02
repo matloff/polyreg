@@ -1,26 +1,35 @@
-block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, recursive=TRUE, noisy=TRUE){
+# if !recursive, divides into blocks based on n and max_block_size
+# if recursive, calls block_solve(), rather than solve(), until n/2 < max_block_size
+# note: matrix inversion and several matrix multiplications must be performed on largest blocks!
+# assumes matrices are dense; otherwise, use sparse options...
+# max_block_size chosen by trial-and-error on 2017 MacBook Pro i5 with 16 gigs of RAM
+# (too small == too much subsetting, too big == matrix calculations too taxing)
+#  S, crossprod(X), will be crossprod(X) only at outer call
+# Either S or X should be provided, but not both
+# S = | A B |
+#     | C D |
+# for full expressions used below: https://en.wikipedia.org/wiki/Invertible_matrix#Blockwise_inversion
+# returns NULL if inversion fails either due to collinearity or memory exhaustion
 
-  # if !recursive, divides into blocks based on n and max_block_size
-  # if recursive, calls block_solve(), rather than solve(), until n/2 < max_block_size
+block_solve  <- function(S = NULL, X = NULL, A_inv = NULL, max_block_size = 250, recursive=TRUE, noisy=TRUE){
 
-  # note: matrix inversion and several matrix multiplications must be performed on largest blocks!
-  # assumes matrices are dense; otherwise, use sparse options...
+  if(is.null(S) == is.null(X))
+    stop("Please provide either rectangular matrix as X or a square matrix as S to be inverted by block_solve(). (If X is provided, (X'X)^{-1} is returned but in a more memory efficient manner than providing S = X'X directly).")
 
-  # max_block_size chosen by trial-and-error on 2017 MacBook Pro i5 with 16 gigs of RAM
-  # (too small == too much subsetting, too big == matrix calculations too taxing)
+  if(!is.null(A_inv) && is.null(X))
+    stop("If A_inv is provided, X must be provided to block_solve() too. (Suppose A_inv has p columns; A must be equal to solve(crossprod(X[,1:p])) or, equivalently, block_solve(X=X[,1:p]).")
 
-  #  S, crossprod(X), will be crossprod(X) at outer call
+  solvable <- function(A, noisy=TRUE){
 
-  # Either S or X should be provided, but not both
+    tried <- try(solve(A), silent = TRUE)
+    if(noisy) cat(".")
+    if(inherits(tried, "try-error")) return(NULL) else return(tried)
 
-  # S = | A B |
-  #     | C D |
-  # for full expressions used below: https://en.wikipedia.org/wiki/Invertible_matrix#Blockwise_inversion
-
+  }
 
   if(is.null(X)){
 
-    stopifnot(nrow(S) == ncol(S))  # called internally, may not be necessary checks
+    stopifnot(nrow(S) == ncol(S))
 
     symmetric <- isSymmetric(S)
     n <- ncol(S)   # if S is crossprod(X), this is really a p * p matrix
@@ -33,9 +42,12 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, recursive=TRU
   }else{
 
     n <- ncol(X)     # n refers to the resulting crossproduct of S as above
-    k <- floor(n/2)
-
-    A <- crossprod(X[,1:k])
+    if(is.null(A_inv)){
+      k <- floor(n/2)
+      A <- crossprod(X[,1:k])
+    }else{
+      k <- ncol(A_inv)
+    }
     B <- crossprod(X[,1:k], X[,(k+1):n])
     D <- crossprod(X[,(k+1):n])
 
@@ -43,18 +55,12 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, recursive=TRU
 
   }
 
-  solvable <- function(A, noisy=TRUE){
-
-    tried <- try(solve(A), silent = TRUE)
-    if(noisy) cat(".")
-    if(inherits(tried, "try-error")) return(NULL) else return(tried)
-
-  }
-
   invert <- if(recursive && (k > max_block_size)) block_solve else solvable
 
-  A_inv <- invert(A, noisy=noisy)
-  remove(A)
+  if(is.null(A_inv)){
+    A_inv <- invert(A, noisy=noisy)
+    remove(A)
+  }
 
   if(!is.null(A_inv)){
 
@@ -201,7 +207,7 @@ FSR <- function(Xy,
     if(N_distinct(Xy[,ncol(Xy)]) > 2){
       stop("multinomial outcomes not implemented.")
     }else{
-      warning("Logistic regression not implemented, treating as continuous (for now...)...")
+      warning("Logistic regression not implemented (for now...), treating as continuous...")
     }
   }
 
