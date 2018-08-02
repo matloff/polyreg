@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+.DS_Store
+CopyOfFSR.R
+R/poly_poly_testscript.R
