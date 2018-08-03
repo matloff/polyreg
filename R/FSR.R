@@ -135,7 +135,7 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, A_inv = NULL,
 #' @param Xy matrix or data.frame; outcome must be in final column.
 #' @param max_poly_degree highest power to raise continuous features; default 3 (cubic).
 #' @param max_interaction_degree highest interaction order; default 1. Also interacts each level of factors with continuous features.
-#' @param cor_type correlation to be used for adjusted pseudo R^2. Default "pearson"; other options "spearman" and "kendall".
+#' @param cor_type correlation to be used for adjusted R^2; pseudo R^2 for classification. Default "pearson"; other options "spearman" and "kendall".
 #' @param threshold minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). -1.001 means 'estimate all'. Default: 0.01.
 #' @param pTraining portion of data for training
 #' @param pValidation portion of data for validation
