@@ -120,6 +120,24 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, A_inv = NULL,
 
 }
 
+N_distinct <- function(x) length(unique(x))
+is_continuous <- function(x) if(is.numeric(x)) length(unique(x)) > 2 else FALSE
+mod <- function(m) paste0("model", m)
+pow <- function(X, degree){
+  X <- X^degree
+  colnames(X) <- paste0(colnames(X), "_deg_", degree)
+  return(X)    # ensure unique column names
+}
+model_matrix <- function(f, d, noisy=TRUE){
+  tried <- try(model.matrix(f, d), silent=TRUE)
+  if(inherits(tried, "try-error")){
+    if(noisy) cat("model.matrix() reported the following error:\n", tried, "\n\n")
+    return(NULL)
+  } else {
+    return(tried)
+  }
+}
+
 #################################
 # FSR: Forward Stepwise Regression ###
 #################################
@@ -151,24 +169,6 @@ FSR <- function(Xy,
                 noisy = TRUE, seed = NULL,
                 model = "lm"){
 
-  N_distinct <- function(x) length(unique(x))
-  is_continuous <- function(x) if(is.numeric(x)) length(unique(x)) > 2 else FALSE
-  mod <- function(m) paste0("model", m)
-  pow <- function(X, degree){
-    X <- X^degree
-    colnames(X) <- paste0(colnames(X), "_deg_", degree)
-    return(X)    # ensure unique column names
-  }
-  model_matrix <- function(f, d){
-    tried <- try(model.matrix(f, d), silent=TRUE)
-    if(inherits(tried, "try-error")){
-      cat("model.matrix() reported the following error:\n", tried, "\n\n")
-      return(NULL)
-    } else {
-      return(tried)
-    }
-  }
-
   if(!is.matrix(Xy) && !is.data.frame(Xy))
     stop("Xy must be a matrix or data.frame. Either way, y must be the final column.")
   if(min(pTraining, pValidation) < 0 || max(pTraining, pValidation) > 1)
@@ -184,8 +184,9 @@ FSR <- function(Xy,
     k <- N_distinct(Xy[,i])
     if(k == 2 || is.character(Xy[,i])){
         Xy[,i] <- as.factor(Xy[,i])    # switch this to as.character() in case of nuissance
-        N_factor_columns <- N_factor_columns + k - 1
     }
+    if(is.factor(Xy[,i]))
+      N_factor_columns <- N_factor_columns + k - 1
   }
   continuous_features <- colnames(Xy)[-ncol(Xy)][unlist(lapply(Xy[-ncol(Xy)], is_continuous))]
   P_features <- length(continuous_features) + N_factor_columns # columns without intercept...
@@ -193,7 +194,7 @@ FSR <- function(Xy,
 
   if(noisy) cat("The data contains", n, "observations,", length(continuous_features),
                 "continuous features, and", ncol(Xy) - length(continuous_features) - 1,
-                "features that will be treated as factors (which will become",
+                "feature(s) that will be treated as factor(s) (which will become",
                 N_factor_columns, "columns in the model matrix).\n\n")
 
   if(is.null(model)){
@@ -258,7 +259,7 @@ FSR <- function(Xy,
 
     }
 
-    X_train <- model_matrix(out[[mod(m)]][["formula"]], Xy[out$split == "train", ])
+    X_train <- model_matrix(out[[mod(m)]][["formula"]], Xy[out$split == "train", ], noisy=noisy)
 
     X_train_names <- colnames(X_train)
     X_train_names <- X_train_names[-1]
