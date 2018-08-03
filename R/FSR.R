@@ -21,7 +21,7 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, A_inv = NULL,
 
   solvable <- function(A, noisy=TRUE){
 
-    tried <- try(solve(A), silent = TRUE)
+    tried <- try(solve(A), silent = noisy)
     if(noisy) cat(".")
     if(inherits(tried, "try-error")) return(NULL) else return(tried)
 
