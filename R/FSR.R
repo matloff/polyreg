@@ -135,8 +135,8 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, A_inv = NULL,
 #' @param Xy matrix or data.frame; outcome must be in final column.
 #' @param max_poly_degree highest power to raise continuous features; default 3 (cubic).
 #' @param max_interaction_degree highest interaction order; default 1. Also interacts each level of factors with continuous features.
-#' @param cor_type correlation to be used for pseudo R^2. Default Kendall's (robust).
-#' @param threshold minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). Default -1.001 means 'estimate all'.
+#' @param cor_type correlation to be used for adjusted pseudo R^2. Default "pearson"; other options "spearman" and "kendall".
+#' @param threshold minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). -1.001 means 'estimate all'. Default: 0.01.
 #' @param pTraining portion of data for training
 #' @param pValidation portion of data for validation
 #' @param max_block_size Most of the linear algebra is done recursively in blocks to ease memory managment. Default 250. Changing up or down may slow things...
@@ -146,7 +146,7 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, A_inv = NULL,
 #' @export
 FSR <- function(Xy,
                 max_poly_degree = 3, max_interaction_degree = 1,
-                cor_type = "kendall", threshold = -1.001,
+                cor_type = "pearson", threshold = 0.01,
                 pTraining = 0.8, pValidation = 0.2, max_block_size = 250,
                 noisy = TRUE, seed = NULL,
                 model = "lm"){
@@ -295,14 +295,14 @@ FSR <- function(Xy,
 
           out[[mod(m)]][["y_hat"]] <- model_matrix(out[[mod(m)]][["formula"]],
                                                    Xy[out$split == "validate", ]) %*% out[[mod(m)]][["est"]]
-
-          out[[mod(m)]][[paste0("R2_", cor_type)]] <- cor(out[[mod(m)]][["y_hat"]], y_validate, method=cor_type)^2
+          R2 <- cor(out[[mod(m)]][["y_hat"]], y_validate, method=cor_type)^2
+          out[[mod(m)]][[paste0("adj_R2_", cor_type)]] <- (length(y_train) - ncol(X_train) - 1)/(length(y_train) - 1)*R2
           out[[mod(m)]][["MAPE"]] <- mean(abs(out[[mod(m)]][["y_hat"]] - y_validate))
 
-          improvement <- if(m == 1) out[[mod(m)]][[paste0("R2_", cor_type)]] else out[[mod(m)]][[paste0("R2_", cor_type)]] - out[[mod(m - 1)]][[paste0("R2_", cor_type)]]
+          improvement <- if(m == 1) out[[mod(m)]][[paste0("adj_R2_", cor_type)]] else out[[mod(m)]][[paste0("adj_R2_", cor_type)]] - out[[mod(m - 1)]][[paste0("adj_R2_", cor_type)]]
 
           out$estimated[m] <- TRUE
-          out$fit[m, 1] <- out[[mod(m)]][[paste0("R2_", cor_type)]]
+          out$fit[m, 1] <- out[[mod(m)]][[paste0("adj_R2_", cor_type)]]
           out$fit[m, 2] <- out[[mod(m)]][["MAPE"]]
           if(noisy){
             cat("\n\n")
