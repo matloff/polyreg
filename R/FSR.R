@@ -15,7 +15,7 @@
 #' @param max_interaction_degree highest interaction order; default 1. Also interacts each level of factors with continuous features.
 #' @param cor_type correlation to be used for adjusted R^2; pseudo R^2 for classification. Default "pearson"; other options "spearman" and "kendall".
 #' @param threshold minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). -1.001 means 'estimate all'. Default: 0.01.
-#' @param standardize if TRUE (default), standardizes continuous variables.
+#' @param standardize if TRUE (not default), standardizes continuous variables.
 #' @param pTraining portion of data for training
 #' @param pValidation portion of data for validation
 #' @param min_models minimum number of models to estimate. Defaults to the number of features.
@@ -27,7 +27,7 @@
 #' @export
 FSR <- function(Xy,
                 max_poly_degree = 3, max_interaction_degree = 1,
-                cor_type = "pearson", threshold = 0.01, standardize = TRUE,
+                cor_type = "pearson", threshold = 0.01, standardize = FALSE,
                 pTraining = 0.8, pValidation = 0.2,
                 min_models = NULL,
                 file_name = NULL,
