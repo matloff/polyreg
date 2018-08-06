@@ -1,143 +1,3 @@
-# if !recursive, divides into blocks based on n and max_block_size
-# if recursive, calls block_solve(), rather than solve(), until n/2 < max_block_size
-# note: matrix inversion and several matrix multiplications must be performed on largest blocks!
-# assumes matrices are dense; otherwise, use sparse options...
-# max_block_size chosen by trial-and-error on 2017 MacBook Pro i5 with 16 gigs of RAM
-# (too small == too much subsetting, too big == matrix calculations too taxing)
-#  S, crossprod(X), will be crossprod(X) only at outer call
-# Either S or X should be provided, but not both
-# S = | A B |
-#     | C D |
-# for full expressions used below: https://en.wikipedia.org/wiki/Invertible_matrix#Blockwise_inversion
-# returns NULL if inversion fails either due to collinearity or memory exhaustion
-
-block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, A_inv = NULL, recursive=TRUE, noisy=TRUE){
-
-  if(is.null(S) == is.null(X))
-    stop("Please provide either rectangular matrix as X or a square matrix as S to be inverted by block_solve(). (If X is provided, (X'X)^{-1} is returned but in a more memory efficient manner than providing S = X'X directly).")
-
-  if(!is.null(A_inv) && is.null(X))
-    stop("If A_inv is provided, X must be provided to block_solve() too. (Suppose A_inv has p columns; A must be equal to solve(crossprod(X[,1:p])) or, equivalently, block_solve(X=X[,1:p]).")
-
-  solvable <- function(A, noisy=TRUE){
-
-    tried <- try(solve(A), silent = noisy)
-    if(noisy) cat(".")
-    if(inherits(tried, "try-error")) return(NULL) else return(tried)
-
-  }
-
-  if(is.null(X)){
-
-    stopifnot(nrow(S) == ncol(S))
-
-    symmetric <- isSymmetric(S)
-    n <- ncol(S)   # if S is crossprod(X), this is really a p * p matrix
-    k <- floor(n/2)
-
-    A <- S[1:k, 1:k]
-    B <- S[1:k, (k + 1):n]
-    D <- S[(k + 1):n, (k + 1):n]
-
-  }else{
-
-    n <- ncol(X)     # n refers to the resulting crossproduct of S as above
-    if(is.null(A_inv)){
-      k <- floor(n/2)
-      A <- crossprod(X[,1:k])
-    }else{
-      k <- ncol(A_inv)
-    }
-    B <- crossprod(X[,1:k], X[,(k+1):n])
-    D <- crossprod(X[,(k+1):n])
-
-    symmetric <- TRUE   # refers to S, not A, B, or D (B in general will be rectangular...)
-
-  }
-
-  invert <- if(recursive && (k > max_block_size)) block_solve else solvable
-
-  if(is.null(A_inv)){
-    A_inv <- invert(A, noisy=noisy)
-    remove(A)
-  }
-
-  if(!is.null(A_inv)){
-
-
-    if(symmetric){
-      # S, crossprod(X), will be symmetric at highest level but not at lower levels
-      # want memory savings from that symmetry when it applies
-      # by symmetry, B == t(C), so C is never constructed
-      if(exists("S")) remove(S)
-      C.A_inv <- crossprod(B, A_inv) # really C %*% A_inv since C == t(B)
-      schur_inv <- invert(D - C.A_inv %*% B)
-      remove(D)
-
-      if(!is.null(schur_inv)){
-
-        S_inv <- matrix(nrow=n, ncol=n)
-
-        S_inv[1:k, 1:k] <- A_inv + A_inv %*% B %*% schur_inv %*% C.A_inv
-        remove(B, A_inv)
-        S_inv[(k+1):n, 1:k] <- -schur_inv %*% C.A_inv
-        S_inv[(k+1):n, (k+1):n] <- schur_inv
-        remove(schur_inv, C.A_inv)
-        S_inv[1:k, (k+1):n] <- t(S_inv[(k+1):n, 1:k]) # since symmetric matrices have symm inverses
-        return(S_inv)
-
-      }else{
-        return(NULL)
-      }
-
-    }else{
-
-      C.A_inv <- crossprod(B, A_inv) # S[(k+1):n, 1:k] %*% A_inv  # really C %*% A_inv
-
-      if(exists("C.A_inv")){
-
-        if(exists("S")) remove(S)
-
-        schur_inv <- invert(D - C.A_inv %*% B, noisy=noisy)
-        remove(D)
-
-        S_inv <- matrix(nrow=n, ncol=n)
-        S_inv[1:k, 1:k] <- A_inv + A_inv %*% B %*% schur_inv %*% C.A_inv
-        S_inv[(k+1):n, 1:k] <- -schur_inv %*% C.A_inv
-        remove(C.A_inv)
-        S_inv[(k+1):n, (k+1):n] <- schur_inv
-        S_inv[1:k, (k+1):n] <- -A_inv %*% B %*% schur_inv
-        remove(B, A_inv, schur_inv)
-        return(S_inv)
-
-      }else{
-        return(NULL)
-      }
-    }
-  }else{
-    return(NULL)
-  }
-
-}
-
-N_distinct <- function(x) length(unique(x))
-is_continuous <- function(x) if(is.numeric(x)) length(unique(x)) > 2 else FALSE
-mod <- function(m) paste0("model", m)
-pow <- function(X, degree){
-  X <- X^degree
-  colnames(X) <- paste0(colnames(X), "_deg_", degree)
-  return(X)    # ensure unique column names
-}
-model_matrix <- function(f, d, noisy=TRUE){
-  tried <- try(model.matrix(f, d), silent=TRUE)
-  if(inherits(tried, "try-error")){
-    if(noisy) cat("model.matrix() reported the following error:\n", tried, "\n\n")
-    return(NULL)
-  } else {
-    return(tried)
-  }
-}
-
 #################################
 # FSR: Forward Stepwise Regression ###
 #################################
@@ -155,6 +15,7 @@ model_matrix <- function(f, d, noisy=TRUE){
 #' @param max_interaction_degree highest interaction order; default 1. Also interacts each level of factors with continuous features.
 #' @param cor_type correlation to be used for adjusted R^2; pseudo R^2 for classification. Default "pearson"; other options "spearman" and "kendall".
 #' @param threshold minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). -1.001 means 'estimate all'. Default: 0.01.
+#' @param standardize if TRUE (default), standardizes continuous variables.
 #' @param pTraining portion of data for training
 #' @param pValidation portion of data for validation
 #' @param max_block_size Most of the linear algebra is done recursively in blocks to ease memory managment. Default 250. Changing up or down may slow things...
@@ -164,7 +25,7 @@ model_matrix <- function(f, d, noisy=TRUE){
 #' @export
 FSR <- function(Xy,
                 max_poly_degree = 3, max_interaction_degree = 1,
-                cor_type = "pearson", threshold = 0.01,
+                cor_type = "pearson", threshold = 0.01, standardize = TRUE,
                 pTraining = 0.8, pValidation = 0.2, max_block_size = 250,
                 noisy = TRUE, seed = NULL,
                 model = "lm"){
@@ -179,23 +40,27 @@ FSR <- function(Xy,
   out[["n"]] <- n <- nrow(Xy)
 
   Xy <- as.data.frame(Xy)
-  N_factor_columns <- 0
+  P_factor <- 0
+  factor_features <- c() # stores individual levels, omitting one
+
   for(i in 1:ncol(Xy)){
+
     k <- N_distinct(Xy[,i])
+
     if(k == 2 || is.character(Xy[,i])){
         Xy[,i] <- as.factor(Xy[,i])    # switch this to as.character() in case of nuissance
     }
-    if(is.factor(Xy[,i]))
-      N_factor_columns <- N_factor_columns + k - 1
-  }
-  continuous_features <- colnames(Xy)[-ncol(Xy)][unlist(lapply(Xy[-ncol(Xy)], is_continuous))]
-  P_features <- length(continuous_features) + N_factor_columns # columns without intercept...
-  out[["continuous_features"]] <- continuous_features
 
-  if(noisy) cat("The data contains", n, "observations,", length(continuous_features),
-                "continuous features, and", ncol(Xy) - length(continuous_features) - 1,
-                "feature(s) that will be treated as factor(s) (which will become",
-                N_factor_columns, "columns in the model matrix).\n\n")
+    if(is.factor(Xy[,i])){
+      P_factor <- P_factor + k - 1
+      tmp <- paste(colnames(Xy)[i], "==", paste0("\'", levels(Xy[,i])[-1], "\'"))
+      tmp <- paste0("(", tmp, ")")
+      factor_features <- c(factor_features, tmp)
+    }else{
+      if(standardize)
+        Xy[,i] <- scale(Xy[,i])
+    }
+  }
 
   if(is.null(model)){
     model <- if(is.factor(Xy[,ncol(Xy)])) "glm" else "lm"
@@ -203,68 +68,80 @@ FSR <- function(Xy,
     if(!(model %in% c("lm", "glm")))
       stop("model must be either 'lm' or 'glm' or 'NULL' (auto-detect based on y).")
   }
-
   if(model == "glm"){
     if(N_distinct(Xy[,ncol(Xy)]) > 2){
       stop("multinomial outcomes not implemented.")
     }else{
-      warning("Logistic regression not implemented (for now...), treating as continuous...")
+      warning("Logistic regression not yet implemented, treating as continuous...")
     }
   }
+
+  continuous_features <- cf <- colnames(Xy)[-ncol(Xy)][unlist(lapply(Xy[-ncol(Xy)], is_continuous))]
+  P_continuous <- length(continuous_features)
+  out[["continuous_features"]] <- continuous_features
+  out[["factors"]] <- colnames(Xy)[-ncol(Xy)][unlist(lapply(Xy[-ncol(Xy)], is.factor))]
+  out[["y"]] <- colnames(Xy)[ncol(Xy)]
+  P <- P_continuous + P_factor # count without intercept
+  # P does not reflect interactions or poly
+
+  for(i in 2:max_poly_degree)
+    continuous_features <- c(continuous_features, paste("pow(", cf, ",", i, ")"))
+
+  features <- c(continuous_features, factor_features)
+  if(max_interaction_degree > 0){
+    for(i in 1:max_interaction_degree){
+      features <- c(features,
+                    apply(combn(c(continuous_features, factor_features), i + 1),
+                        2, isolate_interaction, i))
+    }
+  }
+
 
   out[["seed"]] <- if(is.null(seed)) as.integer(runif(1, 0, 10000000)) else seed
   set.seed(out$seed)
   if(noisy) message("set seed to ", out$seed, ".\n")
 
-  out[["split"]] <- sample(c("train", "validate"), n, replace=TRUE,
+  out[["split"]] <- sample(c("train", "test"), n, replace=TRUE,
                   prob = c(pTraining, pValidation))
   y_train <- Xy[out$split == "train", ncol(Xy)]
-  y_validate <- Xy[out$split == "validate", ncol(Xy)]
+  y_test <- Xy[out$split == "test", ncol(Xy)]
 
-  if(noisy) cat("N training:", length(y_train), "\nN validation:", length(y_validate), "\n\n")
+  if(noisy) cat("N training:", length(y_train), "\nN validation:", length(y_test), "\n\n")
 
-  increment <- "neither"
-  for(i in 1:min(max_poly_degree, max_interaction_degree))
-    increment <- c(increment, "poly", "interaction")
-  increment <- c(increment, rep("poly", max_poly_degree - min(max_poly_degree, max_interaction_degree)))
-  increment <- c(increment, rep("interaction", max_interaction_degree - min(max_poly_degree, max_interaction_degree)))
-  out[["estimated"]] <- rep(FALSE, length(increment)) # will be updated based on whether successful ...
-  out[["fit"]] <- matrix(ncol=2, nrow=length(increment))
-  colnames(out$fit) <- c(paste0("pseudo R2 (", cor_type, ")"), "MAPE")
-  rownames(out$fit) <- paste0("model", 1:length(increment))
+  # metadata to construct all possible models based on Xy and user input stored in 'add'
+
+  models <- data.frame(added_feature = features, stringsAsFactors = FALSE)
+  models[["estimated"]]<- FALSE # will be updated based on whether successful ...
+  models[["adjR2"]] <- NA
+  models[["MAPE"]] <- NA
+  models[["formula"]] <- NA
+  models[["accepted"]] <- FALSE
+  out[["models"]] <- models
+
+  if(noisy) cat("The data contains", n, "observations,", length(continuous_features),
+                "continuous features, and", P_factor,
+                "dummy variables. Up to", length(features),
+                "models will be estimated. The output will have a data.frame that contains measures of fit and information about each model, such as the formula call. The output is also a nested list object, such that out$model1, out$model2, etc. contains further metadata.\n\n")
+
 
   m <- 1            # counts which model
-  improvement <- threshold + 1  # not meaningful; just initializing ...
-  poly_degree <- 1
-  interaction_degree <- 0
-  out[[mod(m)]][["formula"]] <- formula(paste(colnames(Xy)[ncol(Xy)], "~ ."))
-  N_train <- sum(out$split == "train")
-  unable_to_estimate <- 0
+  improvement <- 0  # not meaningful; just initializing ...
+  y_name <- as.character(colnames(Xy)[ncol(Xy)])
+  out[["N_train"]] <- N_train <- sum(out$split == "train")
+  out[["N_test"]] <- N_test <- sum(out$split == "train")
+  unable_to_estimate <- 0 # allowed 2 fails ... change?
+  out[["best_formula"]] <- ""
 
-  while((m <= length(increment)) && (improvement > threshold) && (P_features < N_train) && unable_to_estimate < 2){
+  while((m <= nrow(models)) &&
+        ((improvement > threshold) || m <= P) && # 'attempt all x variables additively'
+        unable_to_estimate < 2){
 
-    if(increment[m] == "poly"){
-
-      poly_degree <- poly_degree + 1
-      Xy <- cbind(pow(Xy[ , match(continuous_features, colnames(Xy))], poly_degree), Xy)
-      out[[mod(m)]][["formula"]] <- out[[mod(m - 1)]][["formula"]]
-
+    if(sum(out$models$accepted) == 0){
+      out$models$formula[m] <- paste(y_name, "~", features[m])
+    }else{
+      out$models$formula[m] <- paste(out[["best_formula"]], "+", features[m])
     }
-
-    if(increment[m] == "interaction"){
-
-      f <- paste(colnames(Xy)[ncol(Xy)], "~ .")
-      f <- paste(c(f, rep("*.", sum(increment[1:m] == "interaction"))), collapse="")
-      out[[mod(m)]][["formula"]] <- formula(f)
-
-    }
-
-    X_train <- model_matrix(out[[mod(m)]][["formula"]], Xy[out$split == "train", ], noisy=noisy)
-
-    X_train_names <- colnames(X_train)
-    X_train_names <- X_train_names[-1]
-    out[[mod(m)]][["formula_with_names"]] <- formula(paste(colnames(Xy)[ncol(Xy)], "~",
-                                                   paste(X_train_names, collapse="+")))
+    X_train <- model_matrix(formula(out$models$formula[m]), Xy[out$split == "train",], noisy=TRUE)
 
     if(!exists("X_train")){
 
@@ -272,6 +149,8 @@ FSR <- function(Xy,
       unable_to_estimate <- unable_to_estimate + 1
 
     }else{
+
+      out[[mod(m)]] <- list()
 
       out[[mod(m)]][["p"]] <- ncol(X_train)
 
@@ -282,39 +161,64 @@ FSR <- function(Xy,
 
       }else{
 
-        XtX_inv <- if(exists("XtX_inv")) block_solve(X = X_train, A_inv = XtX_inv, max_block_size = max_block_size) else block_solve(X = X_train,  max_block_size = max_block_size)
+        if(sum(out$models$accepted) == 0){
+          XtX_inv <- block_solve(X = X_train,  max_block_size = max_block_size)
+        }else{
+          XtX_inv <- block_solve(X = X_train, A_inv = XtX_inv_accepted, max_block_size = max_block_size)
+        }
         # passing X takes crossproduct first
-        # starting with second iteration, XtX_inv is taken as the inverse of the first block
+        # starting with second iteration,
+        # XtX_inv of the last accepted model is taken as the inverse of the first block
+
 
         if(!is.null(XtX_inv)){
 
           out[[mod(m)]][["est"]] <- tcrossprod(XtX_inv, X_train) %*% y_train
-          if(m == length(increment))
+          if(m == length(features))
             remove(XtX_inv)
 
-          out[[mod(m)]][["poly_degree"]] <- poly_degree
-
-          out[[mod(m)]][["y_hat"]] <- model_matrix(out[[mod(m)]][["formula"]],
-                                                   Xy[out$split == "validate", ]) %*% out[[mod(m)]][["est"]]
-          R2 <- cor(out[[mod(m)]][["y_hat"]], y_validate, method=cor_type)^2
+          out[[mod(m)]][["y_hat"]] <- model_matrix(formula(out$models$formula[m]),
+                                                   Xy[out$split == "test", ]) %*% out[[mod(m)]][["est"]]
+          R2 <- cor(out[[mod(m)]][["y_hat"]], y_test, method=cor_type)^2
           out[[mod(m)]][[paste0("adj_R2_", cor_type)]] <- (length(y_train) - ncol(X_train) - 1)/(length(y_train) - 1)*R2
-          out[[mod(m)]][["MAPE"]] <- mean(abs(out[[mod(m)]][["y_hat"]] - y_validate))
+          out[[mod(m)]][["MAPE"]] <- mean(abs(out[[mod(m)]][["y_hat"]] - y_test))
 
           improvement <- if(m == 1) out[[mod(m)]][[paste0("adj_R2_", cor_type)]] else out[[mod(m)]][[paste0("adj_R2_", cor_type)]] - out[[mod(m - 1)]][[paste0("adj_R2_", cor_type)]]
 
-          out$estimated[m] <- TRUE
-          out$fit[m, 1] <- out[[mod(m)]][[paste0("adj_R2_", cor_type)]]
-          out$fit[m, 2] <- out[[mod(m)]][["MAPE"]]
+          out$models$estimated[m] <- TRUE
+          out$models$adjR2[m] <- out[[mod(m)]][[paste0("adj_R2_", cor_type)]]
+          out$models$MAPE[m] <- out[[mod(m)]][["MAPE"]]
+
           if(noisy){
             cat("\n\n")
-            print(out$fit[1:m,])
+            cat("model", m, "adjusted R2", out$models$adjR2[m], "\n")
+            cat("model", m, "Mean Absolute Predicted Error (MAPE)", out$models$MAPE[m], "\n")
+            if(m > 1){
+              cat("adj R2 improvement over last model:", out$models$adjR2[m] - out$models$adjR2[m - 1], "\n")
+              cat("MAPE improvement over last model:", out$models$MAPE[m] - out$models$MAPE[m - 1], "\n")
+            }
+
             cat("\n\n")
           }
+
+          if(m > 1 && (out$models$adjR2[m] > out$models$adjR2[m - 1])){
+            out$best_formula <- out$models$formula[m]
+            out$models$accepted[m] <- TRUE
+          }else{
+
+            if(out$models$adjR2[m] > threshold){
+              out$best_formula <- out$models$formula[m]
+              out$models$accepted[m] <- TRUE
+            }
+
+          }
+          if(out$models$accepted[m])
+            XtX_inv_accepted <- XtX_inv
 
 
         }else{
 
-          if(noisy) cat("\nunable to estimate Model", m, "due to (near) singularity.\n")
+          if(noisy) cat("\nunable to estimate Model", m, "likely due to (near) singularity.\n")
           unable_to_estimate <- unable_to_estimate + 1
 
         }
@@ -323,12 +227,11 @@ FSR <- function(Xy,
     }
 
     m <- m + 1
-    P_features <- P_features + (increment[m] == "poly") * length(continuous_features) + (increment[m] == "interaction") * choose(P_features, interaction_degree + 1)
 
   } # end WHILE loop
 
 
-  if(sum(out$estimated) == 0){
+  if(sum(out$models$estimated) == 0){
 
     if(noisy) message("\nNo models could be estimated, likely due to (near) singularity; returning NULL. Check for highly correlated features or factors with rarely observed levels. (Increasing pTraining may help.)\n")
     return(NULL)
