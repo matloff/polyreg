@@ -18,6 +18,8 @@
 #' @param standardize if TRUE (default), standardizes continuous variables.
 #' @param pTraining portion of data for training
 #' @param pValidation portion of data for validation
+#' @param min_models minimum number of models to estimate. Defaults to the number of features.
+#' @param file_name If a file name (and path) is provided, saves output after each model is estimated as an .RData file. ex: file_name = "results.RData"
 #' @param max_block_size Most of the linear algebra is done recursively in blocks to ease memory managment. Default 250. Changing up or down may slow things...
 #' @param noisy display measures of fit, progress, etc. Recommended.
 #' @param seed Automatically set but can also be passed as paramater.
@@ -26,7 +28,10 @@
 FSR <- function(Xy,
                 max_poly_degree = 3, max_interaction_degree = 1,
                 cor_type = "pearson", threshold = 0.01, standardize = TRUE,
-                pTraining = 0.8, pValidation = 0.2, max_block_size = 250,
+                pTraining = 0.8, pValidation = 0.2,
+                min_models = NULL,
+                file_name = NULL,
+                max_block_size = 250,
                 noisy = TRUE, seed = NULL,
                 model = "lm"){
 
@@ -131,9 +136,11 @@ FSR <- function(Xy,
   out[["N_test"]] <- N_test <- sum(out$split == "train")
   unable_to_estimate <- 0 # allowed 2 fails ... change?
   out[["best_formula"]] <- ""
+  if(is.null(min_models))
+    min_models <- P
 
   while((m <= nrow(models)) &&
-        ((improvement > threshold) || m <= P) && # 'attempt all x variables additively'
+        ((improvement > threshold) || m <= min_models) && # 'attempt all x variables additively'
         unable_to_estimate < 2){
 
     if(sum(out$models$accepted) == 0){
@@ -227,6 +234,8 @@ FSR <- function(Xy,
     }
 
     m <- m + 1
+    if(!is.null(file_name))
+      save(out, file=file_name)
 
   } # end WHILE loop
 
