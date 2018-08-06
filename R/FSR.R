@@ -14,7 +14,8 @@
 #' @param max_poly_degree highest power to raise continuous features; default 3 (cubic).
 #' @param max_interaction_degree highest interaction order; default 1. Also interacts each level of factors with continuous features.
 #' @param cor_type correlation to be used for adjusted R^2; pseudo R^2 for classification. Default "pearson"; other options "spearman" and "kendall".
-#' @param threshold minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). -1.001 means 'estimate all'. Default: 0.01.
+#' @param threshold_include minimum improvement to include a recently added term in the model (pseudo R^2 so scale 0 to 1). -1.001 means 'include all'. Default: 0.01.
+#' @param threshold_estimate minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). -1.001 means 'estimate all'. Default: 0.001.
 #' @param standardize if TRUE (not default), standardizes continuous variables.
 #' @param pTraining portion of data for training
 #' @param pValidation portion of data for validation
@@ -27,7 +28,10 @@
 #' @export
 FSR <- function(Xy,
                 max_poly_degree = 3, max_interaction_degree = 1,
-                cor_type = "pearson", threshold = 0.01, standardize = FALSE,
+                cor_type = "pearson",
+                threshold_include = 0.01,
+                threshold_estimate = 0.001,
+                standardize = FALSE,
                 pTraining = 0.8, pValidation = 0.2,
                 min_models = NULL,
                 file_name = NULL,
@@ -39,7 +43,8 @@ FSR <- function(Xy,
     stop("Xy must be a matrix or data.frame. Either way, y must be the final column.")
   if(min(pTraining, pValidation) < 0 || max(pTraining, pValidation) > 1)
     stop("pTraining and pValidation should all be between 0 and 1 and sum to 1.")
-  stopifnot(is.numeric(threshold))
+  stopifnot(is.numeric(threshold_estimate))
+  stopifnot(is.numeric(threshold_include))
 
   out <- list()
   class(out) <- "FSR" # nested list
@@ -138,10 +143,10 @@ FSR <- function(Xy,
   unable_to_estimate <- 0 # allowed 2 fails ... change?
   out[["best_formula"]] <- ""
   if(is.null(min_models))
-    min_models <- P
+    min_models <- P # 'attempt all x variables additively'
 
   while((m <= nrow(models)) &&
-        ((improvement > threshold) || m <= min_models) && # 'attempt all x variables additively'
+        ((improvement > threshold_estimate) || m <= min_models) &&
         unable_to_estimate < 2){
 
     if(sum(out$models$accepted) == 0){
@@ -209,13 +214,13 @@ FSR <- function(Xy,
             cat("\n\n")
           }
 
-          if(m > 1 && (out$models$adjR2[m] > out$models$adjR2[m - 1])){
+          if(m > 1 && (improvement > threshold_include)){
             out$best_formula <- out$models$formula[m]
             out[["best_coeffs"]] <- out[[mod(m)]][["est"]]
             out$models$accepted[m] <- TRUE
           }else{
 
-            if(out$models$adjR2[m] > threshold){
+            if(out$models$adjR2[m] > threshold_include){
               out$best_formula <- out$models$formula[m]
               out$models$accepted[m] <- TRUE
               out[["best_coeffs"]] <- out[[mod(m)]][["est"]]
