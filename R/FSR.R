@@ -196,7 +196,12 @@ FSR <- function(Xy,
           out[[mod(m)]][[paste0("adj_R2_", cor_type)]] <- (length(y_train) - ncol(X_train) - 1)/(length(y_train) - 1)*R2
           out[[mod(m)]][["MAPE"]] <- mean(abs(out[[mod(m)]][["y_hat"]] - y_test))
 
-          improvement <- if(m == 1) out[[mod(m)]][[paste0("adj_R2_", cor_type)]] else out[[mod(m)]][[paste0("adj_R2_", cor_type)]] - out[[mod(m - 1)]][[paste0("adj_R2_", cor_type)]]
+          if(sum(out$models$accepted) == 0){
+            improvement <- out[[mod(m)]][[paste0("adj_R2_", cor_type)]]
+          }else{
+            best_m <- max(which(out$models$accepted))
+            improvement <- out[[mod(m)]][[paste0("adj_R2_", cor_type)]] - out[[mod(best_m)]][[paste0("adj_R2_", cor_type)]]
+          }
 
           out$models$estimated[m] <- TRUE
           out$models$adjR2[m] <- out[[mod(m)]][[paste0("adj_R2_", cor_type)]]
