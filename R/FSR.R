@@ -133,7 +133,7 @@ FSR <- function(Xy,
   improvement <- 0  # not meaningful; just initializing ...
   y_name <- as.character(colnames(Xy)[ncol(Xy)])
   out[["N_train"]] <- N_train <- sum(out$split == "train")
-  out[["N_test"]] <- N_test <- sum(out$split == "train")
+  out[["N_test"]] <- N_test <- sum(out$split == "test")
   unable_to_estimate <- 0 # allowed 2 fails ... change?
   out[["best_formula"]] <- ""
   if(is.null(min_models))
@@ -143,13 +143,15 @@ FSR <- function(Xy,
                 P_continuous,
                 "continuous features, and", P_factor,
                 "dummy variables. Up to", length(features),
-                "models will be estimated. (And at least", min_models, "models will be estimated.)")
+                "models will be estimated. (And at least", min_models, "models will be estimated.) Each model will add a feature, which will be included in subsequent models if it explains at least an additional", threshold_include, "on the adjusted R^2 scale.")
 
 
 
   while((m <= nrow(models)) &&
         ((improvement > threshold_estimate) || m <= min_models) &&
         unable_to_estimate < 2){
+
+    out[[mod(m)]] <- list()
 
     if(sum(out$models$accepted) == 0){
       out$models$formula[m] <- paste(y_name, "~", features[m])
@@ -165,11 +167,9 @@ FSR <- function(Xy,
 
     }else{
 
-      out[[mod(m)]] <- list()
-
       out[[mod(m)]][["p"]] <- ncol(X_train)
 
-      if(out[[mod(m)]][["p"]] >= nrow(X_train)){
+      if(out[[mod(m)]][["p"]] >= nrow(X_train)){ # N_train
 
         if(noisy) message("There are too few training observations to estimate model ",  m, ". Skipping.")
         unable_to_estimate <- unable_to_estimate + 1
@@ -189,55 +189,57 @@ FSR <- function(Xy,
         if(!is.null(XtX_inv)){
 
           out[[mod(m)]][["est"]] <- tcrossprod(XtX_inv, X_train) %*% y_train
+
           if(m == length(features))
             remove(XtX_inv)
 
-          out[[mod(m)]][["y_hat"]] <- model_matrix(formula(out$models$formula[m]),
-                                                   Xy[out$split == "test", ]) %*% out[[mod(m)]][["est"]]
-          R2 <- cor(out[[mod(m)]][["y_hat"]], y_test, method=cor_type)^2
-          out[[mod(m)]][[paste0("adj_R2_", cor_type)]] <- (length(y_train) - ncol(X_train) - 1)/(length(y_train) - 1)*R2
-          out[[mod(m)]][["MAPE"]] <- mean(abs(out[[mod(m)]][["y_hat"]] - y_test))
+          if(sum(is.na(out[[mod(m)]][["est"]])) > 0){
 
-          if(sum(out$models$accepted) == 0){
-            improvement <- out[[mod(m)]][[paste0("adj_R2_", cor_type)]]
+            if(noisy) cat("\nfailed to estimate model", m, "skipping...\n")
+            unable_to_estimate <- unable_to_estimate + 1
+
           }else{
-            best_m <- max(which(out$models$accepted))
-            improvement <- out[[mod(m)]][[paste0("adj_R2_", cor_type)]] - out[[mod(best_m)]][[paste0("adj_R2_", cor_type)]]
-          }
 
-          out$models$estimated[m] <- TRUE
-          out$models$adjR2[m] <- out[[mod(m)]][[paste0("adj_R2_", cor_type)]]
-          out$models$MAPE[m] <- out[[mod(m)]][["MAPE"]]
+            out$models$estimated[m] <- TRUE
+            out[[mod(m)]][["y_hat"]] <- model_matrix(formula(out$models$formula[m]),
+                                                     Xy[out$split == "test", ]) %*% out[[mod(m)]][["est"]]
+            R2 <- cor(out[[mod(m)]][["y_hat"]], y_test, method=cor_type)^2
+            adjR2 <- (N_train - ncol(X_train) - 1)/(N_train - 1)*R2
+            out$models$adjR2[m] <- out[[mod(m)]][[paste0("adj_R2_", cor_type)]] <- adjR2
 
-          if(noisy){
-            cat("\n\n")
-            cat("model", m, "adjusted R2", out$models$adjR2[m], "\n")
-            cat("model", m, "Mean Absolute Predicted Error (MAPE)", out$models$MAPE[m], "\n")
-            if(sum(out$models$accepted) > 0){
-              cat("adj R2 improvement over best model so far:", improvement, "\n")
-              cat("MAPE improvement over best model so far:", out$models$MAPE[m] - out$models$MAPE[best_m], "\n")
+            MAPE <- mean(abs(out[[mod(m)]][["y_hat"]] - y_test))
+            out$models$MAPE[m] <- out[[mod(m)]][["MAPE"]] <- MAPE
+
+            if(sum(out$models$accepted) == 0){
+              improvement <- adjR2
+            }else{
+              improvement <- adjR2 - out$best_adjR2
             }
 
-            cat("\n\n")
-          }
+            if(improvement > threshold_include){
 
-          if(m > 1 && (improvement > threshold_include)){
-            out$best_formula <- out$models$formula[m]
-            out[["best_coeffs"]] <- out[[mod(m)]][["est"]]
-            out$models$accepted[m] <- TRUE
-          }else{
 
-            if(out$models$adjR2[m] > threshold_include){
               out$best_formula <- out$models$formula[m]
-              out$models$accepted[m] <- TRUE
               out[["best_coeffs"]] <- out[[mod(m)]][["est"]]
+              out[["best_adjR2"]] <- adjR2
+              out[["best_MAPE"]] <- MAPE
+              out$models$accepted[m] <- TRUE
+              XtX_inv_accepted <- XtX_inv
+
             }
 
+            if(noisy){
+              cat("\n\n\n\n")
+              cat("Model:", m, "\n\n")
+              cat("The added feature", ifelse(out$models$accepted[m], "WAS", "WAS NOT"), "accepted into the model.")
+              cat("Adjusted R2", out$models$adjR2[m], "\n")
+              cat("Mean Absolute Predicted Error (MAPE)", out$models$MAPE[m], "\n")
+              if(sum(out$models$accepted) > 0){
+                cat("adj R2 improvement over best model so far:", improvement, "\n")
+                cat("MAPE improvement over best model so far:", MAPE - out$best_MAPE, "\n\n\n")
+              }
+            }
           }
-          if(out$models$accepted[m])
-            XtX_inv_accepted <- XtX_inv
-
-
         }else{
 
           if(noisy) cat("\nunable to estimate Model", m, "likely due to (near) singularity.\n")
