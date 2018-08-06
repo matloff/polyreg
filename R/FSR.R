@@ -47,7 +47,7 @@ FSR <- function(Xy,
   stopifnot(is.numeric(threshold_include))
 
   out <- list()
-  class(out) <- "FSR" # nested list
+  class(out) <- "FSR" # nested list, has S3 method
   out[["n"]] <- n <- nrow(Xy)
 
   Xy <- as.data.frame(Xy)
@@ -129,12 +129,6 @@ FSR <- function(Xy,
   models[["accepted"]] <- FALSE
   out[["models"]] <- models
 
-  if(noisy) cat("The data contains", n, "observations,", length(continuous_features),
-                "continuous features, and", P_factor,
-                "dummy variables. Up to", length(features),
-                "models will be estimated. The output will have a data.frame that contains measures of fit and information about each model, such as the formula call. The output is also a nested list object, such that out$model1, out$model2, etc. contains further metadata.\n\n")
-
-
   m <- 1            # counts which model
   improvement <- 0  # not meaningful; just initializing ...
   y_name <- as.character(colnames(Xy)[ncol(Xy)])
@@ -144,6 +138,14 @@ FSR <- function(Xy,
   out[["best_formula"]] <- ""
   if(is.null(min_models))
     min_models <- P # 'attempt all x variables additively'
+
+  if(noisy) cat("The data contains", n, "observations (N_train ==", N_train, "and N_test ==", N_test, "),",
+                P_continuous,
+                "continuous features, and", P_factor,
+                "dummy variables. Up to", length(features),
+                "models will be estimated. (And at least", min_models, "models will be estimated.)")
+
+
 
   while((m <= nrow(models)) &&
         ((improvement > threshold_estimate) || m <= min_models) &&
@@ -212,8 +214,8 @@ FSR <- function(Xy,
             cat("model", m, "adjusted R2", out$models$adjR2[m], "\n")
             cat("model", m, "Mean Absolute Predicted Error (MAPE)", out$models$MAPE[m], "\n")
             if(sum(out$models$accepted) > 0){
-              cat("adj R2 improvement over last model:", improvement, "\n")
-              cat("MAPE improvement over last model:", out$models$MAPE[m] - out$models$MAPE[best_m], "\n")
+              cat("adj R2 improvement over best model so far:", improvement, "\n")
+              cat("MAPE improvement over best model so far:", out$models$MAPE[m] - out$models$MAPE[best_m], "\n")
             }
 
             cat("\n\n")
@@ -259,6 +261,7 @@ FSR <- function(Xy,
     return(NULL)
 
   }else{
+    if(noisy) message("\nEstimated ", sum(out$models$estimated), " models. The output will have a data.frame out$models that contains measures of fit and information about each model, such as the formula call. The output is also a nested list object, such that out$model1, out$model2, and so on, contain further metadata. The predict method will automatically use the model with the best validated fit but individual models can also be selected like so:\n\npredict(out, newdata = Xnew, model_to_use = 3) \n\n\n")
     return(out)
   }
 }
