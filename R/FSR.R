@@ -211,9 +211,9 @@ FSR <- function(Xy,
             cat("\n\n")
             cat("model", m, "adjusted R2", out$models$adjR2[m], "\n")
             cat("model", m, "Mean Absolute Predicted Error (MAPE)", out$models$MAPE[m], "\n")
-            if(m > 1){
-              cat("adj R2 improvement over last model:", out$models$adjR2[m] - out$models$adjR2[m - 1], "\n")
-              cat("MAPE improvement over last model:", out$models$MAPE[m] - out$models$MAPE[m - 1], "\n")
+            if(sum(out$models$accepted) > 0){
+              cat("adj R2 improvement over last model:", improvement, "\n")
+              cat("MAPE improvement over last model:", out$models$MAPE[m] - out$models$MAPE[best_m], "\n")
             }
 
             cat("\n\n")
