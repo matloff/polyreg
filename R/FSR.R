@@ -231,7 +231,7 @@ FSR <- function(Xy,
             if(noisy){
               cat("\n\n\n\n")
               cat("Model:", m, "\n\n")
-              cat("The added feature", ifelse(out$models$accepted[m], "WAS", "WAS NOT"), "accepted into the model.")
+              cat("The added feature", ifelse(out$models$accepted[m], "WAS", "WAS NOT"), "accepted into the model.\n\n")
               cat("Adjusted R2", out$models$adjR2[m], "\n")
               cat("Mean Absolute Predicted Error (MAPE)", out$models$MAPE[m], "\n")
               if(sum(out$models$accepted) > 0){
