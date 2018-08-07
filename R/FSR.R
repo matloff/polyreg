@@ -12,7 +12,7 @@
 #' FSR
 #' @param Xy matrix or data.frame; outcome must be in final column.
 #' @param max_poly_degree highest power to raise continuous features; default 3 (cubic).
-#' @param max_interaction_degree highest interaction order; default 1. Also interacts each level of factors with continuous features.
+#' @param max_interaction_degree highest interaction order; default 2 (allow x_i*x_j). Also interacts each level of factors with continuous features.
 #' @param cor_type correlation to be used for adjusted R^2; pseudo R^2 for classification. Default "pearson"; other options "spearman" and "kendall".
 #' @param threshold_include minimum improvement to include a recently added term in the model (pseudo R^2 so scale 0 to 1). -1.001 means 'include all'. Default: 0.01.
 #' @param threshold_estimate minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). -1.001 means 'estimate all'. Default: 0.001.
@@ -27,7 +27,7 @@
 #' @return list with slope coefficients, model details, and measures of fit
 #' @export
 FSR <- function(Xy,
-                max_poly_degree = 3, max_interaction_degree = 1,
+                max_poly_degree = 3, max_interaction_degree = 2,
                 cor_type = "pearson",
                 threshold_include = 0.01,
                 threshold_estimate = 0.001,
@@ -102,10 +102,10 @@ FSR <- function(Xy,
     continuous_features <- c(continuous_features, paste("pow(", cf, ",", i, ")"))
 
   features <- c(continuous_features, factor_features)
-  if(max_interaction_degree > 0){
-    for(i in 1:max_interaction_degree){
+  if(max_interaction_degree > 1){
+    for(i in 2:max_interaction_degree){
       features <- c(features,
-                    apply(combn(c(continuous_features, factor_features), i + 1),
+                    apply(combn(c(continuous_features, factor_features), i),
                         2, isolate_interaction, i))
     }
   }
