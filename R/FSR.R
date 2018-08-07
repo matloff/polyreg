@@ -48,11 +48,14 @@ FSR <- function(Xy,
 
   out <- list()
   class(out) <- "FSR" # nested list, has S3 method
+  out[["standardize"]] <- standardize
   out[["n"]] <- n <- nrow(Xy)
 
   Xy <- as.data.frame(Xy)
   P_factor <- 0
   factor_features <- c() # stores individual levels, omitting one
+
+  y_scale <- if(standardize) sd(Xy[,ncol(Xy)]) else 1
 
   for(i in 1:ncol(Xy)){
 
@@ -207,7 +210,7 @@ FSR <- function(Xy,
             adjR2 <- (N_train - ncol(X_train) - 1)/(N_train - 1)*R2
             out$models$adjR2[m] <- out[[mod(m)]][[paste0("adj_R2_", cor_type)]] <- adjR2
 
-            MAPE <- mean(abs(out[[mod(m)]][["y_hat"]] - y_test))
+            MAPE <- y_scale * mean(abs(out[[mod(m)]][["y_hat"]] - y_test))
             out$models$MAPE[m] <- out[[mod(m)]][["MAPE"]] <- MAPE
 
             if(sum(out$models$accepted) == 0){
@@ -282,6 +285,10 @@ predict.FSR <- function(object, newdata, model_to_use=NULL, noisy=TRUE){
   f <- strsplit(f, "~")[[1]][2]
   f <- formula(paste("~", f))
   X_test <- model_matrix(f = f, d = newdata, noisy = noisy)
+  if(out$standardize)
+    for(i in 1:ncol(X_test))
+      if(N_distinct(X[,i]) > 2)
+        X[,i] <- scale(X[,i])
   return(X_test %*% beta_hat)
 
 
