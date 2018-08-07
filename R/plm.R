@@ -365,7 +365,7 @@ polyOneVsAll <- function(plm.xy, classes,cls=NULL) {
 }
 
 ##################################################################
-# polyfit: generate polynomial terms of data and fit models
+# polyFit: generate polynomial terms of data and fit models
 ##################################################################
 
 # arguments:

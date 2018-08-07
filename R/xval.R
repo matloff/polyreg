@@ -104,8 +104,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
 
 
       pol <- polyFit(train1,i,m,use,pcaMethod=NULL,pcaPortion,glmMethod,
-                     polyMat = train1,stage2deg=stage2deg,cls=cls,
-                     dropout=0)
+                     polyMat = train1,cls=cls, dropout=0)
       pred <- predict(pol, test1, test1)
 
     if (use == "lm") {
