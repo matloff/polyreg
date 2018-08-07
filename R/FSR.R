@@ -287,8 +287,8 @@ predict.FSR <- function(object, newdata, model_to_use=NULL, noisy=TRUE){
   X_test <- model_matrix(f = f, d = newdata, noisy = noisy)
   if(out$standardize)
     for(i in 1:ncol(X_test))
-      if(N_distinct(X[,i]) > 2)
-        X[,i] <- scale(X[,i])
+      if(N_distinct(X_test[,i]) > 2)
+        X_test[,i] <- scale(X_test[,i])
   return(X_test %*% beta_hat)
 
 
