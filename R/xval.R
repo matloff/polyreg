@@ -12,107 +12,70 @@
 
 # return: a vector of mean absolute error (for lm) or accuracy (for glm),
 #         the i-th element of the list is for degree = i
-#' @export
+#" @export
 
-xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
-                     pcaMethod = NULL,pcaPortion = 0.9, glmMethod = "one",
-                     nHoldout=min(10000,round(0.2*nrow(xy))),stage2deg=NULL,
-                     yCol = NULL,printTimes=TRUE,cls=NULL,dropout=0,startDeg=1)
-{
-  if (dropout >= 1) stop("dropout should be less than 1.")
+xvalPoly <- function(xy, maxDeg, maxInteractDeg=maxDeg, use="lm",
+                     pcaMethod=NULL, pcaLocation=NULL, pcaPortion=0.9,
+                     glmMethod="one",
+                     nHoldout=min(10000, round(0.2 * nrow(xy))), stage2deg=NULL,
+                     yCol=NULL, printTimes=TRUE, cls=NULL, dropout=0,
+                     startDeg=1) {
+  if (dropout >= 1) {
+    stop("dropout should be less than 1.")
+  }
 
-  if (!is.null(yCol)) xy <- moveY(xy,yCol)
+  if (!is.null(yCol)) {
+    xy <- moveY(xy, yCol)
+  }
 
-  if(nHoldout > nrow(xy))
-    nHoldout <- round(0.2*nrow(xy))
+  if(nHoldout > nrow(xy)) {
+    nHoldout <- round(0.2 * nrow(xy))
+  }
 
-  y <- xy[,ncol(xy)]
+  y <- xy[, ncol(xy)]
   if (is.factor(y)) {  # change to numeric code for the classes
      y <- as.numeric(y)
-     xy[,ncol(xy)] <- y
+     xy[, ncol(xy)] <- y
   }
-  
-  if (is.null(pcaMethod)) {
-    xdata <- xy[,-ncol(xy), drop=FALSE]
-  } else if (pcaMethod == "prcomp") {
-    
-    tmp <- system.time(
-      xy.pca <- prcomp(xy[,-ncol(xy)])
-    )
-    if (printTimes) cat('PCA time in xvalPoly: ',tmp,'\n')
-    pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
-    for (k in 1:length(pcNo)) {
-      if (pcNo[k] >= pcaPortion)
-        break
-    }
-    if (printTimes) cat(k,' principal comps used\n')
-    xdata <- xy.pca$x[,1:k, drop=FALSE]
-  } else if (pcaMethod == "RSpectra") {
-    require(Matrix)
-    require(RSpectra)
-    xyscale <- scale(xy[,-ncol(xy)], center=TRUE, scale=FALSE)
-    xy.cov <- cov(xyscale)
-    sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
-    class(sparse) <- "dgCMatrix"
-    xy.eig <- eigs(sparse, ncol(sparse))
-    pcNo <- cumsum(xy.eig$values)/sum(xy.eig$values)
-    for (k in 1:length(pcNo)) {
-      if (pcNo[k] >= pcaPortion)
-        break
-    }
-    if (printTimes) cat(k,' principal comps used\n')
-    xdata <- as.matrix(xy[,-ncol(xy)]) %*% xy.eig$vectors[,1:k]
-    
-  } else {
-    stop("pcaMethod should be either NULL, prcomp, or RSpectra")
-  } 
 
-  tmp <- system.time(
-    poly.xy <- getPoly(xdata, maxDeg, maxInteractDeg)
-  )
-  if (printTimes) cat('getPoly time in xvalPoly: ',tmp,'\n')
-
-  xy <- cbind(poly.xy$xdata, y)
-
+  # split input data into training and testing sets
   tmp <- splitData(xy, nHoldout)
   training <- tmp$trainSet
   testing <- tmp$testSet
-  train.y <- training[,ncol(training)]
-  train.x <- training[,-ncol(training)]
-  test.y <- testing[,ncol(testing)]
-  test.x <- testing[,-ncol(testing)]
-#  testIdx <- splitData(xy, nHoldout,TRUE)
+  train.y <- training[, ncol(training)]
+  train.x <- training[, -ncol(training)]
+  test.y <- testing[, ncol(testing)]
+  test.x <- testing[, -ncol(testing)]
 
+  # compute accuracy of fit (via predict) for each degree up to maximum
   acc <- NULL
   for (i in 1:maxDeg) {  # for each degree
-    m <- ifelse(i > maxInteractDeg, maxInteractDeg, i)
-
-    endCol <- poly.xy$endCols[i]
-
+    # handle dropout of columns
     if (dropout != 0 && startDeg <= i) {
-      ndropout <- floor(endCol * dropout)
-      dropoutIdx <- sample(endCol, ndropout, replace = FALSE)
-      train1 <- cbind(train.x[,-dropoutIdx, drop=FALSE], train.y)
-      test1 <- test.x[,-dropoutIdx, drop=FALSE]
+      ndropout <- floor(ncol(xy) * dropout)
+      dropoutIdx <- sample(ncol(xy), ndropout, replace = FALSE)
+      train1 <- cbind(train.x[, -dropoutIdx, drop=FALSE], train.y)
+      test1 <- test.x[, -dropoutIdx, drop=FALSE]
     }
     else {
-      train1 <- cbind(training[,1:endCol], train.y)
-      test1 <- testing[,1:endCol, drop=FALSE]
+      train1 <- training
+      test1 <- test.x
     }
 
-      colnames(train1)[ncol(train1)] <- "y"
+    colnames(train1)[ncol(train1)] <- "y"
 
+    # compute fit and predict based on fit
+    pol <- polyFit(xy=train1, deg=i, use=use, pcaMethod=pcaMethod,
+                   pcaLocation=pcaLocation, pcaPortion=pcaPortion,
+                   glmMethod=glmMethod, cls=cls, dropout=0)
+    pred <- predict(pol, test1)
 
-      pol <- polyFit(train1,i,m,use,pcaMethod=NULL,pcaPortion,glmMethod,
-                     polyMat = train1,cls=cls, dropout=0)
-      pred <- predict(pol, test1, test1)
-
+    # store current degree's accuracy
     if (use == "lm") {
       acc[i] <- mean(abs(pred - test.y))
-    } else
-      acc[i] <- mean(pred == test.y) # accuracy
-    cat('accuracy: ',acc[i],'\n')
-
+    } else {
+      acc[i] <- mean(pred == test.y)
+    }
   } # for each degree
   return(acc)
 }

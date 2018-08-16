@@ -475,7 +475,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
       )
       if (printTimes) cat('getPoly time: ',tmp,'\n')
     }
-    applyPCAOutputs <- applyPCA(polyMat[,-ncol(xy)],pcaMethod)
+    applyPCAOutputs <- applyPCA(polyMat,pcaMethod)
     polyMat <- applyPCAOutputs$xdata
     xy.pca <- applyPCAOutputs$xy.pca
     k <- applyPCAOutputs$k
