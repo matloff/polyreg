@@ -14,3 +14,6 @@ idxs <- sample(1:nrow(cvr),15000)
 cvr15000 <- cvr[idxs,]
 system.time(plot(Rtsne(cvr15000[,-55])$Y,col=cvr15000[,55]))
 
+The results for a subsample of size 2000 are similar.  Here t-sne was
+slightly faster than prVis, 40s to 51 s.
+
