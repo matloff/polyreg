@@ -27,10 +27,12 @@
 #    saveOutputs: if TRUE, return list with gpOut = output of getPoly(), 
 #                  prout = output of prcomp()
 
-prVis <- function(xy,deg=2,nSubSam=2000,nIntervals=3,saveOutputs=FALSE)
+prVis <- function(xy,deg=2,nSubSam=2000,nIntervals=NULL,saveOutputs=FALSE)
 { 
   if (nSubSam > 0) xy <- xy[sample(1:nrow(xy),nSubSam),]
   ydata <- xy[,ncol(xy)]
+  if (is.null(nIntervals) && !is.factor(ydata))
+     stop('Y must be a factor for classif.; set nIntervals for regress.')
   if (!is.factor(ydata)) {
     rng <- range(ydata)
     increm <- (rng[2] - rng[1]) / nIntervals
