@@ -1,0 +1,10 @@
+
+The t-sne method, implemented in R in the Rtsne package, is a method for
+nonlinear projection of data into a two-dimensional submanifold, just
+like plotting the first 2 principle components in PCA.
+
+But t-sne is finicky; choose the wrong values for tuning parameters, and
+you get garbage.  See the excellent account at
+
+https://distill.pub/2016/misread-tsne/
+
