@@ -8,3 +8,6 @@ you get garbage.  See the excellent account at
 
 https://distill.pub/2016/misread-tsne/
 
+So, prVis() seems like a good alternative.  It simply calls getPoly() to
+generate the polynomial expansion of the data, then does PCA.  No tuning
+
