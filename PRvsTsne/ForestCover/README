@@ -1,0 +1,8 @@
+
+Forest Cover data.
+
+On subsample of 15000, Rtsne took 3442 seconds, prVis 393.
+
+Clearly Rtsne case needs turning, e.g. on perplexity.
+
+
