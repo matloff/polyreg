@@ -1,0 +1,8 @@
+
+See http://people.cs.uchicago.edu/~dinoj/manifold/swissroll.html
+
+Artificial dataset generated as mixture of 4 bivariate normals,
+creating a swirl-like image.
+
+Both prVis() and Rtsne() recovered the 4 original objects.
+
