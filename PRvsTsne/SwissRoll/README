@@ -16,5 +16,13 @@ them, at least a hint of them?
 
 3.  prVis() seems to suggest 4 components.
 
+sw <- read.table('swissroll.dat',header=F) 
+plot(prcomp(sw,center=T)$x[,1:2])  # swirl
+plot(Rtsne(sw)$Y)  # suggests 3-5 components
+sw1 <- cbind(sw,0)  # dummy class variable
+sw1[,4] <- as.factor(sw1[,4])  
+prVis(sw1,deg=2,nSubSam=0)  # suggests 4 components
+pr2file('prswiss.jpg') 
+
 
 
