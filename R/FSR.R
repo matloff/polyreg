@@ -285,7 +285,7 @@ predict.FSR <- function(object, newdata, model_to_use=NULL, noisy=TRUE){
   f <- strsplit(f, "~")[[1]][2]
   f <- formula(paste("~", f))
   X_test <- model_matrix(f = f, d = newdata, noisy = noisy)
-  if(out$standardize)
+  if(object$standardize)
     for(i in 1:ncol(X_test))
       if(N_distinct(X_test[,i]) > 2)
         X_test[,i] <- scale(X_test[,i])
