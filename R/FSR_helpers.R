@@ -77,7 +77,10 @@ FSR_estimate <- function(z, Xy){
 
     }else{
 
-      if(m == 1) z[["y_train_mean"]] <- mean(as.numeric(Xy[z$split == "train",ncol(Xy)]) - 1)
+      if(m == 1){
+        z[["y_train_mean"]] <- mean(as.numeric(Xy[z$split == "train",ncol(Xy)]) - 1)
+        z[["training_labels"]] <- levels(Xy[[z$y_name]])
+      }
 
       z[[mod(m)]][["fit"]] <- glm(z$models$formula[m], Xy[z$split == "train",], family = binomial(link = "logit"))
       z$models$estimated[m] <- TRUE
@@ -93,7 +96,7 @@ FSR_estimate <- function(z, Xy){
       pseudo_R2 <- cor(z[[mod(m)]][["y_hat"]], as.numeric(y_test))^2
       z$models$adjR2[m] <- adjR2 <- (z$N_train - z[[mod(m)]][["p"]])/(z$N_train - 1)*pseudo_R2
 
-      z[[mod(m)]][["classified"]] <- factor(levels(Xy[[z$y_name]])[(z[[mod(m)]][["y_hat"]] > z[["y_train_mean"]]) + 1],
+      z[[mod(m)]][["classified"]] <- factor(z[["training_labels"]][(z[[mod(m)]][["y_hat"]] > z[["y_train_mean"]]) + 1],
                                             levels = levels(y_train))
       z$models$test_accuracy[m] <- mean(z[[mod(m)]][["classified"]] == y_test)
 
