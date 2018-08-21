@@ -267,6 +267,30 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
     }
 
   }
+<<<<<<< HEAD
+=======
+}
+
+#' predict.FSR
+#' @param object FSR output. Predictions will be made based on object$best_formula unless model_to_use is provided (as an integer).
+#' @param newdata New Xdata.
+#' @param model_to_use Integer optionally indicating a model to use if object$best_formula is not selected. Example: model_to_use = 3 will use object$models$formula[3].
+#' @return y_hat (predictions using chosen model estimates).
+#' @method predict FSR
+#' @export
+predict.FSR <- function(object, newdata, model_to_use=NULL, noisy=TRUE){
+
+  f <- if(is.null(model_to_use)) object$best_formula else object$models$formula[model_to_use]
+  beta_hat <- if(is.null(model_to_use)) object$best_coeffs else object[[mod(model_to_use)]][["est"]]
+  f <- strsplit(f, "~")[[1]][2]
+  f <- formula(paste("~", f))
+  X_test <- model_matrix(f = f, d = newdata, noisy = noisy)
+  if(object$standardize)
+    for(i in 1:ncol(X_test))
+      if(N_distinct(X_test[,i]) > 2)
+        X_test[,i] <- scale(X_test[,i])
+  return(X_test %*% beta_hat)
+>>>>>>> 47c8b1c1581439783c67fb455337a3c184467b21
 
 
 }
