@@ -2,6 +2,7 @@
 
 S3method(predict,polyFit)
 S3method(predict,FSR)
+S3method(summary,FSR)
 export(FSR)
 export(getPoly)
 export(polyFit)

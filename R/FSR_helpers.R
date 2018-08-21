@@ -1,8 +1,131 @@
-# if !recursive, divides into blocks based on n and max_block_size
-# if recursive, calls block_solve(), rather than solve(), until n/2 < max_block_size
+FSR_estimate <- function(z, Xy){
+
+  y_train <- Xy[z$split == "train", ncol(Xy)]
+  y_test <- Xy[z$split == "test", ncol(Xy)]
+
+  m <- 1            # counts which model
+  improvement <- 0  # not meaningful; just initializing ...
+
+  while((m <= nrow(z$models)) &&
+        ((improvement > z$threshold_estimate) || m <= z$min_models) &&
+        z$unable_to_estimate < z$max_fails){
+
+    if(z$noisy) cat("\n\n\n\nModel:", m, "\n\n")
+    z[[mod(m)]] <- list()
+    z$models$formula[m] <- if(sum(z$models$accepted) == 0) paste(z$y_name, "~", z$models$features[m]) else paste(z[["best_formula"]], "+", z$models$features[m])
+
+    if(z$model_type == "lm"){
+
+      X_train <- model_matrix(formula(z$models$formula[m]), Xy[z$split == "train",], noisy=z$noisy)
+
+      if(!exists("X_train")){
+        if(z$noisy) message("Unable to construct model.matrix for model ",  m, ". Skipping.")
+        z$unable_to_estimate <- z$unable_to_estimate + 1
+      }else{
+
+        z$models$p[m] <- z[[mod(m)]][["p"]] <- ncol(X_train)
+
+        if(z[[mod(m)]][["p"]] >= z$N_train){
+          if(z$noisy) message("There are too few training observations to estimate model ",  m, ". Skipping.")
+          z$unable_to_estimate <- z$unable_to_estimate + 1
+        }else{
+
+          if(sum(z$models$accepted) == 0){ # passing X takes crossproduct first; starting with second iteration,
+            XtX_inv <- block_solve(X = X_train, max_block = z$max_block)
+          }else{  # XtX_inv of the last accepted model is taken as the inverse of the first block
+            XtX_inv <- block_solve(X = X_train, A_inv = XtX_inv_accepted, max_block = z$max_block)
+          }
+          if(!is.null(XtX_inv)){
+
+            z[[mod(m)]][["coeffs"]] <- tcrossprod(XtX_inv, X_train) %*% y_train
+
+            if(m == length(z$models$features)) remove(XtX_inv)
+            if(sum(is.na(z[[mod(m)]][["coeffs"]])) > 0){
+              if(z$noisy) cat("\nfailed to estimate model", m, "skipping...\n")
+              z$unable_to_estimate <- z$unable_to_estimate + 1
+            }else{
+
+              z$models$estimated[m] <- TRUE
+              z[[mod(m)]][["y_hat"]] <- model_matrix(formula(z$models$formula[m]),
+                                                     Xy[z$split == "test", ]) %*% z[[mod(m)]][["coeffs"]]
+
+              R2 <- cor(z[[mod(m)]][["y_hat"]], y_test, method=z$cor_type)^2
+              adjR2 <- (z$N_train - ncol(X_train) - 1)/(z$N_train - 1)*R2 # odd to have penalty mashed up this way...
+              z$models$adjR2[m] <- z[[mod(m)]][[paste0("adj_R2_", z$cor_type)]] <- adjR2
+
+              MAPE <- z$y_scale * mean(abs(z[[mod(m)]][["y_hat"]] - y_test))
+              z$models$MAPE[m] <- z[[mod(m)]][["MAPE"]] <- MAPE
+              improvement <- if(sum(z$models$accepted) == 0) adjR2 else (adjR2 - z$best_adjR2)
+
+              if(improvement > z$threshold_include){
+                z$best_formula <- z$models$formula[m]
+                z[["best_coeffs"]] <- z[[mod(m)]][["coeffs"]]
+                z[["best_adjR2"]] <- adjR2
+                z[["best_MAPE"]] <- MAPE
+                z$models$accepted[m] <- TRUE
+                XtX_inv_accepted <- XtX_inv
+              }
+
+              if(z$noisy) summary(z, estimation_overview=FALSE, results_overview=FALSE, model_number = m)
+            }
+          }else{
+            if(z$noisy) cat("\nunable to estimate Model", m, "likely due to (near) singularity.\n")
+            unable_to_estimate <- unable_to_estimate + 1
+          }
+        }
+      }# end linear model
+
+    }else{
+
+      if(m == 1) z[["y_train_mean"]] <- mean(as.numeric(Xy[z$split == "train",ncol(Xy)]) - 1)
+
+      z[[mod(m)]][["fit"]] <- glm(z$models$formula[m], Xy[z$split == "train",], family = binomial(link = "logit"))
+      z$models$estimated[m] <- TRUE
+      z[[mod(m)]][["coeffs"]] <- beta_hat <- z[[mod(m)]][["fit"]][["coefficients"]]
+
+      z$models$p[m] <- z[[mod(m)]][["p"]] <- length(beta_hat)
+      z$models$AIC[m] <- z[[mod(m)]][["fit"]][["aic"]]
+      z$models$BIC[m] <- z$models$AIC[m] - 2*z[[mod(m)]][["p"]]  + log(z$N_train)*z[[mod(m)]][["p"]]
+
+      z[[mod(m)]][["y_hat"]] <- predict(z[[mod(m)]][["fit"]],
+                                        as.data.frame(model_matrix(as.formula(z$models$formula[m]), Xy[z$split == "test",])))
+
+      pseudo_R2 <- cor(z[[mod(m)]][["y_hat"]], as.numeric(y_test))^2
+      z$models$adjR2[m] <- adjR2 <- (z$N_train - z[[mod(m)]][["p"]])/(z$N_train - 1)*pseudo_R2
+
+      z[[mod(m)]][["classified"]] <- factor(levels(Xy[[z$y_name]])[(z[[mod(m)]][["y_hat"]] > z[["y_train_mean"]]) + 1],
+                                            levels = levels(y_train))
+      z$models$test_accuracy[m] <- mean(z[[mod(m)]][["classified"]] == y_test)
+
+      improvement <- if(sum(z$models$accepted)) (adjR2 - z$best_adjR2) else adjR2
+
+      if(improvement > z$threshold_include){
+
+        z$best_formula <- z$models$formula[m]
+        z[["best_coeffs"]] <- z[[mod(m)]][["coeffs"]]
+        z[["best_adjR2"]] <- adjR2
+        z$models$accepted[m] <- TRUE
+        z[["best_test_accuracy"]] <- z$models$test_accuracy[m]
+      }
+      if(z$noisy) summary(z, estimation_overview=FALSE, results_overview=FALSE, model_number = m)
+    } # end glm()
+    m <- m + 1
+    if(!is.null(z$file_name)) save(z, file=z$file_name)
+
+  } # end WHILE loop
+
+  if(z$noisy) summary(z, estimation_overview=FALSE)
+
+  if(sum(z$models$estimated) == 0) return(NULL) else return(z)
+
+}
+
+
+# if !recursive, divides into blocks based on n and max_block
+# if recursive, calls block_solve(), rather than solve(), until n/2 < max_block
 # note: matrix inversion and several matrix multiplications must be performed on largest blocks!
 # assumes matrices are dense; otherwise, use sparse options...
-# max_block_size chosen by trial-and-error on 2017 MacBook Pro i5 with 16 gigs of RAM
+# max_block chosen by trial-and-error on 2017 MacBook Pro i5 with 16 gigs of RAM
 # (too small == too much subsetting, too big == matrix calculations too taxing)
 #  S, crossprod(X), will be crossprod(X) only at outer call
 # Either S or X should be provided, but not both
@@ -11,7 +134,7 @@
 # for full expressions used below: https://en.wikipedia.org/wiki/Invertible_matrix#Blockwise_inversion
 # returns NULL if inversion fails either due to collinearity or memory exhaustion
 
-block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, A_inv = NULL, recursive=TRUE, noisy=TRUE){
+block_solve  <- function(S = NULL, X = NULL, max_block = 250, A_inv = NULL, recursive=TRUE, noisy=TRUE){
 
   if(is.null(S) == is.null(X))
     stop("Please provide either rectangular matrix as X or a square matrix as S to be inverted by block_solve(). (If X is provided, (X'X)^{-1} is returned but in a more memory efficient manner than providing S = X'X directly).")
@@ -55,7 +178,7 @@ block_solve  <- function(S = NULL, X = NULL, max_block_size = 250, A_inv = NULL,
 
   }
 
-  invert <- if(recursive && (k > max_block_size)) block_solve else solvable
+  invert <- if(recursive && (k > max_block)) block_solve else solvable
 
   if(is.null(A_inv)){
     A_inv <- invert(A, noisy=noisy)
@@ -147,3 +270,6 @@ isolate_interaction <- function(elements, degree){
   }
   return(f)
 }
+
+
+
