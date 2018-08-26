@@ -1,0 +1,28 @@
+
+Comparisons of prVis() and umap() on various datasets:
+
+UCI Satellite Image 
+UCI Pima Diabetes
+UCI Pulsar 
+R Old Faithful
+"Swiss Role" artificial
+
+plot(umap(sat[,-37])$layout,col=sat$V37)
+dim(pima) 
+pima$Diab <- as.factor(pima$Diab)
+plot(umap(pima[,-9])$layout,col=pima$Diab)
+pr2file('umap.pima.jpg') 
+prVis(pima,labels=T,,nSubSam=0) 
+pr2file('prvis.pima.jpg') 
+plot(umap(pima[,-9])$layout,col=pima$Diab) 
+pr2file('umap2.pima.jpg')
+pulsar <- read.csv('~/tmp/HTRU_2.csv',header=F)
+pulsar[,9] <- as.factor(pulsar[,9])
+prVis(pulsar,labels=T,nSubSam=0) 
+plot(umap(pulsar[,-9])$layout,col=pulsar[,9])
+pr2file('umap.pulsar.jpg')
+prVis(pulsar,labels=T,nSubSam=2000) 
+pr2file('prvis2000.pulsar.jpg')
+plot(umap(pulsar[,-9])$layout,col=pulsar[,9])
+pr2file('umap2.pulsar.jpg')
+
