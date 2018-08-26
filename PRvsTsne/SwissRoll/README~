@@ -1,0 +1,20 @@
+
+See http://people.cs.uchicago.edu/~dinoj/manifold/swissroll.html
+
+Artificial dataset generated as mixture of 4 bivariate normals,
+followed by adding a third variable, using
+
+(x,y) -> (x cos x, y, x sin x)
+
+and then seeing what happens when we project back down to 2 dimensions.
+
+1.  PCA creates a swirl-like image, a continuous curve, hiding the fact
+that the data originated with 4 separate components; can we recover
+them, at least a hint of them?
+
+2.  t-sne seems to hint that there are between 3 and 5 components.
+
+3.  prVis() seems to suggest 4 components.
+
+
+
