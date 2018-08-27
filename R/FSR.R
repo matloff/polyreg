@@ -80,7 +80,7 @@ FSR <- function(Xy,
   if(is.null(model_type)){
     out[["model_type"]] <- if(is.factor(Xy[,ncol(Xy)])) "glm" else "lm"
   }else{
-    if(!(model %in% c("lm", "glm")))
+    if(!(model_type %in% c("lm", "glm")))
       stop("model must be either 'lm' or 'glm' or 'NULL' (auto-detect based on y).")
     out[["model_type"]] <- model_type
   }
@@ -89,7 +89,7 @@ FSR <- function(Xy,
       stop("multinomial outcomes not yet implemented.")
     }
   }
-  out[["y_scale"]] <- if(standardize && model == "lm") sd(Xy[,ncol(Xy)]) else 1
+  out[["y_scale"]] <- if(standardize && out$model_type == "lm") sd(Xy[,ncol(Xy)]) else 1
 
   continuous_features <- cf <- colnames(Xy)[-ncol(Xy)][unlist(lapply(Xy[-ncol(Xy)], is_continuous))]
   P_continuous <- length(continuous_features)
@@ -130,7 +130,7 @@ FSR <- function(Xy,
   models[["test_adjR2"]] <- NA  # computes pseudo, most important for glm. for ols, multiple definitions of R^2 equivalent including squared correlation.
                                 # applies the adjustment found in adj R^2 even though out of sample ...
 
-  if(model == "lm"){
+  if(out$model_type == "lm"){
     models[["MAPE"]] <- NA
   }else{
     models[["test_accuracy"]] <- NA
