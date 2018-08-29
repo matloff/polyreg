@@ -82,7 +82,7 @@ FSR_estimate <- function(z, Xy){
         z[["training_labels"]] <- levels(Xy[[z$y_name]])
       }
 
-      z[[mod(m)]][["fit"]] <- glm(z$models$formula[m], Xy[z$split == "train",], family = binomial(link = "logit"))
+      z[[mod(m)]][["fit"]] <- glm(as.formula(z$models$formula[m]), Xy[z$split == "train",], family = binomial(link = "logit"))
       z$models$estimated[m] <- TRUE
       z[[mod(m)]][["coeffs"]] <- beta_hat <- z[[mod(m)]][["fit"]][["coefficients"]]
 
@@ -273,6 +273,5 @@ isolate_interaction <- function(elements, degree){
   }
   return(f)
 }
-
 
 
