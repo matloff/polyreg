@@ -427,8 +427,8 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
     } else if (pcaMethod == "RSpectra") { # use RSpectra for pca
       require(Matrix)
       require(RSpectra)
-      #xyscale <- scale(x[,-ncol(x)], center=TRUE, scale=FALSE)
-      xyscale <- scale(x, center=TRUE, scale=FALSE)
+      ## redundant:
+      ## xyscale <- scale(x, center=TRUE, scale=FALSE) 
       xy.cov <- cov(xyscale)
       sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
       class(sparse) <- "dgCMatrix"
