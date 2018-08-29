@@ -29,7 +29,7 @@
 #    saveOutputs: if TRUE, return list with gpOut = output of getPoly(), 
 #                  prout = output of prcomp()
 
-prVis <- function(xy,labels=FALSE,deg=2,nSubSam=2000,nIntervals=NULL,
+prVis <- function(xy,labels=FALSE,deg=2,nSubSam=0,nIntervals=NULL,
    saveOutputs=FALSE)
 {  
   nrxy <- nrow(xy)
