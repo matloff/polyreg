@@ -103,7 +103,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
       colnames(train1)[ncol(train1)] <- "y"
 
 
-      pol <- polyFit(train1,i,m,use,pcaMethod=NULL,pcaPortion,glmMethod,
+      pol <- polyFit(train1,i,m,use,pcaMethod=NULL,pcaLocation=NULL,pcaPortion,glmMethod,
                      polyMat = train1,cls=cls, dropout=0)
       pred <- predict(pol, test1, test1)
 
