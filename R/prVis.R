@@ -28,9 +28,10 @@
 #                partioning Y range to create labels
 #    saveOutputs: if TRUE, return list with gpOut = output of getPoly(), 
 #                  prout = output of prcomp()
+#    cex: argument to R plot(), controlling point size
 
 prVis <- function(xy,labels=FALSE,deg=2,nSubSam=0,nIntervals=NULL,
-   saveOutputs=FALSE)
+   saveOutputs=FALSE,cex=0.5)
 {  
   nrxy <- nrow(xy)
   ncxy <- ncol(xy)
@@ -60,5 +61,27 @@ prVis <- function(xy,labels=FALSE,deg=2,nSubSam=0,nIntervals=NULL,
   
   if (saveOutputs) 
      return(list(gpOut=polyMat,prout=x.pca))
+}
+
+# intended to be used when a plot produced by prVis() is on the screen;
+# chooses np points at random from the PCA output, writing their row
+# numbers on the plot; if nSubSam > 0 note that these are the numbers
+# from the full dataset; the argument savedPrVisOut is the return value
+# of prVis()
+
+addRowNums <- function(np,savedPrVisOut) 
+{
+   pcax <- savedPrVisOut$prout$x[,1:2]
+   npcax <- nrow(pcax)
+   tmp <- sample(1:npcax,np,replace=FALSE)
+   rowNames <- row.names(pcax[tmp,])
+   print('highlighted rows:')
+   sorted <- sort(as.numeric(rowNames))
+   for (i in 1:length(rowNames)) {
+      rn <- rowNames[i]
+      print(sorted[i])
+      coords <- pcax[rn,]
+      text(coords[1],coords[2],rn)
+   }
 }
 
