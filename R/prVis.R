@@ -36,6 +36,12 @@ prVis <- function(xy,labels=FALSE,deg=2,nSubSam=0,nIntervals=NULL,
   nrxy <- nrow(xy)
   ncxy <- ncol(xy)
 
+  rns <- row.names(xy)
+  if (labels) {
+     xy[,-ncxy] <- scale(xy[,-ncxy])
+  } else xy <- scale(xy)
+  row.names(xy) <- rns
+
   if (nSubSam < nrxy && nSubSam > 0)  
      xy <- xy[sample(1:nrxy,nSubSam),]
 
@@ -72,6 +78,8 @@ prVis <- function(xy,labels=FALSE,deg=2,nSubSam=0,nIntervals=NULL,
 addRowNums <- function(np,savedPrVisOut) 
 {
    pcax <- savedPrVisOut$prout$x[,1:2]
+   if(is.null(row.names(pcax))) 
+      stop('no row names')
    npcax <- nrow(pcax)
    tmp <- sample(1:npcax,np,replace=FALSE)
    rowNames <- row.names(pcax[tmp,])
