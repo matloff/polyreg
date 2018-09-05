@@ -294,6 +294,28 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
 
   rt <- as.data.frame(result)
 
+  # when some dummy variables arise originally from a categorical
+  # variable, their product will be identically 0, i.e. will result in
+  # a column of all 0s; such columns should not be returned below, and
+  # the easiest remedy is to excise them at this point, taking care to
+  # update endCols
+
+  all0 <- function(x) all(x == 0)
+  # rt will keep shrinking below; special care needed!
+  ec <- endCols
+  i <- 0
+  while (TRUE) {
+     i <- i + 1
+     if (i > ncol(rt)) break
+     if (all0(rt[,i])) {
+        tmp <- which(ec >= i)[1]
+        lec <- length(ec)
+        rt[,i] <- NULL
+        ec[tmp:lec] <- ec[tmp:lec] - 1
+     }
+  }
+  endCols <- ec
+
   for (i in 1:ncol(rt)) {
     colnames(rt)[i] <- paste("V", i, sep = "")
   }
@@ -362,6 +384,40 @@ polyOneVsAll <- function(plm.xy, classes,cls=NULL) {
      ft <- clusterApply(cls,1:length(classes),predClassi)
   }
   return(ft)
+}
+
+# to test whenever changes are made to getPoly(); output should be
+
+#    a c bu bv
+# 1  4 2  1  0
+# 2 14 3  0  1
+# 3 17 4  0  0
+# 4 10 5  1  0
+# 5 12 6  0  0
+# > gpx <- getPoly(x,2)
+# > gpx
+# $xdata
+#   V1 V2 V3 V4  V5 V6 V7 V8 V9 V10 V11 V12
+# 1  4  2  1  0  16  4  8  0  4   2   0   0
+# 2 14  3  0  1 196  9 42  0  0   0  14   3
+# 3 17  4  0  0 289 16 68  0  0   0   0   0
+# 4 10  5  1  0 100 25 50  0 10   5   0   0
+# 5 12  6  0  0 144 36 72  0  0   0   0   0
+# 
+# $endCols
+# [1]  4 12
+# 
+# attr(,"class")
+# [1] "polyMatrix"
+
+testGP <- function()
+{
+   require(dummies)
+   x <-
+      data.frame(a=sample(1:20,5),b=factor(c('u','v','w','u','w')),c=2:6)
+   tmp <- dummy(x$b)
+   x <- cbind(x,tmp[,-3])
+   x$b <- NULL
 }
 
 ##################################################################
