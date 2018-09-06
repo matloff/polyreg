@@ -2,3 +2,4 @@
 ^\.Rproj\.user$
 experiments
 data/
+R/newplm.R
