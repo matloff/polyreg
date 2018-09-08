@@ -89,6 +89,7 @@ FSR_estimate <- function(z, Xy){
           tallies <- table(Xy[z$split == "train", ncol(Xy)])
           modal_outcome <- names(tallies)[which.max(tallies)]
           z[["reference_category"]] <- modal_outcome
+          Xy[,ncol(Xy)] <- relevel(Xy[,ncol(Xy)], z$reference_category)
 
           if(z$noisy) message("Multinomial models will be fit with '",
                             modal_outcome,
@@ -98,16 +99,18 @@ FSR_estimate <- function(z, Xy){
 
         }
 
-        # defaults to mean-bias reducing adjusted scores, see ?brglmFit for 'type' options including ML
-        z[[mod(m)]][["fit"]] <- brmultinom(as.formula(z$models$formula[m]),
-                                           Xy[z$split == "train", ],
-                                           ref = z$reference_category)
+        z[[mod(m)]][["fit"]] <- multinom(as.formula(z$models$formula[m]),
+                                         Xy[z$split == "train", ])
+        z[[mod(m)]][["fit"]][["aic"]] <- z[[mod(m)]][["fit"]][["AIC"]]
+
 
         z[[mod(m)]][["coeffs"]] <- coefficients(z[[mod(m)]][["fit"]])
-        # omits nuissance parameters designed to reduce bias etc.
-        # those are found in fit...
-        z$models$P[m] <- z[[mod(m)]][["p"]]<- ncol(z[[mod(m)]][["coeffs"]])
+        z$models$P[m] <- z[[mod(m)]][["p"]] <- ncol(z[[mod(m)]][["coeffs"]])
 
+        # defaults to mean-bias reducing adjusted scores, see ?brglmFit for 'type' options including ML
+        # z[[mod(m)]][["fit"]] <- brmultinom(as.formula(z$models$formula[m]),
+        #                                   Xy[z$split == "train", ],
+        #                                   ref = z$reference_category)
         # for training accuracy, could precede as below
         # fitted values are predicted probabilities for reference category, followed by others, as vector...
         # z[[mod(m)]][["probs"]] <- matrix(z[[mod(m)]][["fit"]][["fitted.values"]], ncol=length(z$training_labels))
@@ -121,7 +124,7 @@ FSR_estimate <- function(z, Xy){
         z[[mod(m)]][["pred_probs"]] <- predictions$probs
         z[[mod(m)]][["classified"]] <- predictions$classified
 
-        z$models$test_accuracy[m] <- mean(y_test == z[[mod(m)]][["classified"]])
+        z$models$test_accuracy[m] <- mean(y_test == as.character(z[[mod(m)]][["classified"]]))
         z$models$test_adj_accuracy[m] <- adj_accuracy <- (z$N_train - z[[mod(m)]][["p"]])/(z$N_train - 1)*z$models$test_accuracy[m]
         improvement <- if(sum(z$models$accepted)) (adj_accuracy - z$best_adj_accuracy) else adj_accuracy
 

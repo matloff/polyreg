@@ -12,7 +12,7 @@
 #' FSR
 #' @param Xy matrix or data.frame; outcome must be in final column.
 #' @param max_poly_degree highest power to raise continuous features; default 3 (cubic).
-#' @param model_type Either 'lm' (linear model), 'logit' (logistic regression currently implemented by glm()), 'multinomial' (multinomial regression via brglm2::brmultinom()), or NULL (auto-detect based on response).
+#' @param model_type Either 'lm' (linear model), 'logit' (logistic regression currently implemented by glm()), 'multinomial' (multinomial regression via nnet::multinom()), or NULL (auto-detect based on response).
 #' @param max_interaction_degree highest interaction order; default 2 (allow x_i*x_j). Also interacts each level of factors with continuous features.
 #' @param cor_type correlation to be used for adjusted R^2; pseudo R^2 for classification. Default "pearson"; other options "spearman" and "kendall".
 #' @param threshold_include minimum improvement to include a recently added term in the model (change in fit originally on 0 to 1 scale). -1.001 means 'include all'. Default: 0.01. (Adjust R^2 for linear models, Pseudo R^2 for logistic regression, out-of-sample accuracy for multinomial models. In latter two cases, the same adjustment for number of predictors is applied as pseudo-R^2.)
@@ -30,7 +30,8 @@
 #' @return list with slope coefficients, model details, and measures of fit
 #' @examples
 #' out <- FSR(mtcars)
-#' @importFrom brglm2 brmultinom
+#' @importFrom nnet multinom
+#' @importFrom stats relevel
 #' @export
 FSR <- function(Xy,
                 max_poly_degree = 3, max_interaction_degree = 2,
@@ -246,9 +247,9 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
 
     cat("The dependent variable is '",  object$y_name, "' and the model will be ",  object$model_type,
         ". ",
-        if(object$model_type == "multinomial") paste0("Multinomial models will be fit with '",
-                                                      object$modal_outcome,
-                                                      "' (the sample mode of the training data) as the reference category. "),
+#        if(object$model_type == "multinomial") paste0("Multinomial models will be fit with '",
+#                                                     object$modal_outcome,
+#                                                      "' (the sample mode of the training data) as the reference category. "),
         " The data contains ", object$N, " observations (N_train == ",
         object$N_train, " and N_test == ", object$N_test,
         "), which were split using seed ", object$seed, ". The data contains ",

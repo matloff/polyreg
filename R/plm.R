@@ -214,7 +214,7 @@ polyMatrix <- function(x, k) {
 #                   interaction terms
 
 # return: a polyMatrix object
-
+# getPoly
 #' @export
 getPoly <- function(xdata, deg, maxInteractDeg = deg)
 {
@@ -403,10 +403,10 @@ polyOneVsAll <- function(plm.xy, classes,cls=NULL) {
 # 3 17  4  0  0 289 16 68  0  0   0   0   0
 # 4 10  5  1  0 100 25 50  0 10   5   0   0
 # 5 12  6  0  0 144 36 72  0  0   0   0   0
-# 
+#
 # $endCols
 # [1]  4 12
-# 
+#
 # attr(,"class")
 # [1] "polyMatrix"
 
@@ -435,7 +435,7 @@ testGP <- function()
 #        regression; 'lmplus' specifies a 2-stage approach, first
 #        fitting lm() on poly X but then fitting regressing Y against
 #        the predicted values from Stage 1
-#   pcamethod: default is NULL, can be either "prcomp" (use the prcomp() 
+#   pcamethod: default is NULL, can be either "prcomp" (use the prcomp()
 #              function to compute PCA) or "RSpectra" (use sparse Matrix and
 #              compute eigenvalues/vectors to compute PCA)
 #   pcaportion: the portion of principal components to be used; default == 0.9.
@@ -451,7 +451,7 @@ testGP <- function()
 polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
      pcaLocation=NULL,pcaPortion=0.9,glmMethod="one",printTimes=TRUE,
      polyMat=NULL,cls=NULL,dropout=0) {
-  
+
   y <- xy[,ncol(xy)]
   if (is.factor(y)) {  # change to numeric code for the classes
      y <- as.numeric(y)
@@ -466,7 +466,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
       xdata <- x
       xy.pca <- NULL
     } else if (pcaMethod == "prcomp") { # use prcomp for pca
-      
+
       tmp <- system.time(
         #xy.pca <- prcomp(x[,-ncol(xy)])
         xy.pca <- prcomp(x)
@@ -484,7 +484,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
       require(Matrix)
       require(RSpectra)
       ## redundant:
-      ## xyscale <- scale(x, center=TRUE, scale=FALSE) 
+      ## xyscale <- scale(x, center=TRUE, scale=FALSE)
       xy.cov <- cov(xyscale)
       sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
       class(sparse) <- "dgCMatrix"
@@ -498,7 +498,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
       if (printTimes) cat(k,' principal comps used\n')
       #xdata <- as.matrix(x[,-ncol(x)]) %*% xy.eig$vectors[,1:k]
       xdata <- as.matrix(x) %*% xy.eig$vectors[,1:k]
-      
+
     } else { # invalid argument
       stop("pcaMethod should be either NULL, prcomp, or RSpectra")
     }
@@ -631,8 +631,8 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
       class(sparse) <- "dgCMatrix"
       xy.eig <- eigs(sparse, ncol(sparse))
       plm.newdata <- as.matrix(polyMat) %*% xy.eig$vectors[,1:object$pcaCol]
-    } 
-    
+    }
+
     plm.newdata <- as.data.frame(plm.newdata)
   }
   else { # polynomial matrix is not provided
@@ -671,7 +671,7 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
           as.matrix(new_data) %*% xy.eig$vectors[,1:object$pcaCol]
         plm.newdata <- as.data.frame(plm.newdata)
       }
-    } 
+    }
   } # end polynomial matrix is not provided
 
   if (!is.null(object$dropout)) {

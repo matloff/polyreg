@@ -17,7 +17,7 @@ FSR(Xy, max_poly_degree = 3, max_interaction_degree = 2,
 
 \item{max_interaction_degree}{highest interaction order; default 2 (allow x_i*x_j). Also interacts each level of factors with continuous features.}
 
-\item{model_type}{Either 'lm' (linear model), 'logit' (logistic regression currently implemented by glm()), 'multinomial' (multinomial regression via brglm2::brmultinom()), or NULL (auto-detect based on response).}
+\item{model_type}{Either 'lm' (linear model), 'logit' (logistic regression currently implemented by glm()), 'multinomial' (multinomial regression via nnet::multinom()), or NULL (auto-detect based on response).}
 
 \item{cor_type}{correlation to be used for adjusted R^2; pseudo R^2 for classification. Default "pearson"; other options "spearman" and "kendall".}
 
