@@ -12,21 +12,25 @@
 #' FSR
 #' @param Xy matrix or data.frame; outcome must be in final column.
 #' @param max_poly_degree highest power to raise continuous features; default 3 (cubic).
-#' @param model_type Either 'lm' (linear model), 'glm' (generalized lm), or NULL (auto-detect based on response).
+#' @param model_type Either 'lm' (linear model), 'logit' (logistic regression currently implemented by glm()), 'multinomial' (multinomial regression via brglm2::brmultinom()), or NULL (auto-detect based on response).
 #' @param max_interaction_degree highest interaction order; default 2 (allow x_i*x_j). Also interacts each level of factors with continuous features.
 #' @param cor_type correlation to be used for adjusted R^2; pseudo R^2 for classification. Default "pearson"; other options "spearman" and "kendall".
-#' @param threshold_include minimum improvement to include a recently added term in the model (pseudo R^2 so scale 0 to 1). -1.001 means 'include all'. Default: 0.01.
+#' @param threshold_include minimum improvement to include a recently added term in the model (change in fit originally on 0 to 1 scale). -1.001 means 'include all'. Default: 0.01. (Adjust R^2 for linear models, Pseudo R^2 for logistic regression, out-of-sample accuracy for multinomial models. In latter two cases, the same adjustment for number of predictors is applied as pseudo-R^2.)
 #' @param threshold_estimate minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). -1.001 means 'estimate all'. Default: 0.001.
 #' @param standardize if TRUE (not default), standardizes continuous variables.
 #' @param pTraining portion of data for training
 #' @param pValidation portion of data for validation
 #' @param min_models minimum number of models to estimate. Defaults to the number of features (unless P > N).
 #' @param max_fails maximum number of models to FSR() can fail on computationally before exiting. Default == 2.
-#' @param file_name If a file name (and path) is provided, saves output after each model is estimated as an .RData file. ex: file_name = "results.RData"
+#' @param file_name If a file name (and path) is provided, saves output after each model is estimated as an .RData file. ex: file_name = "results.RData". See also store_fit for options as to how much to store in the outputted object.
+#' @param store_fit If file_name is provided, FSR() will return coefficients, measures of fit, and call details. Save entire fit objects? Options include "none" (default, just save those other items), "accepted_only" (only models that meet the threshold), and "all".
 #' @param max_block Most of the linear algebra is done recursively in blocks to ease memory managment. Default 250. Changing up or down may slow things...
 #' @param noisy display measures of fit, progress, etc. Recommended.
 #' @param seed Automatically set but can also be passed as paramater.
 #' @return list with slope coefficients, model details, and measures of fit
+#' @examples
+#' out <- FSR(mtcars)
+#' @importFrom brglm2 brmultinom
 #' @export
 FSR <- function(Xy,
                 max_poly_degree = 3, max_interaction_degree = 2,
@@ -39,6 +43,7 @@ FSR <- function(Xy,
                 min_models = NULL,
                 max_fails = 2,
                 file_name = NULL,
+                store_fit = "none",
                 max_block = 250,
                 noisy = TRUE, seed = NULL){
 
@@ -48,6 +53,7 @@ FSR <- function(Xy,
     stop("pTraining and pValidation should all be between 0 and 1 and sum to 1.")
   stopifnot(is.numeric(threshold_estimate))
   stopifnot(is.numeric(threshold_include))
+  stopifnot(store_fit %in% c("none", "accepted", "all"))
 
   out <- list()
   class(out) <- "FSR" # nested list, has S3 method
@@ -66,11 +72,13 @@ FSR <- function(Xy,
         Xy[,i] <- as.factor(Xy[,i])    # switch this to as.character() in case of nuissance
     }
 
-    if(is.factor(Xy[,i])){
+    if(is.factor(Xy[,i]) && i == ncol(Xy)){
+
       P_factor <- P_factor + k - 1
       tmp <- paste(colnames(Xy)[i], "==", paste0("\'", levels(Xy[,i])[-1], "\'"))
       tmp <- paste0("(", tmp, ")")
       factor_features <- c(factor_features, tmp)
+
     }else{
       if(standardize)
         Xy[,i] <- scale(Xy[,i])
@@ -78,17 +86,13 @@ FSR <- function(Xy,
   }
 
   if(is.null(model_type)){
-    out[["model_type"]] <- if(is.factor(Xy[,ncol(Xy)])) "glm" else "lm"
+    out[["model_type"]] <- if(is.factor(Xy[,ncol(Xy)])) if(N_distinct(Xy[,ncol(Xy)]) > 2) "multinomial" else "logit" else "lm"
   }else{
-    if(!(model_type %in% c("lm", "glm")))
-      stop("model must be either 'lm' or 'glm' or 'NULL' (auto-detect based on y).")
+    if(!(model_type %in% c("lm", "logit", "multinomial")))
+      stop("model must be either 'lm', 'logit', 'multinomial', or NULL (auto-detect based on y).")
     out[["model_type"]] <- model_type
   }
-  if(out$model_type == "glm"){
-    if(N_distinct(Xy[,ncol(Xy)]) > 2){
-      stop("multinomial outcomes not yet implemented.")
-    }
-  }
+
   out[["y_scale"]] <- if(standardize && out$model_type == "lm") sd(Xy[,ncol(Xy)]) else 1
 
   continuous_features <- cf <- colnames(Xy)[-ncol(Xy)][unlist(lapply(Xy[-ncol(Xy)], is_continuous))]
@@ -114,7 +118,7 @@ FSR <- function(Xy,
   }
 
 
-  out[["seed"]] <- if(is.null(seed)) as.integer(runif(1, 0, 10000000)) else seed
+  out[["seed"]] <- if(is.null(seed)) sample(.Random.seed, 1) else seed
   set.seed(out$seed)
   if(noisy) message("set seed to ", out$seed, ".\n")
 
@@ -127,8 +131,13 @@ FSR <- function(Xy,
 
   models <- data.frame(features = features, stringsAsFactors = FALSE)
   models[["estimated"]]<- FALSE # will be updated based on whether successful ...
-  models[["test_adjR2"]] <- NA  # computes pseudo, most important for glm. for ols, multiple definitions of R^2 equivalent including squared correlation.
-                                # applies the adjustment found in adj R^2 even though out of sample ...
+
+  if(out$model_type == "multinomial"){
+    models[["test_adj_accuracy"]] <- NA
+  }else{
+    models[["test_adjR2"]] <- NA  # computes pseudo, most important for logit. for ols, multiple definitions of R^2 equivalent including squared correlation.
+    # applies the adjustment found in adj R^2 even though out of sample ...
+  }
 
   if(out$model_type == "lm"){
     models[["MAPE"]] <- NA
@@ -160,6 +169,7 @@ FSR <- function(Xy,
   out[["max_fails"]] <- max_fails
   out[["min_models"]] <- min_models
   out[["file_name"]] <- file_name
+  out[["store_fit"]] <- store_fit
   out[["max_block"]] <- 250
   out[["noisy"]] <- noisy
 
@@ -173,36 +183,50 @@ FSR <- function(Xy,
 #' @param object FSR output. Predictions will be made based on object$best_formula unless model_to_use is provided (as an integer).
 #' @param newdata New Xdata.
 #' @param model_to_use Integer optionally indicating a model to use if object$best_formula is not selected. Example: model_to_use = 3 will use object$models$formula[3].
+#' @param standardize Logical--standardize numeric variables? (If NULL, the default, bypasses and decides based on object$standardize.)
+#' @param noisy Display output?
 #' @return y_hat (predictions using chosen model estimates).
 #' @method predict FSR
 #' @export
-predict.FSR <- function(object, newdata, model_to_use=NULL, noisy=TRUE){
+predict.FSR <- function(object, newdata, model_to_use=NULL, standardize=NULL, noisy=TRUE){
 
-  f <- if(is.null(model_to_use)) object$best_formula else object$models$formula[model_to_use]
+  m <- if(is.null(model_to_use)) which(object$best_formula == object$models$formula) else model_to_use
+
+  f <- if(is.null(m)) object$best_formula else object$models$formula[m]
 
   f <- strsplit(f, "~")[[1]][2]
   f <- formula(paste("~", f))
   X_test <- model_matrix(f = f, d = newdata, noisy = noisy)
-  if(object$standardize)
-    for(i in 1:ncol(X_test))
-      if(N_distinct(X_test[,i]) > 2)
+
+  if(!is.null(standardize) && object$standardize)
+    for(i in which(apply(X_test, 2, N_distinct) > 2))
         X_test[,i] <- scale(X_test[,i])
 
   if(object$model_type == "lm"){
 
-    beta_hat <- if(is.null(model_to_use)) object$best_coeffs else object[[mod(model_to_use)]][["est"]]
-    return(X_test %*% beta_hat)
+    return(X_test %*% object[[mod(m)]][["est"]]) # should this be coeffs?
 
   }else{
 
-    m <- model_to_use
-    if(is.null(model_to_use))
-       m <- which(object$best_formula == object$models$formula)
-
     pred <- list()
-    pred[["y_star_hat"]] <- predict(object[[mod(m)]][["fit"]], as.data.frame(X_test))
-    pred[["classified"]] <- factor(object[["training_labels"]][(z[[mod(m)]][["y_hat"]] > object[["y_train_mean"]]) + 1],
-                                   levels = levels(y_train))
+
+    if(object$model_type == "logit"){
+
+      pred[["y_star_hat"]] <- X_test %*% object[[mod(m)]][["coeffs"]]
+      # pred[["y_star_hat"]] <- predict(object[[mod(m)]][["fit"]], as.data.frame(X_test)) # glm S3
+      pred[["classified"]] <- factor(object[["training_labels"]][(z[[mod(m)]][["y_hat"]] > object[["y_train_mean"]]) + 1],
+                                     levels = levels(y_train))
+
+    }else{  # multinomial case
+
+        Xb <- X_test %*% t(object[[mod(m)]][["coeffs"]])
+        p_K <- 1/(1 + rowSums(exp(Xb))) # prob of being in reference category
+        pred[["probs"]] <- cbind(p_K, exp(Xb)*p_K)
+        colnames(pred$probs)[1] <- object$reference_category
+        pred[["classified"]] <- classify(pred$probs)
+
+    }
+
     return(pred)
   }
 
@@ -220,15 +244,22 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
 
   if(estimation_overview){
 
-    cat("The data contains ", object$N, " observations (N_train == ",
-        object$N_train, " and N_test ==", object$N_test, "), which were split using seed",
-        object$seed, ". The data contains ",
+    cat("The dependent variable is '",  object$y_name, "' and the model will be ",  object$model_type,
+        ". ",
+        if(object$model_type == "multinomial") paste0("Multinomial models will be fit with '",
+                                                      object$modal_outcome,
+                                                      "' (the sample mode of the training data) as the reference category. "),
+        " The data contains ", object$N, " observations (N_train == ",
+        object$N_train, " and N_test == ", object$N_test,
+        "), which were split using seed ", object$seed, ". The data contains ",
         object$P_continuous,
-        " continuous features, and ", object$P_factor,
-        " dummy variables. Up to ", min(length(object$features), object$N_train - 1),
-        " models will be estimated. (And at least ", object$min_models,
-        " models will be estimated.) Each model will add a feature, which will be included in subsequent models if it explains at least an additional ",
-        object$threshold_include, " of variance on [0, 1]. ", sep="")
+        " continuous features and ", object$P_factor,
+        " dummy variables. Between ", object$min_models, " and ",
+        min(nrow(object$models), object$N_train - 1),
+        " models will be estimated. Each model will add a feature, ",
+        "which will be included in subsequent models if it explains at least an additional ",
+        object$threshold_include,
+        " of variance out-of-sample (after adjusting for the additional term on [0, 1]).\n\n", sep="")
 
   }
 
@@ -244,8 +275,15 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
         cat("\nThe best model has Adjusted R^2:", object$best_adjR2)
         cat("\nThe best model has Mean Absolute Predicted Error:", object$best_MAPE)
       }else{
-        cat("\nThe best model has pseudo R^2 (adjusted for P and N):", object$best_adjR2)
-        cat("\nThe best model has out-of-sample accuracy:", object$best_test_accuracy)
+        if(object$model_type == "logit"){
+          cat("\nThe best model has pseudo R^2 (adjusted for P and N):",
+              object$best_adjR2)
+          cat("\nThe best model has out-of-sample accuracy:",
+              object$best_test_accuracy)
+        }else{
+          cat("\nThe best model has out-of-sample accuracy (adjusted for P and N):",
+              object$best_adj_accuracy)
+        }
       }
       cat("\n\nThe output has a data.frame out$models that contains measures of fit and information abz each model, such as the formula call. The output is also a nested list such that if the output is called 'out', out$model1, out$model2, and so on, contain further metadata. The predict method will automatically use the model with the best validated fit but individual models can also be selected like so:\n\npredict(z, newdata = Xnew, model_to_use = 3) \n\n")
     }
@@ -254,35 +292,43 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
   if(!is.null(model_number)){
 
     m <- model_number
-    cat("The added feature", ifelse(object$models$accepted[m], "WAS", "WAS NOT"), "accepted into the model.\n\n")
-    cat("Adjusted R2", object$models$adjR2[m], "\n")
+    cat("The added feature", ifelse(object$models$accepted[m], "WAS", "WAS NOT"),
+        "accepted into the model.\n\n")
 
     if(object$model_type == "lm"){
 
+      cat("Adjusted R2", object$models$adjR2[m], "\n")
       cat("Mean Absolute Predicted Error (MAPE)", object$models$MAPE[m], "\n")
 
       if(sum(object$models$accepted[1:m]) > 1){
 
         cat("adjusted R^2 improvement over best model so far:",
-            object$models$adjR2[m] - max(object$models$adjR2[1:(m-1)], na.rm=TRUE), "\n")
-        cat("MAPE improvement over best model so far:", object$models$MAPE[m] - max(object$models$MAPE[1:(m-1)], na.rm=TRUE), "\n\n\n")
+            object$models$adjR2[m] - max(object$models$adjR2[1:(m-1)], na.rm=TRUE),
+            "\n")
+        cat("MAPE improvement over best model so far:",
+            object$models$MAPE[m] - max(object$models$MAPE[1:(m-1)], na.rm=TRUE),
+            "\n\n\n")
 
       }
     }else{
+
+      if(object$model_type == "logit")
+        cat("Pseudo R2 (adjusted for P and N)", object$models$adjR2[m], "\n")
 
       cat("(training) AIC:",  object$models$AIC[m], "\n")
       cat("(training) BIC:",  object$models$BIC[m], "\n")
       cat("(test) classification accuracy:", object$models$test_accuracy[m], "\n")
 
       if(sum(object$models$accepted) > 1){
-        cat("pseudo-R^2 (adjusted based on P and N) improvement over best model so far:",
-            object$models$adjR2[m] - max(object$models$adjR2[1:(m-1)], na.rm=TRUE), "\n")
         cat("Classification accuracy improvement on the test data:",
-            object$models$test_accuracy[m] - max(object$models$accuracy[1:(m-1)], na.rm=TRUE), "\n")
+            object$models$test_accuracy[m] - max(object$models$test_accuracy[1:(m-1)], na.rm=TRUE),
+            "\n")
+        if(object$model_type == "logit"){
+          cat("pseudo-R^2 (adjusted based on P and N) improvement over best model so far:",
+              object$models$adjR2[m] - max(object$models$adjR2[1:(m-1)], na.rm=TRUE),
+              "\n")
+        }
       }
     }
-
   }
-
-
 }

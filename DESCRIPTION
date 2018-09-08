@@ -3,7 +3,7 @@ Title: Polynomial Regression
 Version: 0.0.0.9000
 Authors@R: c(person("Norman", "Matloff", email = "matloff@cs.ucdavis.edu", role = c("aut", "cre")),
            person("Xi", "Cheng", email = "xicheng0821@gmail.com", role = c("aut")),
-           person("Peter", "Mohanty", email = "pete.mohanty@gmail.com", role = c("aut")),
+           person("Pete", "Mohanty", email = "pete.mohanty@gmail.com", role = c("aut")),
            person("Bohdan", "Khomtchouk", email = "bohdan@stanford.edu", role = c("aut")), 
            person("Matthew", "Kotila", email = "mrkotila@ucdavis.edu", role = c("aut")), 
            person("Robin", "Yancey", email = "reyancey@ucdavis.edu", role = c("aut")) 
