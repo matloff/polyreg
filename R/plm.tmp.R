@@ -579,10 +579,13 @@ applyPCA <- function(x, pcaMethod=NULL,pcaPortion,printTimes) {
       xy.pca <- prcomp(x)
     )
     if (printTimes) cat('PCA time: ',tmp,'\n')
-    pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
-    for (k in 1:length(pcNo)) {
-      if (pcNo[k] >= pcaPortion)
-        break
+    if (pcaPortion > 1.0) k <- pcaPortion else {
+       k <- 0
+       pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
+       for (k in 1:length(pcNo)) {
+         if (pcNo[k] >= pcaPortion)
+           break
+       }
     }
     if (printTimes) cat(k,' principal comps used\n')
     xdata <- xy.pca$x[,1:k, drop=FALSE]
