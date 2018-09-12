@@ -464,42 +464,38 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
      cat('new codes for Y: ',classes,'\n')
      xy[,ncol(xy)] <- y
   } else classes <- FALSE
-  xy.pca <- NULL
-  k <- 0
+  xdata <- xy[,-ncol(xy)]
 
-  # get (dimensionally reduced) polynomially expanded input data
-  if (is.null(pcaMethod)) { # no pca
-    if (is.null(polyMat)) { # polynomial matrix is not provided
-      xdata <- xy[,-ncol(xy), drop=FALSE]
+  doPCA <- !is.null(pcaMethod)
+
+  # poly matrix already provided, and if not need to create it now?
+  if (is.null(polyMat)) 
+     if (!doPCA || (doPCA && pcaLocation == 'back'))  {
+         tmp <- system.time(
+           polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
+         )
+         if (printTimes) cat('getPoly time: ',tmp,'\n')
+     }
+
+  if (doPCA)  {  # start PCA section
+    # safety checks first
+    stopifnot(pcaLocation %in% c('front','back'))
+    # can't do PCA with R factors or char
+    if (!all(apply(xdata,2,is.numeric)))
+       stop('X data must be numeric for PCA')
+    if (pcaLocation == 'front') {
       tmp <- system.time(
         polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
       )
       if (printTimes) cat('getPoly time: ',tmp,'\n')
     }
-  } else if (pcaLocation == "front") { # we apply pca to input data
-    applyPCAOutputs <- applyPCA(xy[,-ncol(xy), drop=FALSE],pcaMethod)
-    xdata <- applyPCAOutputs$xdata
-    xy.pca <- applyPCAOutputs$xy.pca
-    k <- applyPCAOutputs$k
-    tmp <- system.time(
-      polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
-    )
-    if (printTimes) cat('getPoly time: ',tmp,'\n')
-  } else if (pcaLocation == "back") { # we apply pca to polynomial data
-    if (is.null(polyMat)) { # polynomial matrix is not provided
-      xdata <- xy[,-ncol(xy), drop=FALSE]
-      tmp <- system.time(
-        polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
-      )
-      if (printTimes) cat('getPoly time: ',tmp,'\n')
-    }
-    applyPCAOutputs <- applyPCA(polyMat,pcaMethod)
+    applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion)
     polyMat <- applyPCAOutputs$xdata
     xy.pca <- applyPCAOutputs$xy.pca
     k <- applyPCAOutputs$k
-  } else { # invalid argument
-    stop("pcaLocation should be either NULL, front, or back")
-  }
+
+  }  # end PCA section
+
   plm.xy <- as.data.frame(cbind(polyMat,y))
 
   # fit
@@ -563,12 +559,12 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
 # 09/11/18, NM: moved this function out of polyFit(), now standalone,
 # for readability
-applyPCA <- function(x, pcaMethod=NULL) {
+applyPCA <- function(x, pcaMethod=NULL,pcaPortion) {
   if (is.null(pcaMethod)) { # do not use pca
     xdata <- x
     xy.pca <- NULL
   } else if (pcaMethod == "prcomp") { # use prcomp for pca
-
+  browser()
     tmp <- system.time(
       #xy.pca <- prcomp(x[,-ncol(xy)])
       xy.pca <- prcomp(x)
