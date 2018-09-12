@@ -489,12 +489,16 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
       )
       if (printTimes) cat('getPoly time: ',tmp,'\n')
     }
-    applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion)
+    applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion,printTimes)
     polyMat <- applyPCAOutputs$xdata
     xy.pca <- applyPCAOutputs$xy.pca
     k <- applyPCAOutputs$k
 
-  }  # end PCA section
+  # end PCA section
+  }  else { 
+     xy.pca <- NULL
+     k <- 0
+  }
 
   plm.xy <- as.data.frame(cbind(polyMat,y))
 
@@ -547,7 +551,9 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
     } # more than two classes
 
   } else stop('invalid "use" argument')
-  pcaPrn <- ifelse(pcaMethod == TRUE, pcaPortion, 0)
+
+  # create return value and wrap up
+  pcaPrn <- if(pcaMethod) pcaPortion else 0
   me<-list(xy=xy,degree=deg,maxInteractDeg=maxInteractDeg,use=use,
     poly.xy=plm.xy,fit=ft,PCA=pcaMethod,pca.portion=pcaPrn,
     pca.xy=xy.pca,pcaCol=k,pcaLocation=pcaLocation,glmMethod=glmMethod,
@@ -559,12 +565,11 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
 # 09/11/18, NM: moved this function out of polyFit(), now standalone,
 # for readability
-applyPCA <- function(x, pcaMethod=NULL,pcaPortion) {
+applyPCA <- function(x, pcaMethod=NULL,pcaPortion,printTimes) {
   if (is.null(pcaMethod)) { # do not use pca
     xdata <- x
     xy.pca <- NULL
   } else if (pcaMethod == "prcomp") { # use prcomp for pca
-  browser()
     tmp <- system.time(
       #xy.pca <- prcomp(x[,-ncol(xy)])
       xy.pca <- prcomp(x)
@@ -621,8 +626,11 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
 
   use <- object$use
 
+  # the next few dozen lines are devoted to forming plm.newdata(), which
+  # ultimately be fed into predict.lm(), predict.glm() or whatever
+
   if (!is.null(polyMat)) { # polynomial matrix is provided
-    if (is.null(object$PCA)) {
+    if (is.null(object$PCA)) {  # no PCA 
       plm.newdata <- polyMat
     } else if (object$PCA == "prcomp") {
       plm.newdata <- predict(object$pca.xy, polyMat)[,1:object$pcaCol]
