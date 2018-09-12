@@ -478,19 +478,24 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
      }
 
   if (doPCA)  {  # start PCA section
+
     # safety checks first
     stopifnot(pcaLocation %in% c('front','back'))
     # can't do PCA with R factors or char
     if (!all(apply(xdata,2,is.numeric)))
        stop('X data must be numeric for PCA')
+
     if (pcaLocation == 'front') {
-      tmp <- system.time(
-        polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
-      )
-      if (printTimes) cat('getPoly time: ',tmp,'\n')
+       applyPCAOutputs <- applyPCA(xdata,pcaMethod,pcaPortion,printTimes)
+       xdata <- applyPCAOutputs$xdata
+       tmp <- system.time(
+         polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
+       )
+       if (printTimes) cat('getPoly time: ',tmp,'\n')
+    } else  {  # 'back'
+       applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion,printTimes)
+       polyMat <- applyPCAOutputs$xdata
     }
-    applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion,printTimes)
-    polyMat <- applyPCAOutputs$xdata
     xy.pca <- applyPCAOutputs$xy.pca
     k <- applyPCAOutputs$k
 
@@ -553,7 +558,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   } else stop('invalid "use" argument')
 
   # create return value and wrap up
-  pcaPrn <- if(pcaMethod) pcaPortion else 0
+  pcaPrn <- if(doPCA) pcaPortion else 0
   me<-list(xy=xy,degree=deg,maxInteractDeg=maxInteractDeg,use=use,
     poly.xy=plm.xy,fit=ft,PCA=pcaMethod,pca.portion=pcaPrn,
     pca.xy=xy.pca,pcaCol=k,pcaLocation=pcaLocation,glmMethod=glmMethod,
@@ -619,7 +624,6 @@ applyPCA <- function(x, pcaMethod=NULL,pcaPortion,printTimes) {
 
 # return: predicted values of newdata, IN THE FORM OF NUMERICAL CLASS CODES
 
-#' @export
 predict.polyFit <- function(object,newdata,polyMat=NULL)
 {
   # note: newdata doesn't have y column
@@ -629,8 +633,11 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
   # the next few dozen lines are devoted to forming plm.newdata(), which
   # ultimately be fed into predict.lm(), predict.glm() or whatever
 
+  doPCA <- !is.null(object$PCA)
+
   if (!is.null(polyMat)) { # polynomial matrix is provided
-    if (is.null(object$PCA)) {  # no PCA 
+    # if (is.null(object$PCA)) {  # no PCA 
+    if (!doPCA) {  # no PCA 
       plm.newdata <- polyMat
     } else if (object$PCA == "prcomp") {
       plm.newdata <- predict(object$pca.xy, polyMat)[,1:object$pcaCol]
@@ -642,11 +649,9 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
       xy.eig <- eigs(sparse, ncol(sparse))
       plm.newdata <- as.matrix(polyMat) %*% xy.eig$vectors[,1:object$pcaCol]
     }
-
     plm.newdata <- as.data.frame(plm.newdata)
-  }
-  else { # polynomial matrix is not provided
-    if (is.null(object$PCA)) {
+  } else  { # polynomial matrix is not provided
+    if (!doPCA) {
       plm.newdata <-
         getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
     } else if (object$PCA == "prcomp") {
