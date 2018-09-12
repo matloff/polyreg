@@ -440,7 +440,9 @@ testGP <- function()
 #   pcaMethod: default is NULL, can be either "prcomp" (use the prcomp()
 #              function to compute PCA) or "RSpectra" (use sparse Matrix and
 #              compute eigenvalues/vectors to compute PCA)
-#   pcaPortion: the portion of principal components to be used; default == 0.9.
+#   pcaPortion: number of principal components to be used; if < 1, this
+#               specifies a desired proportion of explained variance,
+#               otherwise the actual number of components
 #   pcaLocation: if 'front', compute principal comps and then form
 #                polynomial in them; if 'back', do the opposite;
 #                relevant only if pcaMethod is non-NULL
@@ -571,10 +573,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 # 09/11/18, NM: moved this function out of polyFit(), now standalone,
 # for readability
 applyPCA <- function(x, pcaMethod=NULL,pcaPortion,printTimes) {
-  if (is.null(pcaMethod)) { # do not use pca
-    xdata <- x
-    xy.pca <- NULL
-  } else if (pcaMethod == "prcomp") { # use prcomp for pca
+  if (pcaMethod == "prcomp") { # use prcomp for pca
     tmp <- system.time(
       #xy.pca <- prcomp(x[,-ncol(xy)])
       xy.pca <- prcomp(x)
