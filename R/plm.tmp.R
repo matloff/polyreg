@@ -581,7 +581,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
   # create return value and wrap up
   pcaPrn <- if(doPCA) pcaPortion else 0
-  me<-list(xy=xy,degree=deg,maxInteractDeg=maxInteractDeg,use=use,
+  me <-list(xy=xy,degree=deg,maxInteractDeg=maxInteractDeg,use=use,
     poly.xy=plm.xy,fit=ft,PCA=pcaMethod,pca.portion=pcaPrn,
     pca.xy=xy.pca,pcaCol=k,pcaLocation=pcaLocation,glmMethod=glmMethod,
     classes=classes, dropout=dropoutIdx)
