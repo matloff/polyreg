@@ -435,8 +435,8 @@ testGP <- function()
 #   deg: the degree of the polynomial terms
 #   maxInteractDeg: the max degree of dummy and nondummy predictor variables
 #                   interaction terms
-#   use: can be "lm" for linear regreesion, and "glm" for logistic
-#        regression
+#   use: can be "lm" for linear regreesion, "glm" for logistic
+#        regression, or "mvrlm" for multivariate-response lm()
 #   pcaMethod: default is NULL, can be either "prcomp" (use the prcomp()
 #              function to compute PCA) or "RSpectra" (use sparse Matrix and
 #              compute eigenvalues/vectors to compute PCA)
@@ -523,41 +523,51 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
   if (use == 'lmplus') {
     stop('lmplus not implemented yet')
-  } else if (use == "lm") {
+  }
+
+  if (!use %in% c('lm','glm','mvrlm')) 
+     stop('"use" must be "lm", "glm" or "mvrlm"')
+  
+  if (use == "lm") {
     tmp <- system.time(
        ft <- lm(y~., data = plm.xy)
     )
     if (printTimes) cat('lm() time: ',tmp,'\n')
     glmMethod <- NULL
-  } else if (use == "glm") {
-    classes <- unique(y)
-    if (length(classes) == 2) {
-      plm.xy$y <- as.numeric(ifelse(plm.xy$y == classes[1], 1, 0))
-      tmp <- system.time(
-      ft <- glm(y~., family = binomial(link = "logit"), data = plm.xy)
-      )
-      if (printTimes) cat('2-class glm() time: ',tmp,'\n')
-      glmMethod <- NULL
-    }  # end 2-class case
-    else { # more than two classes
-      if (glmMethod == "all") { # all-vs-all
-        tmp <- system.time(ft <- polyAllVsAll(plm.xy, classes))
-        if (printTimes) cat('all-vs-all glm() time: ',tmp,'\n')
-      } else if (glmMethod == "one") { # one-vs-all
-        tmp <- system.time(
-           ft <- polyOneVsAll(plm.xy, classes,cls)
-        )
-        if (printTimes) cat('one-vs-all glm() time: ',tmp,'\n')
-      } else if (glmMethod == "multlog") { # multinomial logistics
-         require(nnet)
-        tmp <- system.time(
-        ft <- multinom(y~., plm.xy)
-        )
-        if (printTimes) cat('multlog time: ', tmp, '\n')
+  } else if (use == "glm" || use == 'mvrlm') {
+       classes <- unique(y)  # see preprocessing of y, start of this ftn
+       if (use == 'glm') {
+          if (length(classes) == 2) {
+            # plm.xy$y <- as.numeric(ifelse(plm.xy$y == classes[1], 1, 0))
+            plm.xy$y <- as.numeric(plm.xy$y == classes[1])
+            tmp <- system.time(
+            ft <- glm(y~., family = binomial(link = "logit"), data = plm.xy)
+            )
+            if (printTimes) cat('2-class glm() time: ',tmp,'\n')
+            glmMethod <- NULL
+          }  # end 2-class case
+          else { # more than two classes
+            if (glmMethod == "all") { # all-vs-all
+              tmp <- system.time(ft <- polyAllVsAll(plm.xy, classes))
+              if (printTimes) cat('all-vs-all glm() time: ',tmp,'\n')
+            } else if (glmMethod == "one") { # one-vs-all
+              tmp <- system.time(
+                 ft <- polyOneVsAll(plm.xy, classes,cls)
+              )
+              if (printTimes) cat('one-vs-all glm() time: ',tmp,'\n')
+            } else if (glmMethod == "multlog") { # multinomial logistics
+               require(nnet)
+              tmp <- system.time(
+              ft <- multinom(y~., plm.xy)
+              )
+              if (printTimes) cat('multlog time: ', tmp, '\n')
+            }
+          } # more than two classes
+      # end 'glm' case
+      }  else  {  # 'mvrlm' case
       }
-    } # more than two classes
 
-  } else stop('invalid "use" argument')
+  }  # end 'glm'/'mvrlm' case 
 
   # create return value and wrap up
   pcaPrn <- if(doPCA) pcaPortion else 0
@@ -632,8 +642,8 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
 
   use <- object$use
 
-  # the next few dozen lines are devoted to forming plm.newdata(), which
-  # ultimately be fed into predict.lm(), predict.glm() or whatever
+  # the next few dozen lines are devoted to forming plm.newdata, which
+  # will ultimately be fed into predict.lm(), predict.glm() or whatever
 
   doPCA <- !is.null(object$PCA)
 
