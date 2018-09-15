@@ -21,20 +21,19 @@ transits <- function(img,nr,nc,deg,maxFlips=10,maxBright=255)
 
    ## works for small number of rows, not large; "sapply() ATTEMPTS to
    ## create a matrix..."
-   ## inct <- as.data.frame(t(inc))
-   ## tmp <- sapply(inct,getNewX,nr,maxFlips)
    inct <- as.data.frame(t(inc))
-   tmp <- lapply(inct,getNewX,nr,maxFlips)
-   browser()
-#       tmp <- NULL
-#       for (i in 1:nrow(inc)) {
-#          rw <- as.matrix(inc[i,])
-#          tmp <- cbind(tmp,getNewX(rw,nr,maxFlips))
-#       }
+   tmp <- sapply(inct,getNewX,nr,maxFlips)
    xformedImg <- cbind(t(tmp),img[,nc])
-   names(xformedImg)[nc] <- 'y'
+   xformedImg <- as.data.frame(xformedImg)
+   names(xformedImg)[ncol(xformedImg)] <- 'y'
+   browser()
 
-   # now need to do the regression
+   # may have some 0 cols, due to overly conservative setting of
+   # maxFlips
+   all0 <- function(col)  all(col == 0)
+   zeroCols <- which(apply(xformedImg,2,all0))
+   xformedImg[zeroCols] <- NULL
+   browser()
 
 }
 
@@ -60,14 +59,15 @@ getNewX <- function(oneImg,nr,maxFlips)
 
 getFlips <- function(inc,maxFlips) 
 {
-   flips <- function(x) x[-length(x)]!= x[-1]
+   # flips <- function(x) x[-length(x)]!= x[-1]
+   flips <- function(x) x[-1] == 1 & x[-length(x)] == 0
    flipCount <- function(x) sum(flips(x))
-   horiz <- apply(inc,1,flipCount) / 2
+   horiz <- apply(inc,1,flipCount) 
    th <- table(horiz)
    h <- as.vector(th)
    names(h) <- names(th) 
    names(h) <- paste0('h',names(h))
-   vert <- apply(inc,2,flipCount) / 2
+   vert <- apply(inc,2,flipCount) 
    tv <- table(vert)
    v <- as.vector(tv)
    names(v) <- names(tv) 
