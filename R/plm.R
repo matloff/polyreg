@@ -232,10 +232,10 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
   # anticipating parallel verion: a chunk might have a nondummy with
   # only 2 values in that chunk
   # is_dummy <- (lapply(lapply(xdata, table), length)==2)
-  ## NM, 9/16/18: check_dummy did not account for cols with all 0s or
-  ## all 1s, fixed now
-  ## check_dummy <- function(xcol)
-  ##    identical(unique(xcol),0:1) || identical(unique(xcol),1:0)
+  # NM, 9/16/18: check_dummy did not account for cols with all 0s or
+  # all 1s, fixed now
+  # check_dummy <- function(xcol)
+  #    identical(unique(xcol),0:1) || identical(unique(xcol),1:0)
   check_dummy <- function(xcol) {
      uxcol <- unique(xcol)                                                      
      setequal(uxcol,0:1) || uxcol == 0 || uxcol == 1   
@@ -305,24 +305,23 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
   # a column of all 0s; such columns should not be returned below, and
   # the easiest remedy is to excise them at this point, taking care to
   # update endCols
+  # REMOVED, by NM, 9/16/18
 
-  # REMOVED, by NM, 9/16/18; see ## lines:
-
-##   all0 <- function(x) all(x == 0)
-##   # rt will keep shrinking below; special care needed!
-##   ec <- endCols
-##   i <- 0
-##   while (TRUE) {
-##      i <- i + 1
-##      if (i > ncol(rt)) break
-##      if (all0(rt[,i])) {
-##         tmp <- which(ec >= i)[1]
-##         lec <- length(ec)
-##         rt[,i] <- NULL
-##         ec[tmp:lec] <- ec[tmp:lec] - 1
-##      }
-##   }
-##   endCols <- ec
+  #   all0 <- function(x) all(x == 0)
+  #   # rt will keep shrinking below; special care needed!
+  #   ec <- endCols
+  #   i <- 0
+  #   while (TRUE) {
+  #      i <- i + 1
+  #      if (i > ncol(rt)) break
+  #      if (all0(rt[,i])) {
+  #         tmp <- which(ec >= i)[1]
+  #         lec <- length(ec)
+  #         rt[,i] <- NULL
+  #         ec[tmp:lec] <- ec[tmp:lec] - 1
+  #      }
+  #   }
+  #   endCols <- ec
 
   for (i in 1:ncol(rt)) {
     colnames(rt)[i] <- paste("V", i, sep = "")
