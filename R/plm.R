@@ -214,8 +214,55 @@ polyMatrix <- function(x, k) {
 #                   interaction terms
 
 # return: a polyMatrix object
-# getPoly
-#' @export
+
+# examples:
+
+# > x <- cbind(1:2,3:4,5:6) 
+# # 3 degree-1 terms, 3 squares, 3 cross products
+# > as.data.frame(x); getPoly(x,2)$xdata 
+#   V1 V2 V3
+# 1  1  3  5
+# 2  2  4  6
+#   V1 V2 V3 V4 V5 V6 V7 V8 V9
+# 1  1  3  5  1  9 25  3  5 15
+# 2  2  4  6  4 16 36  8 12 24
+# x12 <- x[,1:2]
+
+# # 2 degree-1 terms, 2 squares, 1 "ab" cross product, 2 cubes, 2 "a^2b"
+# cross products
+# > as.data.frame(x12); getPoly(x12,3)$xdata 
+#   V1 V2
+# 1  1  3
+# 2  2  4
+#   V1 V2 V3 V4 V5 V6 V7 V8 V9
+# 1  1  3  1  9  3  1 27  9  3
+# 2  2  4  4 16  8  8 64 32 16
+
+# account for the idempotent nature of powers of dummies
+# > x <- cbind(c(1,0,1),c(1,1,0),c(1,1,1),c(0,0,1))
+# # 4 degree-1 terms,C(4,2) degree-2 terms
+# > as.data.frame(x); getPoly(x,2)$xdata
+#   V1 V2 V3 V4
+# 1  1  1  1  0
+# 2  0  1  1  0
+# 3  1  0  1  1
+#   V1 V2 V3 V4 V5 V6 V7 V8 V9 V10
+# 1  1  1  1  0  1  1  0  1  0   0
+# 2  0  1  1  0  0  0  0  1  0   0
+# 3  1  0  1  1  0  1  1  0  0   1
+# # now add c(4,3) degree-3 terms
+# > as.data.frame(x); getPoly(x,3)$xdata
+#   V1 V2 V3 V4
+# 1  1  1  1  0
+# 2  0  1  1  0
+# 3  1  0  1  1
+#   V1 V2 V3 V4 V5 V6 V7 V8 V9 V10 V11 V12 V13 V14
+# 1  1  1  1  0  1  1  0  1  0   0   1   0   0   0
+# 2  0  1  1  0  0  0  0  1  0   0   0   0   0   0
+# 3  1  0  1  1  0  1  1  0  0   1   0   0   1   0
+
+
+
 getPoly <- function(xdata, deg, maxInteractDeg = deg)
 {
 
@@ -237,8 +284,10 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
   # check_dummy <- function(xcol)
   #    identical(unique(xcol),0:1) || identical(unique(xcol),1:0)
   check_dummy <- function(xcol) {
-     uxcol <- unique(xcol)                                                      
-     setequal(uxcol,0:1) || uxcol == 0 || uxcol == 1   
+     uxcol <- unique(xcol)
+     if (length(uxcol) == 1)
+        return(uxcol == 0 || uxcol == 1) 
+     setequal(uxcol,0:1) 
   }
   is_dummy <- sapply(xdata, check_dummy)
   dummy <- xdata[, is_dummy, drop = FALSE]
