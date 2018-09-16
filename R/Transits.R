@@ -2,18 +2,26 @@
 # image classification of B&W images, based on transitions from 0 to 1
 # or vice versa
 
+#####################  transitFit() and helpers  ########################
+
+transitFit <- function() 
+{
+
+}
+
+#####################  transits() and helpers  ########################
+
 # arguments:
 
 # img:  image data frame, one row per pixel row, class ID in last col
 # nr, nc:  numbers of rows and cols of pixels in one image
-# deg:  desired polynomial degree
 # maxBright: max pixel value 
  
 # value:
  
 # S3 object of class 'transits', to be fed into predict.transits()
 
-transits <- function(img,nr,nc,deg,maxFlips=10,maxBright=255) 
+transits <- function(img,nr,nc,maxFlips=10,maxBright=255) 
 {
    # convert to 0,1
    inc <- img[,-nc]
@@ -23,18 +31,17 @@ transits <- function(img,nr,nc,deg,maxFlips=10,maxBright=255)
    ## create a matrix..."
    inct <- as.data.frame(t(inc))
    tmp <- sapply(inct,getNewX,nr,maxFlips)
-   xformedImg <- cbind(t(tmp),img[,nc])
-   xformedImg <- as.data.frame(xformedImg)
+   xformedImg <- as.data.frame(t(tmp))
+   xformedImg <- cbind(xformedImg,img[,nc])
    names(xformedImg)[ncol(xformedImg)] <- 'y'
-   browser()
 
    # may have some 0 cols, due to overly conservative setting of
    # maxFlips
    all0 <- function(col)  all(col == 0)
-   zeroCols <- which(apply(xformedImg,2,all0))
+   xformedImg1 <- xformedImg[,-ncol(xformedImg)]
+   zeroCols <- which(apply(xformedImg1,2,all0))
    xformedImg[zeroCols] <- NULL
-   browser()
-
+   xformedImg
 }
 
 getNewX <- function(oneImg,nr,maxFlips) 
@@ -42,6 +49,8 @@ getNewX <- function(oneImg,nr,maxFlips)
    # get transition counts
    inc <- matrix(oneImg,byrow=TRUE,nrow=nr)
    tmp <- getFlips(inc,maxFlips)
+   if (length(tmp) > maxFlips) 
+      stop('maxFlips set too small')
 
    # form new X vector for this image
    maxFlips1 <- maxFlips + 1
