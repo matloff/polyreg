@@ -1,3 +1,8 @@
+
+
+
+#### 09/11/18, NM:  overhauling this file, kind of a mess
+
 ##################################################################
 # combnDeg: generate the degree distribution of different X's
 ##################################################################
@@ -214,55 +219,8 @@ polyMatrix <- function(x, k) {
 #                   interaction terms
 
 # return: a polyMatrix object
-
-# examples:
-
-# > x <- cbind(1:2,3:4,5:6) 
-# # 3 degree-1 terms, 3 squares, 3 cross products
-# > as.data.frame(x); getPoly(x,2)$xdata 
-#   V1 V2 V3
-# 1  1  3  5
-# 2  2  4  6
-#   V1 V2 V3 V4 V5 V6 V7 V8 V9
-# 1  1  3  5  1  9 25  3  5 15
-# 2  2  4  6  4 16 36  8 12 24
-# x12 <- x[,1:2]
-
-# # 2 degree-1 terms, 2 squares, 1 "ab" cross product, 2 cubes, 2 "a^2b"
-# cross products
-# > as.data.frame(x12); getPoly(x12,3)$xdata 
-#   V1 V2
-# 1  1  3
-# 2  2  4
-#   V1 V2 V3 V4 V5 V6 V7 V8 V9
-# 1  1  3  1  9  3  1 27  9  3
-# 2  2  4  4 16  8  8 64 32 16
-
-# account for the idempotent nature of powers of dummies
-# > x <- cbind(c(1,0,1),c(1,1,0),c(1,1,1),c(0,0,1))
-# # 4 degree-1 terms,C(4,2) degree-2 terms
-# > as.data.frame(x); getPoly(x,2)$xdata
-#   V1 V2 V3 V4
-# 1  1  1  1  0
-# 2  0  1  1  0
-# 3  1  0  1  1
-#   V1 V2 V3 V4 V5 V6 V7 V8 V9 V10
-# 1  1  1  1  0  1  1  0  1  0   0
-# 2  0  1  1  0  0  0  0  1  0   0
-# 3  1  0  1  1  0  1  1  0  0   1
-# # now add c(4,3) degree-3 terms
-# > as.data.frame(x); getPoly(x,3)$xdata
-#   V1 V2 V3 V4
-# 1  1  1  1  0
-# 2  0  1  1  0
-# 3  1  0  1  1
-#   V1 V2 V3 V4 V5 V6 V7 V8 V9 V10 V11 V12 V13 V14
-# 1  1  1  1  0  1  1  0  1  0   0   1   0   0   0
-# 2  0  1  1  0  0  0  0  1  0   0   0   0   0   0
-# 3  1  0  1  1  0  1  1  0  0   1   0   0   1   0
-
-
-
+# getPoly
+#' @export
 getPoly <- function(xdata, deg, maxInteractDeg = deg)
 {
 
@@ -279,10 +237,7 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
   # anticipating parallel verion: a chunk might have a nondummy with
   # only 2 values in that chunk
   # is_dummy <- (lapply(lapply(xdata, table), length)==2)
-  # NM, 9/16/18: check_dummy did not account for cols with all 0s or
-  # all 1s, fixed now
-  # check_dummy <- function(xcol)
-  #    identical(unique(xcol),0:1) || identical(unique(xcol),1:0)
+  # utst <- transits(mntst[,-785]),28,28
   check_dummy <- function(xcol) {
      uxcol <- unique(xcol)
      if (length(uxcol) == 1)
@@ -354,23 +309,21 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
   # a column of all 0s; such columns should not be returned below, and
   # the easiest remedy is to excise them at this point, taking care to
   # update endCols
-  # REMOVED, by NM, 9/16/18
 
-  #   all0 <- function(x) all(x == 0)
-  #   # rt will keep shrinking below; special care needed!
-  #   ec <- endCols
-  #   i <- 0
-  #   while (TRUE) {
-  #      i <- i + 1
-  #      if (i > ncol(rt)) break
-  #      if (all0(rt[,i])) {
-  #         tmp <- which(ec >= i)[1]
-  #         lec <- length(ec)
-  #         rt[,i] <- NULL
-  #         ec[tmp:lec] <- ec[tmp:lec] - 1
-  #      }
-  #   }
-  #   endCols <- ec
+#   all0 <- function(x) all(x == 0)
+#   ec <- endCols
+#   i <- 0
+#   while (TRUE) {
+#      i <- i + 1
+#      if (i > ncol(rt)) break
+#      if (all0(rt[,i])) {
+#         tmp <- which(ec >= i)[1]
+#         lec <- length(ec)
+#         rt[,i] <- NULL
+#         ec[tmp:lec] <- ec[tmp:lec] - 1
+#      }
+#   }
+#   endCols <- ec
 
   for (i in 1:ncol(rt)) {
     colnames(rt)[i] <- paste("V", i, sep = "")
@@ -485,115 +438,80 @@ testGP <- function()
 #       classification case, this must be either an R factor or a
 #       numeric code for the various classes
 #   deg: the degree of the polynomial terms
-#   maxinteractdeg: the max degree of dummy and nondummy predictor variables
+#   maxInteractDeg: the max degree of dummy and nondummy predictor variables
 #                   interaction terms
-#   use: can be "lm" for linear regreesion, and "glm" for logistic
-#        regression; 'lmplus' specifies a 2-stage approach, first
-#        fitting lm() on poly X but then fitting regressing Y against
-#        the predicted values from Stage 1
-#   pcamethod: default is NULL, can be either "prcomp" (use the prcomp()
+#   use: can be "lm" for linear regreesion, "glm" for logistic
+#        regression, or "mvrlm" for multivariate-response lm()
+#   pcaMethod: default is NULL, can be either "prcomp" (use the prcomp()
 #              function to compute PCA) or "RSpectra" (use sparse Matrix and
 #              compute eigenvalues/vectors to compute PCA)
-#   pcaportion: the portion of principal components to be used; default == 0.9.
-#   glmmethod: which method ("all" for all-vs-all, "one" for one-vs-all,
+#   pcaPortion: number of principal components to be used; if < 1, this
+#               specifies a desired proportion of explained variance,
+#               otherwise the actual number of components
+#   pcaLocation: if 'front', compute principal comps and then form
+#                polynomial in them; if 'back', do the opposite;
+#                relevant only if pcaMethod is non-NULL
+#   glmMethod: which method ("all" for all-vs-all, "one" for one-vs-all,
 #              "multlog" for multinomial logistic regression)
 #              to use for multi-class classification
-#   printtimes: whether to print the time of pca, getPoly, lm, or glm.
-#   polyMat: if non-NULL, then polynomial matrix will be passed in
+#   printTimes: whether to print the time of PCA, getPoly, lm, or glm.
+#   polyMat: if non-NULL, then polynomial matrix will be passed in 
+#   cls:  R 'parallel' cluster
 
 # return: the object of class polyFit
 
-#' @export
 polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
-     pcaLocation=NULL,pcaPortion=0.9,glmMethod="one",printTimes=TRUE,
+     pcaLocation='front',pcaPortion=0.9,glmMethod="one",printTimes=TRUE,
      polyMat=NULL,cls=NULL,dropout=0) {
 
   y <- xy[,ncol(xy)]
   if (is.factor(y)) {  # change to numeric code for the classes
      y <- as.numeric(y)
+     classes <- unique(y)
+     cat('new codes for Y: ',classes,'\n')
      xy[,ncol(xy)] <- y
-  }
-  classes <- FALSE
-  xy.pca <- NULL
-  k <- 0
+  } else classes <- FALSE
+  xdata <- xy[,-ncol(xy)]
 
-  applyPCA <- function(x, pcaMethod=NULL) {
-    if (is.null(pcaMethod)) { # do not use pca
-      xdata <- x
-      xy.pca <- NULL
-    } else if (pcaMethod == "prcomp") { # use prcomp for pca
+  doPCA <- !is.null(pcaMethod)
 
-      tmp <- system.time(
-        #xy.pca <- prcomp(x[,-ncol(xy)])
-        xy.pca <- prcomp(x)
-      )
-      if (printTimes) cat('PCA time: ',tmp,'\n')
-      pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
-      for (k in 1:length(pcNo)) {
-        if (pcNo[k] >= pcaPortion)
-          break
-      }
-      if (printTimes) cat(k,' principal comps used\n')
-      xdata <- xy.pca$x[,1:k, drop=FALSE]
+  # poly matrix already provided, and if not need to create it now?
+  if (is.null(polyMat)) 
+     if (!doPCA || (doPCA && pcaLocation == 'back'))  {
+         tmp <- system.time(
+           polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
+         )
+         if (printTimes) cat('getPoly time: ',tmp,'\n')
+     }
 
-    } else if (pcaMethod == "RSpectra") { # use RSpectra for pca
-      require(Matrix)
-      require(RSpectra)
-      ## redundant:
-      ## xyscale <- scale(x, center=TRUE, scale=FALSE)
-      xy.cov <- cov(xyscale)
-      sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
-      class(sparse) <- "dgCMatrix"
-      xy.pca <- NULL
-      xy.eig <- eigs(sparse, ncol(sparse))
-      pcNo <- cumsum(xy.eig$values)/sum(xy.eig$values)
-      for (k in 1:length(pcNo)) {
-        if (pcNo[k] >= pcaPortion)
-          break
-      }
-      if (printTimes) cat(k,' principal comps used\n')
-      #xdata <- as.matrix(x[,-ncol(x)]) %*% xy.eig$vectors[,1:k]
-      xdata <- as.matrix(x) %*% xy.eig$vectors[,1:k]
+  if (doPCA)  {  # start PCA section
 
-    } else { # invalid argument
-      stop("pcaMethod should be either NULL, prcomp, or RSpectra")
+    # safety checks first
+    stopifnot(pcaLocation %in% c('front','back'))
+    # can't do PCA with R factors or char
+    if (!all(apply(xdata,2,is.numeric)))
+       stop('X data must be numeric for PCA')
+
+    if (pcaLocation == 'front') {
+       applyPCAOutputs <- applyPCA(xdata,pcaMethod,pcaPortion,printTimes)
+       xdata <- applyPCAOutputs$xdata
+       tmp <- system.time(
+         polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
+       )
+       if (printTimes) cat('getPoly time: ',tmp,'\n')
+    } else  {  # 'back'
+       applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion,printTimes)
+       polyMat <- applyPCAOutputs$xdata
     }
-    return(list(xdata=xdata,xy.pca=xy.pca,k=k))
-  }
-
-  # get (dimensionally reduced) polynomially expanded input data
-  if (is.null(pcaLocation)) { # no pca
-    if (is.null(polyMat)) { # polynomial matrix is not provided
-      xdata <- xy[,-ncol(xy), drop=FALSE]
-      tmp <- system.time(
-        polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
-      )
-      if (printTimes) cat('getPoly time: ',tmp,'\n')
-    }
-  } else if (pcaLocation == "front") { # we apply pca to input data
-    applyPCAOutputs <- applyPCA(xy[,-ncol(xy), drop=FALSE],pcaMethod)
-    xdata <- applyPCAOutputs$xdata
     xy.pca <- applyPCAOutputs$xy.pca
     k <- applyPCAOutputs$k
-    tmp <- system.time(
-      polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
-    )
-    if (printTimes) cat('getPoly time: ',tmp,'\n')
-  } else if (pcaLocation == "back") { # we apply pca to polynomial data
-    if (is.null(polyMat)) { # polynomial matrix is not provided
-      xdata <- xy[,-ncol(xy), drop=FALSE]
-      tmp <- system.time(
-        polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
-      )
-      if (printTimes) cat('getPoly time: ',tmp,'\n')
-    }
-    applyPCAOutputs <- applyPCA(polyMat,pcaMethod)
-    polyMat <- applyPCAOutputs$xdata
-    xy.pca <- applyPCAOutputs$xy.pca
-    k <- applyPCAOutputs$k
-  } else { # invalid argument
-    stop("pcaLocation should be either NULL, front, or back")
+
+  # end PCA section
+  }  else { 
+     xy.pca <- NULL
+     k <- 0
   }
+
   plm.xy <- as.data.frame(cbind(polyMat,y))
 
   # fit
@@ -609,52 +527,117 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   }
 
   if (use == 'lmplus') {
-    stop('lmplus not implemented yet')
-  } else if (use == "lm") {
+    stop('lmplus not implemented')
+  }
+
+  if (!use %in% c('lm','glm','mvrlm')) 
+     stop('"use" must be "lm", "glm" or "mvrlm"')
+  
+  if (use == "lm") {
     tmp <- system.time(
        ft <- lm(y~., data = plm.xy)
     )
     if (printTimes) cat('lm() time: ',tmp,'\n')
     glmMethod <- NULL
-  } else if (use == "glm") {
-    classes <- unique(y)
-    if (length(classes) == 2) {
-      plm.xy$y <- as.numeric(ifelse(plm.xy$y == classes[1], 1, 0))
-      tmp <- system.time(
-      ft <- glm(y~., family = binomial(link = "logit"), data = plm.xy)
-      )
-      if (printTimes) cat('2-class glm() time: ',tmp,'\n')
-      glmMethod <- NULL
-    }  # end 2-class case
-    else { # more than two classes
-      if (glmMethod == "all") { # all-vs-all
-        tmp <- system.time(
-        ft <- polyAllVsAll(plm.xy, classes)
-        )
-        if (printTimes) cat('all-vs-all glm() time: ',tmp,'\n')
-      } else if (glmMethod == "one") { # one-vs-all
-        tmp <- system.time(
-           ft <- polyOneVsAll(plm.xy, classes,cls)
-        )
-        if (printTimes) cat('one-vs-all glm() time: ',tmp,'\n')
-      } else if (glmMethod == "multlog") { # multinomial logistics
-         require(nnet)
-        tmp <- system.time(
-        ft <- multinom(y~., plm.xy)
-        )
-        if (printTimes) cat('multlog time: ', tmp, '\n')
+  } else if (use == "glm" || use == 'mvrlm') {
+       classes <- unique(y)  # see preprocessing of y, start of this ftn
+       if (use == 'glm') {
+          if (length(classes) == 2) {
+            # plm.xy$y <- as.numeric(ifelse(plm.xy$y == classes[1], 1, 0))
+            plm.xy$y <- as.numeric(plm.xy$y == classes[1])
+            tmp <- system.time(
+            ft <- glm(y~., family = binomial(link = "logit"), data = plm.xy)
+            )
+            if (printTimes) cat('2-class glm() time: ',tmp,'\n')
+            glmMethod <- NULL
+          }  # end 2-class case
+          else { # more than two classes
+            if (glmMethod == "all") { # all-vs-all
+              tmp <- system.time(ft <- polyAllVsAll(plm.xy, classes))
+              if (printTimes) cat('all-vs-all glm() time: ',tmp,'\n')
+            } else if (glmMethod == "one") { # one-vs-all
+              tmp <- system.time(
+                 ft <- polyOneVsAll(plm.xy, classes,cls)
+              )
+              if (printTimes) cat('one-vs-all glm() time: ',tmp,'\n')
+            } else if (glmMethod == "multlog") { # multinomial logistics
+               require(nnet)
+              tmp <- system.time(
+              ft <- multinom(y~., plm.xy)
+              )
+              if (printTimes) cat('multlog time: ', tmp, '\n')
+            }
+          } # more than two classes
+      # end 'glm' case
+      }  else  {  # 'mvrlm' case
+            require(dummies)
+            dms <- dummy(y)
+            dms <- as.data.frame(dms)
+            dxy <- cbind(plm.xy[,-ncol(plm.xy)],dms)
+            nms <- names(dms)
+            addnames <- paste0(nms,collapse=',')
+            frml <- paste0('cbind(',addnames,') ~ .,data=dxy')
+            # somehow as.formula() has a problem here, so back to basics
+            cmd <- paste0('ft <- lm(',frml,')')
+            eval(parse(text=cmd))
       }
-    } # more than two classes
 
-  }
-  pcaPrn <- ifelse(pcaMethod == TRUE, pcaPortion, 0)
-  me<-list(xy=xy,degree=deg,maxInteractDeg=maxInteractDeg,use=use,
+  }  # end 'glm'/'mvrlm' case 
+
+  # create return value and wrap up
+  pcaPrn <- if(doPCA) pcaPortion else 0
+  me <-list(xy=xy,degree=deg,maxInteractDeg=maxInteractDeg,use=use,
     poly.xy=plm.xy,fit=ft,PCA=pcaMethod,pca.portion=pcaPrn,
     pca.xy=xy.pca,pcaCol=k,pcaLocation=pcaLocation,glmMethod=glmMethod,
     classes=classes, dropout=dropoutIdx)
   class(me) <- "polyFit"
   return(me)
 
+}
+
+# 09/11/18, NM: moved this function out of polyFit(), now standalone,
+# for readability
+applyPCA <- function(x, pcaMethod=NULL,pcaPortion,printTimes) {
+  if (pcaMethod == "prcomp") { # use prcomp for pca
+    tmp <- system.time(
+      #xy.pca <- prcomp(x[,-ncol(xy)])
+      xy.pca <- prcomp(x)
+    )
+    if (printTimes) cat('PCA time: ',tmp,'\n')
+    if (pcaPortion > 1.0) k <- pcaPortion else {
+       k <- 0
+       pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
+       for (k in 1:length(pcNo)) {
+         if (pcNo[k] >= pcaPortion)
+           break
+       }
+    }
+    if (printTimes) cat(k,' principal comps used\n')
+    xdata <- xy.pca$x[,1:k, drop=FALSE]
+
+  } else if (pcaMethod == "RSpectra") { # use RSpectra for pca
+    require(Matrix)
+    require(RSpectra)
+    ## redundant:
+    ## xyscale <- scale(x, center=TRUE, scale=FALSE)
+    xy.cov <- cov(xyscale)
+    sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
+    class(sparse) <- "dgCMatrix"
+    xy.pca <- NULL
+    xy.eig <- eigs(sparse, ncol(sparse))
+    pcNo <- cumsum(xy.eig$values)/sum(xy.eig$values)
+    for (k in 1:length(pcNo)) {
+      if (pcNo[k] >= pcaPortion)
+        break
+    }
+    if (printTimes) cat(k,' principal comps used\n')
+    #xdata <- as.matrix(x[,-ncol(x)]) %*% xy.eig$vectors[,1:k]
+    xdata <- as.matrix(x) %*% xy.eig$vectors[,1:k]
+
+  } else { # invalid argument
+    stop("pcaMethod should be either NULL, prcomp, or RSpectra")
+  }
+  return(list(xdata=xdata,xy.pca=xy.pca,k=k))
 }
 
 ##################################################################
@@ -668,15 +651,22 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
 # return: predicted values of newdata, IN THE FORM OF NUMERICAL CLASS CODES
 
-#' @export
 predict.polyFit <- function(object,newdata,polyMat=NULL)
 {
   # note: newdata doesn't have y column
 
   use <- object$use
 
+  # the next few dozen lines are devoted to forming plm.newdata, which
+  # will ultimately be fed into predict.lm(), predict.glm() or whatever;
+  # to do this, newdata, the argument above, must be expanded to
+  # polynomial form (if the latter is not already provided in polyMat),
+  # and/or run through PCA
+
+  doPCA <- !is.null(object$PCA)
+
   if (!is.null(polyMat)) { # polynomial matrix is provided
-    if (is.null(object$PCA)) {
+    if (!doPCA) {  # no PCA 
       plm.newdata <- polyMat
     } else if (object$PCA == "prcomp") {
       plm.newdata <- predict(object$pca.xy, polyMat)[,1:object$pcaCol]
@@ -688,14 +678,12 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
       xy.eig <- eigs(sparse, ncol(sparse))
       plm.newdata <- as.matrix(polyMat) %*% xy.eig$vectors[,1:object$pcaCol]
     }
-
     plm.newdata <- as.data.frame(plm.newdata)
-  }
-  else { # polynomial matrix is not provided
-    if (is.null(object$PCA)) {
+  } else  { # polynomial matrix is not provided
+    if (!doPCA) {
       plm.newdata <-
         getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
-    } else if (object$PCA == "prcomp") {
+    } else if (object$PCA == "prcomp") {  # doPCA
       if (object$pcaLocation == "front") {
         new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
         plm.newdata <-
@@ -727,7 +715,7 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
           as.matrix(new_data) %*% xy.eig$vectors[,1:object$pcaCol]
         plm.newdata <- as.data.frame(plm.newdata)
       }
-    }
+    }  # end doPCA
   } # end polynomial matrix is not provided
 
   if (!is.null(object$dropout)) {
@@ -735,62 +723,67 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
   }
 
   if (object$use == "lmplus") {
-    stop('lmplus not implemented yet')
-    pred <- predict(object$fit, plm.newdata)
-    pred <- data.frame(lmpredout=pred)
-    prgred <- getPoly(pred,object$degree)$xdata
-    pred <- predict(object$stage2fit$fit,pred)
+    stop('lmplus not implemented')
   } else
 
   if (object$use == "lm") {
     pred <- predict(object$fit, plm.newdata)
-  } else { # glm case
-    if (is.null(object$glmMethod)) { # only two classes
+    return(pred)
+  }
+
+  if (object$use == "mvrlm") { 
       pre <- predict(object$fit, plm.newdata)
-      pred <- ifelse(pre > 0.5, object$classes[1], object$classes[2])
-    } else { # more than two classes
-      len <- length(object$classes)
-      if (object$glmMethod == "multlog") { # multinomial logistics
-        pr <- predict(object$fit, plm.newdata, type="probs")
-        idx <- apply(pr,1, which.max)
-        col.name <- colnames(pr)
-        lc <- length(col.name)
-        tempM <- matrix(rep(col.name, length(idx)), ncol=lc, byrow = TRUE)
-        pred <- NULL
-        for (r in 1:nrow(tempM)) {
-          pred[r] <- tempM[r,idx[r]]
-        }
-        return(pred)
-      } # end multinomial logistics
-      else if (object$glmMethod == "all") { # all-vs-all method
-        votes <- matrix(0, nrow = nrow(plm.newdata), ncol = len)
-        for (i in 1:len) {
-          for (j in 1:len) {
-            if (i == j)
-              next
-            pre <- predict(object$fit[[i]][[j]], plm.newdata, type="response")
-            votes[,i] <- votes[,i] + ifelse(pre > 0.5, 1, 0)
-          } # for i
-        } # for j
-        winner <- apply(votes, 1, which.max)
-
-      } else if (object$glmMethod == "one") { # one-vs-all method
-          prob <- matrix(0, nrow=nrow(plm.newdata), ncol=len)
-          for (i in 1:len) {
-            # prob[,i] <- parSapplyLB(object$fit[[i]],
-            prob[,i] <- predict(object$fit[[i]],
-               plm.newdata, type = "response")
-          }
-        winner <- apply(prob, 1, which.max)
-      } # one-vs-all method
-      # calculate pred for all-vs-all & one-vs-all
+      pred <- apply(pre,1,which.max)
+      return(pred)
+  } 
+  
+  # glm case
+  if (is.null(object$glmMethod)) { # only two classes
+    pre <- predict(object$fit, plm.newdata)
+    pred <- ifelse(pre > 0.5, object$classes[1], object$classes[2])
+  } else { # more than two classes
+    len <- length(object$classes)
+    if (object$glmMethod == "multlog") { # multinomial logistics
+      pr <- predict(object$fit, plm.newdata, type="probs")
+      idx <- apply(pr,1, which.max)
+      col.name <- colnames(pr)
+      lc <- length(col.name)
+      tempM <- matrix(rep(col.name, length(idx)), ncol=lc, byrow = TRUE)
       pred <- NULL
-      for (k in 1:nrow(plm.newdata)) {
-        pred[k] <- object$classes[winner[k]]
+      for (r in 1:nrow(tempM)) {
+        pred[r] <- tempM[r,idx[r]]
       }
-    } # end more than two classes
-  } # end glm case
+      return(pred)
+    } # end multinomial logistics
+    else if (object$glmMethod == "all") { # all-vs-all method
+      votes <- matrix(0, nrow = nrow(plm.newdata), ncol = len)
+      for (i in 1:len) {
+        for (j in 1:len) {
+          if (i == j)
+            next
+          pre <- predict(object$fit[[i]][[j]], plm.newdata, type="response")
+          votes[,i] <- votes[,i] + ifelse(pre > 0.5, 1, 0)
+        } # for i
+      } # for j
+      winner <- apply(votes, 1, which.max)
 
+    } else if (object$glmMethod == "one") { # one-vs-all method
+        prob <- matrix(0, nrow=nrow(plm.newdata), ncol=len)
+        for (i in 1:len) {
+          # prob[,i] <- parSapplyLB(object$fit[[i]],
+          prob[,i] <- predict(object$fit[[i]],
+             plm.newdata, type = "response")
+        }
+      winner <- apply(prob, 1, which.max)
+    } # one-vs-all method
+    # calculate pred for all-vs-all & one-vs-all
+    pred <- NULL
+    for (k in 1:nrow(plm.newdata)) {
+      pred[k] <- object$classes[winner[k]]
+    }
+  } # end more than two classes
   return(pred)
+  # end glm case
+
 }
 
