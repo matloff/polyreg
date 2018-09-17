@@ -32,6 +32,8 @@
 # coresponding to 3 interaction terms:
 #  X1 * X2 * X3^2 + X1 * X2^2 * X3 + X1^2 * X2 * X3
 
+# further examples in the comments at the head of getPoly()
+
 combnDeg <- function(n, deg) { # distribute (deg) degrees to (n) different X's
 
   if (n == 2) { # if only have X1, X2, *2* predictors and *deg* degrees
@@ -615,20 +617,29 @@ applyPCA <- function(x, pcaMethod=NULL,pcaPortion,printTimes) {
     if (printTimes) cat(k,' principal comps used\n')
     xdata <- xy.pca$x[,1:k, drop=FALSE]
 
-  } else if (pcaMethod == "RSpectra") { # use RSpectra for pca
+  } else if (pcaMethod == "RSpectra") { # use RSpectra for PCA
+    stop('RSpectra option currently unavailable')
     require(Matrix)
     require(RSpectra)
-    ## redundant:
+    ## redundant, removed:
     ## xyscale <- scale(x, center=TRUE, scale=FALSE)
-    xy.cov <- cov(xyscale)
-    sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
-    class(sparse) <- "dgCMatrix"
+    ### xy.cov <- cov(xyscale)
+    ### sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
+    ### class(sparse) <- "dgCMatrix"
     xy.pca <- NULL
-    xy.eig <- eigs(sparse, ncol(sparse))
-    pcNo <- cumsum(xy.eig$values)/sum(xy.eig$values)
-    for (k in 1:length(pcNo)) {
-      if (pcNo[k] >= pcaPortion)
-        break
+    ### xy.eig <- eigs(sparse, ncol(sparse))
+    xy.cov <- cov(x)
+    browser()
+    if (pcaPortion > 1.0) {
+       k <- pcaPortion 
+       xy.eig <- eigs(xy.cov,k)
+    } else {
+       xy.eig <- eigs(xy.cov,ncol(xy.cov))
+       pcNo <- cumsum(xy.eig$values)/sum(xy.eig$values)
+       for (k in 1:length(pcNo)) {
+         if (pcNo[k] >= pcaPortion)
+           break
+       }
     }
     if (printTimes) cat(k,' principal comps used\n')
     #xdata <- as.matrix(x[,-ncol(x)]) %*% xy.eig$vectors[,1:k]
