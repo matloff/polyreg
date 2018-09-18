@@ -449,7 +449,8 @@ testGP <- function()
 #              compute eigenvalues/vectors to compute PCA)
 #   pcaPortion: number of principal components to be used; if < 1, this
 #               specifies a desired proportion of explained variance,
-#               otherwise the actual number of components
+#               otherwise the actual number of components; if RSpectra
+#               method is used, must be >= 1
 #   pcaLocation: if 'front', compute principal comps and then form
 #                polynomial in them; if 'back', do the opposite;
 #                relevant only if pcaMethod is non-NULL
@@ -477,18 +478,22 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
   doPCA <- !is.null(pcaMethod)
 
-  # poly matrix already provided, and if not need to create it now?
-  if (is.null(polyMat)) 
+  # if poly matrix is not already provided, need to create it now?
+  if (is.null(polyMat))  {
      if (!doPCA || (doPCA && pcaLocation == 'back'))  {
          tmp <- system.time(
            polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
          )
          if (printTimes) cat('getPoly time: ',tmp,'\n')
      }
+  }
 
   if (doPCA)  {  # start PCA section
 
-    # safety checks first
+    if (pcaMethod == 'RSpectra' && pcaPortion < 1)
+       stop('use prcomp method for this case') 
+    if (!pcaMethod %in% c('prcomp','RSpectra'))
+       stop("pcaMethod should be either NULL, prcomp, or RSpectra")
     stopifnot(pcaLocation %in% c('front','back'))
     # can't do PCA with R factors or char
     if (!all(apply(xdata,2,is.numeric)))
@@ -621,32 +626,14 @@ applyPCA <- function(x, pcaMethod=NULL,pcaPortion,printTimes) {
     stop('RSpectra option currently unavailable')
     require(Matrix)
     require(RSpectra)
-    ## redundant, removed:
-    ## xyscale <- scale(x, center=TRUE, scale=FALSE)
-    ### xy.cov <- cov(xyscale)
-    ### sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
-    ### class(sparse) <- "dgCMatrix"
     xy.pca <- NULL
-    ### xy.eig <- eigs(sparse, ncol(sparse))
     xy.cov <- cov(x)
-    browser()
-    if (pcaPortion > 1.0) {
        k <- pcaPortion 
-       xy.eig <- eigs(xy.cov,k)
-    } else {
-       xy.eig <- eigs(xy.cov,ncol(xy.cov))
-       pcNo <- cumsum(xy.eig$values)/sum(xy.eig$values)
-       for (k in 1:length(pcNo)) {
-         if (pcNo[k] >= pcaPortion)
-           break
-       }
-    }
+       xy.eig <- eigs(xy.cov,k
     if (printTimes) cat(k,' principal comps used\n')
     #xdata <- as.matrix(x[,-ncol(x)]) %*% xy.eig$vectors[,1:k]
     xdata <- as.matrix(x) %*% xy.eig$vectors[,1:k]
 
-  } else { # invalid argument
-    stop("pcaMethod should be either NULL, prcomp, or RSpectra")
   }
   return(list(xdata=xdata,xy.pca=xy.pca,k=k))
 }
@@ -676,21 +663,28 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
 
   doPCA <- !is.null(object$PCA)
 
-  if (!is.null(polyMat)) { # polynomial matrix is provided
+  if (!is.null(polyMat)) { 
+  ###### polynomial matrix is provided
     if (!doPCA) {  # no PCA 
       plm.newdata <- polyMat
     } else if (object$PCA == "prcomp") {
       plm.newdata <- predict(object$pca.xy, polyMat)[,1:object$pcaCol]
     } else if (object$PCA == "RSpectra") {
-      xyscale <- scale(polyMat, center = TRUE, scale = FALSE)
-      xy.cov <- cov(xyscale)
-      sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
-      class(sparse) <- "dgCMatrix"
-      xy.eig <- eigs(sparse, ncol(sparse))
+      ## xyscale <- scale(polyMat, center = TRUE, scale = FALSE)
+      xy.cov <- cov(polyMat)
+      if (pcaPortion > 1.0) {
+         k <- pcaPortion 
+         xy.eig <- eigs(xy.cov,k)
+    } else {
+         sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
+         class(sparse) <- "dgCMatrix"
+         xy.eig <- eigs(sparse, ncol(sparse))
+    }
       plm.newdata <- as.matrix(polyMat) %*% xy.eig$vectors[,1:object$pcaCol]
     }
     plm.newdata <- as.data.frame(plm.newdata)
-  } else  { # polynomial matrix is not provided
+  } else  { 
+  ###### polynomial matrix is not provided
     if (!doPCA) {
       plm.newdata <-
         getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
