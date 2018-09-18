@@ -459,15 +459,24 @@ testGP <- function()
 #              to use for multi-class classification
 #   printTimes: whether to print the time of PCA, getPoly, lm, or glm.
 #   polyMat: if non-NULL, then polynomial matrix will be passed in 
+#   dropout: proportion of polynomial terms to randomly delete
 #   cls:  R 'parallel' cluster
 
 # return: the object of class polyFit
+
+# note on RSpectra(): if the full set of eigenvectors is requested,
+# RSpectra() simply calls R's built-in eigen()
 
 polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
      pcaLocation='front',pcaPortion=0.9,glmMethod="one",printTimes=TRUE,
      polyMat=NULL,cls=NULL,dropout=0) {
 
+  if (!use %in% c('lm','glm','mvrlm')) 
+     stop('"use" must be "lm", "glm" or "mvrlm"')
+
   y <- xy[,ncol(xy)]
+  doPCA <- !is.null(pcaMethod)
+
   if (is.factor(y)) {  # change to numeric code for the classes
      y <- as.numeric(y)
      classes <- unique(y)
@@ -476,7 +485,11 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   } else classes <- FALSE
   xdata <- xy[,-ncol(xy)]
 
-  doPCA <- !is.null(pcaMethod)
+  # the bulk of the code code will consist of handling various cases,
+  # involving (a) when should the polymials be generated?, (b) how
+  # should the two different PCA methods be handled in the case in which
+  # PCA is requested? and (c) how should the various types of regression
+  # analysis, e.g. glm(), be handled?
 
   # if poly matrix is not already provided, need to create it now?
   if (is.null(polyMat))  {
@@ -519,9 +532,10 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
      k <- 0
   }
 
+  # this is the new xy, i.e. the polynomialized and possibly PCA-ized
+  # version of xy
   plm.xy <- as.data.frame(cbind(polyMat,y))
 
-  # fit
   if (dropout != 0) {
     cols <- ncol(plm.xy) - 1
     ndropout <- floor(cols * dropout)
@@ -533,12 +547,8 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
     dropoutIdx <- NULL
   }
 
-  if (use == 'lmplus') {
-    stop('lmplus not implemented')
-  }
-
-  if (!use %in% c('lm','glm','mvrlm')) 
-     stop('"use" must be "lm", "glm" or "mvrlm"')
+  # OK, PCA and getPoly() taken care of, now find the fit, to be
+  # assigned to ft
   
   if (use == "lm") {
     tmp <- system.time(
@@ -604,7 +614,9 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
 # 09/11/18, NM: moved this function out of polyFit(), now standalone,
 # for readability
+
 applyPCA <- function(x, pcaMethod=NULL,pcaPortion,printTimes) {
+
   if (pcaMethod == "prcomp") { # use prcomp for pca
     tmp <- system.time(
       #xy.pca <- prcomp(x[,-ncol(xy)])
@@ -628,13 +640,14 @@ applyPCA <- function(x, pcaMethod=NULL,pcaPortion,printTimes) {
     require(RSpectra)
     xy.pca <- NULL
     xy.cov <- cov(x)
-       k <- pcaPortion 
-       xy.eig <- eigs(xy.cov,k
+    k <- pcaPortion 
+    xy.eig <- eigs(xy.cov,k)
     if (printTimes) cat(k,' principal comps used\n')
     #xdata <- as.matrix(x[,-ncol(x)]) %*% xy.eig$vectors[,1:k]
     xdata <- as.matrix(x) %*% xy.eig$vectors[,1:k]
 
   }
+
   return(list(xdata=xdata,xy.pca=xy.pca,k=k))
 }
 
@@ -642,14 +655,16 @@ applyPCA <- function(x, pcaMethod=NULL,pcaPortion,printTimes) {
 # predict.polyFit: predict the fitted models on newdata
 ##################################################################
 
+# NM, 09/17/18: removed the polyMat argument; unlikely to be used,
+# cluttered up the code
+
 # arguments:
 #   object: a polyFit class object
 #   newdata: a new dataframe, without response variable
-#   polyMat: if non-NULL, then polynomial matrix will be passed in
 
 # return: predicted values of newdata, IN THE FORM OF NUMERICAL CLASS CODES
 
-predict.polyFit <- function(object,newdata,polyMat=NULL)
+predict.polyFit <- function(object,newdata)
 {
   # note: newdata doesn't have y column
 
@@ -658,70 +673,47 @@ predict.polyFit <- function(object,newdata,polyMat=NULL)
   # the next few dozen lines are devoted to forming plm.newdata, which
   # will ultimately be fed into predict.lm(), predict.glm() or whatever;
   # to do this, newdata, the argument above, must be expanded to
-  # polynomial form (if the latter is not already provided in polyMat),
-  # and/or run through PCA
+  # polynomial form, and possibly run through PCA
 
   doPCA <- !is.null(object$PCA)
 
-  if (!is.null(polyMat)) { 
-  ###### polynomial matrix is provided
-    if (!doPCA) {  # no PCA 
-      plm.newdata <- polyMat
-    } else if (object$PCA == "prcomp") {
-      plm.newdata <- predict(object$pca.xy, polyMat)[,1:object$pcaCol]
-    } else if (object$PCA == "RSpectra") {
-      ## xyscale <- scale(polyMat, center = TRUE, scale = FALSE)
-      xy.cov <- cov(polyMat)
-      if (pcaPortion > 1.0) {
-         k <- pcaPortion 
-         xy.eig <- eigs(xy.cov,k)
-    } else {
-         sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
-         class(sparse) <- "dgCMatrix"
-         xy.eig <- eigs(sparse, ncol(sparse))
-    }
-      plm.newdata <- as.matrix(polyMat) %*% xy.eig$vectors[,1:object$pcaCol]
-    }
-    plm.newdata <- as.data.frame(plm.newdata)
-  } else  { 
-  ###### polynomial matrix is not provided
-    if (!doPCA) {
+  if (!doPCA) {
+    plm.newdata <-
+      getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
+  } else if (object$PCA == "prcomp") {  # doPCA
+    if (object$pcaLocation == "front") {
+      new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
       plm.newdata <-
-        getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
-    } else if (object$PCA == "prcomp") {  # doPCA
-      if (object$pcaLocation == "front") {
-        new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
-        plm.newdata <-
-           getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
-      } else if (object$pcaLocation == "back") {
-        new_data <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
-        plm.newdata <- predict(object$pca.xy, new_data)[,1:object$pcaCol]
-        plm.newdata <- as.data.frame(plm.newdata)
-      }
-    } else if (object$PCA == "RSpectra") {
-      if (object$pcaLocation == "front") {
-        xyscale <- scale(newdata, center = TRUE, scale = FALSE)
-        xy.cov <- cov(xyscale)
-        sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
-        class(sparse) <- "dgCMatrix"
-        xy.eig <- eigs(sparse, ncol(sparse))
-        new_data <- as.matrix(newdata) %*% xy.eig$vectors[,1:object$pcaCol]
-        plm.newdata <-
-          getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
-      } else if (object$pcaLocation == "back") {
-        # stop("RSpectra + back pca not implemented")
-        new_data <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
-        xyscale <- scale(new_data, center = TRUE, scale = FALSE)
-        xy.cov <- cov(xyscale)
-        sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
-        class(sparse) <- "dgCMatrix"
-        xy.eig <- eigs(sparse, ncol(sparse))
-        plm.newdata <-
-          as.matrix(new_data) %*% xy.eig$vectors[,1:object$pcaCol]
-        plm.newdata <- as.data.frame(plm.newdata)
-      }
-    }  # end doPCA
-  } # end polynomial matrix is not provided
+         getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+    } else if (object$pcaLocation == "back") {
+      new_data <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
+      plm.newdata <- predict(object$pca.xy, new_data)[,1:object$pcaCol]
+      plm.newdata <- as.data.frame(plm.newdata)
+    }
+  } else if (object$PCA == "RSpectra") {
+    if (object$pcaLocation == "front") {
+      xyscale <- scale(newdata, center = TRUE, scale = FALSE)
+      xy.cov <- cov(xyscale)
+      sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
+      class(sparse) <- "dgCMatrix"
+      xy.eig <- eigs(sparse, ncol(sparse))
+      new_data <- as.matrix(newdata) %*% xy.eig$vectors[,1:object$pcaCol]
+      plm.newdata <-
+        getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+    } else if (object$pcaLocation == "back") {
+      # stop("RSpectra + back pca not implemented")
+      new_data <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
+      xyscale <- scale(new_data, center = TRUE, scale = FALSE)
+      xy.cov <- cov(xyscale)
+      sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
+      class(sparse) <- "dgCMatrix"
+      xy.eig <- eigs(sparse, ncol(sparse))
+      plm.newdata <-
+        as.matrix(new_data) %*% xy.eig$vectors[,1:object$pcaCol]
+      plm.newdata <- as.data.frame(plm.newdata)
+    }
+  }  # end doPCA
+  
 
   if (!is.null(object$dropout)) {
     plm.newdata <- plm.newdata[,-object$dropout, drop=FALSE]
