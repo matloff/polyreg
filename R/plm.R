@@ -444,11 +444,11 @@ testGP <- function()
 #   use: can be "lm" for linear regreesion, "glm" for logistic
 #        regression, or "mvrlm" for multivariate-response lm()
 #   pcaMethod: default is NULL, can be either "prcomp" (use the prcomp()
-#              function to compute PCA) or "RSpectra" (use sparse Matrix and
+#              function to compute PCA) or "RSectra" (use sparse Matrix and
 #              compute eigenvalues/vectors to compute PCA)
 #   pcaPortion: number of principal components to be used; if < 1, this
 #               specifies a desired proportion of explained variance,
-#               otherwise the actual number of components; if RSpectra
+#               otherwise the actual number of components; if RSectra
 #               method is used, must be >= 1
 #   pcaLocation: if 'front', compute principal comps and then form
 #                polynomial in them; if 'back', do the opposite;
@@ -503,6 +503,8 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
   if (doPCA)  {  # start PCA section
 
+    if (pcaMethod == 'RSpectra' && pcaLocation) 
+       stop('this option currently disabled')
     if (pcaMethod == 'RSpectra' && pcaPortion < 1)
        stop('use prcomp method for this case') 
     if (!pcaMethod %in% c('prcomp','RSpectra'))
@@ -531,6 +533,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
      xy.pca <- NULL
      k <- 0
   }
+  browser()
 
   # this is the new xy, i.e. the polynomialized and possibly PCA-ized
   # version of xy
