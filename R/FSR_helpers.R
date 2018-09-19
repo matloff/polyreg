@@ -1,210 +1,128 @@
-FSR_estimate <- function(z, Xy){
+N_distinct <- function(x) length(unique(x))
+is_continuous <- function(x) if(is.numeric(x)) length(unique(x)) > 2 else FALSE
+mod <- function(m) paste0("model", m)
+complete <- function(x) !is.null(x) && sum(is.na(x)) == 0
+match_arg <- function(arg, choices){if(is.null(arg)) arg else match.arg(arg, choices)}
 
-  y_train <- Xy[z$split == "train", ncol(Xy)]
-  y_test <- Xy[z$split == "test", ncol(Xy)]
+pow <- function(X, degree){
 
-  m <- 1            # counts which model
-  improvement <- 0  # 0 not meaningful; just initializing ...
+  if(length(degree) == 1){
+    X <- as.matrix(X)^degree
+    colnames(X) <- paste0(colnames(X), "_deg_", degree)
+  }else{
+    out <- list()
+    for(i in 1:length(degree))
+      out[[i]] <- as.matrix(pow(X, degree[i]))
+    X <- do.call(cbind, out)
+  }
+  return(X)    # ensure unique column names
 
-  while((m <= nrow(z$models)) &&
-        ((improvement > z$threshold_estimate) || m <= z$min_models) &&
-        z$unable_to_estimate < z$max_fails){
+}
 
-    if(z$noisy) cat("\n\n\n\nModel:", m, "\n\n")
-    z[[mod(m)]] <- list()
-    z$models$formula[m] <- if(sum(z$models$accepted) == 0) paste(z$y_name, "~", z$models$features[m]) else paste(z[["best_formula"]], "+", z$models$features[m])
+model_matrix <- function(f, d, noisy=TRUE){
 
-    if(z$model_type == "lm"){
+  tried <- try(model.matrix(f, d, na.action = "na.omit"), silent=TRUE)
 
-      X_train <- model_matrix(formula(z$models$formula[m]), Xy[z$split == "train",], noisy=z$noisy)
+  if(inherits(tried, "try-error")){
+    if(noisy) cat("model.matrix() reported the following error:\n", tried, "\n\n")
+    return(NULL)
+  } else {
+    return(tried)
+  }
 
-      if(!exists("X_train")){
-        if(z$noisy) message("Unable to construct model.matrix for model ",  m, ". Skipping.")
-        z$unable_to_estimate <- z$unable_to_estimate + 1
-      }else{
+}
 
-        z$models$p[m] <- z[[mod(m)]][["p"]] <- ncol(X_train)
+isolate_interaction <- function(elements, degree){
 
-        if(z[[mod(m)]][["p"]] >= z$N_train){
-          if(z$noisy) message("There are too few training observations to estimate model ",  m, ". Skipping.")
-          z$unable_to_estimate <- z$unable_to_estimate + 1
-        }else{
+  f <- paste(elements, collapse = " * ")
+  for(i in 1:degree){
+    tmp <- combn(elements, i)
+    if(i > 1)
+      tmp <- apply(tmp, 2, paste, collapse="*")
+    f <- paste(f, "-", paste(tmp, collapse=" - "))
+  }
+  return(f)
 
-          if(sum(z$models$accepted) == 0){ # passing X takes crossproduct first; starting with second iteration,
-            XtX_inv <- block_solve(X = X_train, max_block = z$max_block)
-          }else{  # XtX_inv of the last accepted model is taken as the inverse of the first block
-            XtX_inv <- block_solve(X = X_train, A_inv = XtX_inv_accepted, max_block = z$max_block)
-          }
-          if(!is.null(XtX_inv)){
+}
 
-            z[[mod(m)]][["coeffs"]] <- tcrossprod(XtX_inv, X_train) %*% y_train
+classify <- function(probs, as_factor=TRUE, labels=NULL, cutoff = NULL){ # not meant for binary labels...
 
-            if(m == length(z$models$features)) remove(XtX_inv)
+  if(ncol(as.matrix(probs)) == 1){
 
-            if(!complete(z[[mod(m)]][["coeffs"]])){
+    if(is.null(labels))
+      labels <- c("label1", "label2")
 
-              if(z$noisy) cat("\nfailed to estimate model", m, "skipping...\n")
-              z$unable_to_estimate <- z$unable_to_estimate + 1
+    if(is.null(cutoff))
+      cutoff <- 0.5
 
-            }else{
+    classified <- labels[(probs > cutoff) + 1]
 
-              z[[mod(m)]][["y_hat"]] <- model_matrix(formula(z$models$formula[m]),
-                                                     Xy[z$split == "test", ]) %*% z[[mod(m)]][["coeffs"]]
+  }else{
 
-              R2 <- cor(z[[mod(m)]][["y_hat"]], y_test, method=z$cor_type)^2
-              adjR2 <- (z$N_train - ncol(X_train) - 1)/(z$N_train - 1)*R2 # odd to have penalty mashed up this way...
-              z$models$adjR2[m] <- z[[mod(m)]][[paste0("adj_R2_", z$cor_type)]] <- adjR2
+    if(!is.null(labels))
+      colnames(probs) <- labels
+    if(is.null(colnames(probs)))
+      colnames(probs) <- paste0("label", 1:ncol(probs))
+    classified <- colnames(probs)[apply(probs, 1, which.max)]
 
-              MAPE <- z$y_scale * mean(abs(z[[mod(m)]][["y_hat"]] - y_test))
-              z$models$MAPE[m] <- z[[mod(m)]][["MAPE"]] <- MAPE
-              improvement <- if(sum(z$models$accepted) == 0) adjR2 else (adjR2 - z$best_adjR2)
+  }
 
-              if(improvement > z$threshold_include){
-                z$best_formula <- z$models$formula[m]
-                z[["best_coeffs"]] <- z[[mod(m)]][["coeffs"]]
-                z[["best_adjR2"]] <- adjR2
-                z[["best_MAPE"]] <- MAPE
-                z$models$accepted[m] <- TRUE
-                XtX_inv_accepted <- XtX_inv
-              }
+  if(as_factor)
+    classified <- as.factor(classified)
 
-              if(z$noisy) summary(z, estimation_overview=FALSE, results_overview=FALSE, model_number = m)
-            }
-          }else{
-            if(z$noisy) cat("\nunable to estimate Model", m, "likely due to (near) singularity.\n")
-            unable_to_estimate <- unable_to_estimate + 1
-          }
-        }
-      }# end linear model
-
-    }else{ # begin classification
-
-      if(m == 1)
-        z[["training_labels"]] <- as.character(unique(Xy[z$split == "train", ncol(Xy)])) # levels(Xy[[z$split]])
-
-      if(z$model_type == "multinomial"){
-
-        if(m == 1){
-
-          tallies <- table(Xy[z$split == "train", ncol(Xy)])
-          modal_outcome <- names(tallies)[which.max(tallies)]
-          z[["reference_category"]] <- modal_outcome
-          Xy[,ncol(Xy)] <- relevel(Xy[,ncol(Xy)], z$reference_category)
-
-          if(z$noisy) message("Multinomial models will be fit with '",
-                            modal_outcome,
-                            "' (the sample mode of the training data) as the reference category.\n\n")
-
-          z[["y_train_means"]] <- tallies/z$N_train # proportions... may not use...
-
-        }
-
-        z[[mod(m)]][["fit"]] <- multinom(as.formula(z$models$formula[m]),
-                                         Xy[z$split == "train", ])
-        z[[mod(m)]][["fit"]][["aic"]] <- z[[mod(m)]][["fit"]][["AIC"]]
-
-
-        z[[mod(m)]][["coeffs"]] <- coefficients(z[[mod(m)]][["fit"]])
-        z$models$P[m] <- z[[mod(m)]][["p"]] <- ncol(z[[mod(m)]][["coeffs"]])
-
-        # defaults to mean-bias reducing adjusted scores, see ?brglmFit for 'type' options including ML
-        # z[[mod(m)]][["fit"]] <- brmultinom(as.formula(z$models$formula[m]),
-        #                                   Xy[z$split == "train", ],
-        #                                   ref = z$reference_category)
-        # for training accuracy, could precede as below
-        # fitted values are predicted probabilities for reference category, followed by others, as vector...
-        # z[[mod(m)]][["probs"]] <- matrix(z[[mod(m)]][["fit"]][["fitted.values"]], ncol=length(z$training_labels))
-
-        # classified <- classify(z[[mod(m)]][["probs"]],
-        #                       labels = c(z$reference_category,
-        #                                  z$training_labels[-which(z$training_labels == z$reference_category)]))
-
-
-        predictions <- predict(z, Xy[z$split == "test", ], model_to_use = m, standardize = FALSE)
-        z[[mod(m)]][["pred_probs"]] <- predictions$probs
-        z[[mod(m)]][["classified"]] <- predictions$classified
-
-        z$models$test_accuracy[m] <- mean(y_test == as.character(z[[mod(m)]][["classified"]]))
-        z$models$test_adj_accuracy[m] <- adj_accuracy <- (z$N_train - z[[mod(m)]][["p"]])/(z$N_train - 1)*z$models$test_accuracy[m]
-        improvement <- if(sum(z$models$accepted)) (adj_accuracy - z$best_adj_accuracy) else adj_accuracy
-
-        if(improvement > z$threshold_include){
-
-          z[["best_adj_accuracy"]] <- adj_accuracy
-
-        }
-
-
-      }else{ # start logistic regression code
-
-        if(m == 1){
-          z[["y_train_mean"]] <- mean(as.numeric(Xy[z$split == "train",ncol(Xy)]) - 1)
-        }
-
-        z[[mod(m)]][["fit"]] <- glm(as.formula(z$models$formula[m]), Xy[z$split == "train",],
-                                    family = binomial(link = "logit"))
-        z[[mod(m)]][["coeffs"]] <- beta_hat <- z[[mod(m)]][["fit"]][["coefficients"]]
-
-        z$models$p[m] <- z[[mod(m)]][["p"]] <- length(beta_hat)
-
-        z[[mod(m)]][["y_hat"]] <- predict(z[[mod(m)]][["fit"]],
-                                          as.data.frame(model_matrix(as.formula(z$models$formula[m]),
-                                                                     Xy[z$split == "test",])))
-
-        pseudo_R2 <- cor(z[[mod(m)]][["y_hat"]], as.numeric(y_test))^2
-        z$models$adjR2[m] <- adjR2 <- (z$N_train - z[[mod(m)]][["p"]])/(z$N_train - 1)*pseudo_R2
-
-        z[[mod(m)]][["classified"]] <- factor(z[["training_labels"]][(z[[mod(m)]][["y_hat"]] > z[["y_train_mean"]]) + 1],
-                                              levels = levels(y_train))
-        z$models$test_accuracy[m] <- mean(z[[mod(m)]][["classified"]] == y_test)
-
-        improvement <- if(sum(z$models$accepted)) (adjR2 - z$best_adjR2) else adjR2
-
-        if(improvement > z$threshold_include){
-
-          z[["best_adjR2"]] <- adjR2
-
-        }
-
-      } # end logit
-
-      if(improvement > z$threshold_include){
-
-        z$best_formula <- z$models$formula[m]
-        z[["best_coeffs"]] <- z[[mod(m)]][["coeffs"]]
-        z$models$accepted[m] <- TRUE
-        z[["best_test_accuracy"]] <- z$models$test_accuracy[m]
-
-      }
-
-      z$models$AIC[m] <- z[[mod(m)]][["fit"]][["aic"]]
-      z$models$BIC[m] <- z$models$AIC[m] - 2*z[[mod(m)]][["p"]]  + log(z$N_train)*z[[mod(m)]][["p"]]
-      if(z$noisy) summary(z, estimation_overview=FALSE, results_overview=FALSE, model_number = m)
-
-      }
-
-    z$models$estimated[m] <- complete(z[[mod(m)]][["coeffs"]])
-    if(z$store_fit == "none")
-      z[[mod(m)]][["fit"]] <- NULL
-    if(z$store_fit == "accepted" && !z$models$accepted[m])
-      z[[mod(m)]][["fit"]] <- NULL
-
-    m <- m + 1
-
-    if(!is.null(z$file_name)){
-      if(z$noisy) message("\n\nsaving (updated) results as ", z$file_name, "\n\n")
-      save(z, file=z$file_name)
-    }
-
-  } # end WHILE loop
-
-  if(z$noisy) summary(z, estimation_overview=FALSE)
-
-  if(sum(z$models$estimated) == 0) return(NULL) else return(z)
+  return(classified)
 
 }
 
 
+log_odds <- function(x, split = NULL, noisy = TRUE){
+
+  if(N_distinct(x) == 2){
+
+    if(is.factor(x))
+      x <- as.numeric(x) - 1
+    p <- mean(if(is.null(split)) x else x[split], na.rm=TRUE)
+    y <- ifelse(x == 1, log(p/(1 - p)), log((1 - p)/p))
+
+  }else{
+
+    if(!is.factor(x))
+      x <- as.factor(x)
+
+    if(is.null(split)){
+
+      p_reference <- mean(x == levels(x)[1])
+      y <- matrix(nrow = length(x), ncol = (length(levels(x)) - 1))
+      colnames(y) <- levels(x)[-1]
+      for(i in 1:ncol(y)){
+        p_interest <- mean(x == levels(x)[i + 1])
+        y[ , i] <- ifelse(x == levels(x)[i + 1],
+                          log(p_interest/p_reference),
+                          log(p_reference/p_interest))
+      }
+
+    }else{ # put whole sample on training scale, so N rows, not N_train
+
+      x_train <- x[split]
+      p_reference <- mean(x_train == levels(x)[1])
+      y <- matrix(nrow = length(x),
+                  ncol = (length(levels(x_train)) - 1))
+      colnames(y) <- levels(x_train)[-1]
+      for(i in 1:ncol(y)){
+        p_interest <- mean(x_train == levels(x_train)[i + 1])
+        y[ , i] <- ifelse(x == levels(x_train)[i + 1],
+                          log(p_interest/p_reference),
+                          log(p_reference/p_interest))
+      }
+    }
+  }
+
+  if(noisy && sum(is.na(y)))
+    warning("NAs encountered by log_odds")
+
+  return(y)
+
+}
 # if !recursive, divides into blocks based on n and max_block
 # if recursive, calls block_solve(), rather than solve(), until n/2 < max_block
 # note: matrix inversion and several matrix multiplications must be performed on largest blocks!
@@ -327,55 +245,134 @@ block_solve  <- function(S = NULL, X = NULL, max_block = 250, A_inv = NULL, recu
 
 }
 
-N_distinct <- function(x) length(unique(x))
-is_continuous <- function(x) if(is.numeric(x)) length(unique(x)) > 2 else FALSE
-mod <- function(m) paste0("model", m)
 
-pow <- function(X, degree){
 
-  X <- as.matrix(X)^degree
-  colnames(X) <- paste0(colnames(X), "_deg_", degree)
-  return(X)    # ensure unique column names
+ols <- function(object, Xy, m, train = TRUE, y = NULL){
 
-}
+  X <- if(train){
+          model_matrix(formula(object$models$formula[m]),
+                        Xy[object$split == "train", ],
+                        noisy = object$noisy)
+       }else{
+          model_matrix(formula(object$models$formula[m]),
+                        Xy, noisy = object$noisy)
+       }
 
-model_matrix <- function(f, d, noisy=TRUE){
-  tried <- try(model.matrix(f, d), silent=TRUE)
-  if(inherits(tried, "try-error")){
-    if(noisy) cat("model.matrix() reported the following error:\n", tried, "\n\n")
-    return(NULL)
-  } else {
-    return(tried)
+  if(exists("X")){
+
+    if(is.null(y))
+      y <- if(train) Xy[object$split == "train", ncol(Xy)] else Xy[, ncol(Xy)]
+
+    if(ncol(X) >= length(y)){
+
+      if(object$noisy)
+        message("There are too few training observations to estimate model ",  m, ". Skipping.")
+
+    }else{
+
+      XtX_inv <- block_solve(X = X, max_block = object$max_block,
+                             A_inv = object$XtX_inv_accepted)
+      # initialized to NULL, which block_solve interprets as 'start from scratch'
+
+      if(!is.null(XtX_inv)){
+
+        object[[mod(m)]][["coeffs"]] <- tcrossprod(XtX_inv, X) %*% y
+
+        if(complete(object[[mod(m)]][["coeffs"]])){
+
+          object <- post_estimation(object, Xy, m)
+          if(object$models$accepted[m])
+            object$XtX_inv_accepted <- XtX_inv
+
+          remove(XtX_inv)
+          object$models$estimated[m] <- TRUE
+
+        }
+      }
+    }
   }
-}
-
-isolate_interaction <- function(elements, degree){
-
-  f <- paste(elements, collapse = " * ")
-  for(i in 1:degree){
-    tmp <- combn(elements, i)
-    if(i > 1)
-      tmp <- apply(tmp, 2, paste, collapse="*")
-    f <- paste(f, "-", paste(tmp, collapse=" - "))
+  if(!object$models$estimated[m]){
+    warning("Unable to estimate model", m, "\n\n")
+    object$unable_to_estimate <- object$unable_to_estimate + 1
   }
-  return(f)
-
+  return(object)
 }
 
-classify <- function(probs, as_factor=TRUE, labels=NULL){ # not meant for binary labels...
+post_estimation <- function(object, Xy, m, y_test = NULL){
 
-  if(!is.null(labels))
-    colnames(probs) <- labels
-  if(is.null(colnames(probs)))
-    colnames(probs) <- paste0("label", 1:ncol(probs))
-  classified <- colnames(probs)[apply(probs, 1, which.max)]
-  if(as_factor)
-    classified <- as.factor(classified)
-  return(classified)
+    P <- if(object$outcome == "multinomial")
+            nrow(object[[mod(m)]][["coeffs"]]) else length(object[[mod(m)]][["coeffs"]])
 
+    object$models$P[m] <- object[[mod(m)]][["p"]]  <- P
+
+    if(is.null(y_test))
+      y_test <- Xy[object$split == "test", ncol(Xy)]
+
+    if(object$outcome == "continuous"){
+
+      object[[mod(m)]][["y_hat"]] <- predict(object, Xy[object$split=="test", ], m, standardize = FALSE)
+      MAPE <- object$y_scale * mean(abs(object[[mod(m)]][["y_hat"]] - y_test))
+      object$models$MAPE[m] <- object[[mod(m)]][["MAPE"]] <- MAPE
+
+    }else{
+
+      pred <- predict(object, Xy[object$split=="test", ], m, standardize = FALSE)
+
+      object[[mod(m)]][["y_hat"]] <- pred$probs
+      object[[mod(m)]][["classified"]] <- pred$classified
+
+      object$models$test_accuracy[m] <- mean(as.character(pred$classified) == object$y_test_labels)
+
+      if(!object$linear_estimation){
+
+        object$models$AIC[m] <- if(object$outcome == "binary")
+                                    object[[mod(m)]][["fit"]][["aic"]] else
+                                      object[[mod(m)]][["fit"]][["AIC"]]
+
+        object$models$BIC[m] <- object$models$AIC[m] - 2*P + log(object$N_train)*P
+
+      }
+    }
+
+    if(object$outcome != "multinomial"){
+
+      R2 <- cor(object[[mod(m)]][["y_hat"]], as.numeric(y_test))^2
+
+      adjR2 <- (object$N_train - P - 1)/(object$N_train - 1)*R2
+
+      object$models$test_adjR2[m] <- object[[mod(m)]][["adj_R2"]] <- adjR2
+
+      improvement <- adjR2 - object$best_test_adjR2
+
+    }else{
+
+      adj_accuracy <- (object$N_train - P)/(object$N_train - 1)*object$models$test_accuracy[m]
+
+      object$models$test_adj_accuracy[m] <- adj_accuracy
+
+      improvement <- adj_accuracy - object$best_test_adj_accuracy
+
+    }
+
+    object[["improvement"]] <- improvement
+
+  if(object$improvement > object$threshold_include){
+
+      object[["best_formula"]] <- object$models$formula[m]
+      object[["best_coeffs"]] <- object[[mod(m)]][["coeffs"]]
+
+      if(object$outcome == "multinomial"){
+        object[["best_test_adj_accuracy"]] <- adj_accuracy
+      }else{
+        object[["best_test_adjR2"]] <- adjR2
+      }
+
+      object$models$accepted[m] <- TRUE
+
+      if(object$outcome == "continuous")
+        object[["best_MAPE"]] <- MAPE
+  }
+  return(object)
 }
 
-complete <- function(x){
-  !is.null(x) && sum(is.na(x)) == 0
-}
 

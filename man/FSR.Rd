@@ -4,8 +4,8 @@
 \alias{FSR}
 \title{FSR}
 \usage{
-FSR(Xy, max_poly_degree = 3, max_interaction_degree = 2,
-  model_type = NULL, cor_type = "pearson", threshold_include = 0.01,
+FSR(Xy, max_poly_degree = 3, max_interaction_degree = 2, outcome = NULL,
+  linear_estimation = FALSE, threshold_include = 0.01,
   threshold_estimate = 0.001, standardize = FALSE, pTraining = 0.8,
   pValidation = 0.2, min_models = NULL, max_fails = 2, file_name = NULL,
   store_fit = "none", max_block = 250, noisy = TRUE, seed = NULL)
@@ -17,9 +17,9 @@ FSR(Xy, max_poly_degree = 3, max_interaction_degree = 2,
 
 \item{max_interaction_degree}{highest interaction order; default 2 (allow x_i*x_j). Also interacts each level of factors with continuous features.}
 
-\item{model_type}{Either 'lm' (linear model), 'logit' (logistic regression currently implemented by glm()), 'multinomial' (multinomial regression via nnet::multinom()), or NULL (auto-detect based on response).}
+\item{outcome}{Treat y as either 'continuous', 'binary', 'multinomial', or NULL (auto-detect based on response).}
 
-\item{cor_type}{correlation to be used for adjusted R^2; pseudo R^2 for classification. Default "pearson"; other options "spearman" and "kendall".}
+\item{linear_estimation}{Logical: model outcome as linear and estimate with ordinary least squares? Recommended for speed on large datasets even if outcome is categorical. (For multinomial outcome, this means treated response as vector.) If FALSE, estimator chosen based on 'outcome' (i.e., OLS for continuous outcomes, glm() to estimate logistic regression models for 'binary' outcomes, and nnet::multinom() for 'multinomial').}
 
 \item{threshold_include}{minimum improvement to include a recently added term in the model (change in fit originally on 0 to 1 scale). -1.001 means 'include all'. Default: 0.01. (Adjust R^2 for linear models, Pseudo R^2 for logistic regression, out-of-sample accuracy for multinomial models. In latter two cases, the same adjustment for number of predictors is applied as pseudo-R^2.)}
 
