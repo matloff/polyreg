@@ -503,8 +503,6 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
   if (doPCA)  {  # start PCA section
 
-    if (pcaMethod == 'RSpectra' && pcaLocation) 
-       stop('this option currently disabled')
     if (pcaMethod == 'RSpectra' && pcaPortion < 1)
        stop('use prcomp method for this case') 
     if (!pcaMethod %in% c('prcomp','RSpectra'))
@@ -533,7 +531,6 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
      xy.pca <- NULL
      k <- 0
   }
-  browser()
 
   # this is the new xy, i.e. the polynomialized and possibly PCA-ized
   # version of xy
@@ -700,8 +697,9 @@ predict.polyFit <- function(object,newdata)
        } else if (object$pcaLocation == "back") {
          new_data <- 
             getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
-         xy.cov <- cov(new_data)
-         xy.eig <- eigs(xy.cov,object$pcaCol)
+         ### xy.cov <- cov(new_data)
+         ### xy.eig <- eigs(xy.cov,object$pcaCol)
+         xy.eig <- object$pca.xy
          plm.newdata <-
             as.matrix(new_data) %*% xy.eig$vectors[,1:object$pcaCol]
          plm.newdata <- as.data.frame(plm.newdata)
