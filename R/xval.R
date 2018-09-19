@@ -4,22 +4,21 @@
 ##################################################################
 
 # arguments:
-#   for most args, see the comments for polyFit()
+#   for most args, see the comments for polyFit(); note that Y in xy
+#   must be a factor in the classification case
 #   nHoldout: number of cases for the test set
 #   yCol: if not NULL, Y is in this column, and will be moved to last
-#   dropout: the proportion of columns of the polynomial matrix would be
-#            randomly delected
 
 # return: a vector of mean absolute error (for lm) or accuracy (for glm),
 #         the i-th element of the list is for degree = i
-#' @export
+
+# note: there is no pcaLocation option; polyFit is called with 'front'
 
 xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
                      pcaMethod = NULL,pcaPortion = 0.9, glmMethod = "one",
-                     nHoldout=min(10000,round(0.2*nrow(xy))),stage2deg=NULL,
-                     yCol = NULL,printTimes=TRUE,cls=NULL,dropout=0,startDeg=1)
+                     nHoldout=min(10000,round(0.2*nrow(xy))), yCol = NULL,
+                     printTimes=TRUE,cls=NULL,startDeg=1)
 {
-  if (dropout >= 1) stop("dropout should be less than 1.")
 
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
 
@@ -32,80 +31,52 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
      xy[,ncol(xy)] <- y
   }
   
-  if (is.null(pcaMethod)) {
-    xdata <- xy[,-ncol(xy), drop=FALSE]
-  } else if (pcaMethod == "prcomp") {
-    
-    tmp <- system.time(
-      xy.pca <- prcomp(xy[,-ncol(xy)])
-    )
-    if (printTimes) cat('PCA time in xvalPoly: ',tmp,'\n')
-    pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
-    for (k in 1:length(pcNo)) {
-      if (pcNo[k] >= pcaPortion)
-        break
-    }
-    if (printTimes) cat(k,' principal comps used\n')
-    xdata <- xy.pca$x[,1:k, drop=FALSE]
-  } else if (pcaMethod == "RSpectra") {
-    require(Matrix)
-    require(RSpectra)
-    xyscale <- scale(xy[,-ncol(xy)], center=TRUE, scale=FALSE)
-    xy.cov <- cov(xyscale)
-    sparse <- Matrix(data=as.matrix(xy.cov), sparse = TRUE)
-    class(sparse) <- "dgCMatrix"
-    xy.eig <- eigs(sparse, ncol(sparse))
-    pcNo <- cumsum(xy.eig$values)/sum(xy.eig$values)
-    for (k in 1:length(pcNo)) {
-      if (pcNo[k] >= pcaPortion)
-        break
-    }
-    if (printTimes) cat(k,' principal comps used\n')
-    xdata <- as.matrix(xy[,-ncol(xy)]) %*% xy.eig$vectors[,1:k]
-    
-  } else {
-    stop("pcaMethod should be either NULL, prcomp, or RSpectra")
+  # need to set xdata = the predictor data, but first apply PCA if
+  # requested; afterward, apply getPoly() to turn xdata into poly.xy,
+  # including Y at the end
+
+  xdata <- xy[,-ncol(xy), drop=FALSE]
+  if (!is.null(pcaMethod)) {
+     applyPCAoutput <- applyPCA(xdata,pcaMethod,pcaPortion,printTimes)
+     xdata <- applyPCAoutput$xdata
   } 
 
   tmp <- system.time(
-    poly.xy <- getPoly(xdata, maxDeg, maxInteractDeg)
-  )
+       polyMat <- getPoly(xdata, maxDeg, maxInteractDeg)
+     )
   if (printTimes) cat('getPoly time in xvalPoly: ',tmp,'\n')
 
-  xy <- cbind(poly.xy$xdata, y)
+  xy <- cbind(polyMat$xdata, y)
 
-  tmp <- splitData(xy, nHoldout)
-  training <- tmp$trainSet
-  testing <- tmp$testSet
+  split.xy <- splitData(xy, nHoldout)
+  training <- split.xy$trainSet
+  testing <- split.xy$testSet
   train.y <- training[,ncol(training)]
   train.x <- training[,-ncol(training)]
   test.y <- testing[,ncol(testing)]
   test.x <- testing[,-ncol(testing)]
-#  testIdx <- splitData(xy, nHoldout,TRUE)
+  testIdxs <- split.xy$testIdxs
 
   acc <- NULL
   for (i in 1:maxDeg) {  # for each degree
-    m <- ifelse(i > maxInteractDeg, maxInteractDeg, i)
 
-    endCol <- poly.xy$endCols[i]
+     m <- if(i > maxInteractDeg) maxInteractDeg else i
+     endCol <- polyMat$endCols[i]
 
-    if (dropout != 0 && startDeg <= i) {
-      ndropout <- floor(endCol * dropout)
-      dropoutIdx <- sample(endCol, ndropout, replace = FALSE)
-      train1 <- cbind(train.x[,-dropoutIdx, drop=FALSE], train.y)
-      test1 <- test.x[,-dropoutIdx, drop=FALSE]
-    }
-    else {
-      train1 <- cbind(training[,1:endCol], train.y)
-      test1 <- testing[,1:endCol, drop=FALSE]
-    }
+     # make train1, the portion of train.x for this polynomial degree i,
+     # and tack on Y at the end, yield train1; similar for test1, but no
+     # Y
+     train1 <- cbind(training[,1:endCol], train.y)
+     test1 <- testing[,1:endCol, drop=FALSE]
 
-      colnames(train1)[ncol(train1)] <- "y"
+     colnames(train1)[ncol(train1)] <- "y"
 
+     pMatShort <- polyMat  # portion of polyMat for this i
+     pMatShort$xdata <- polyMat$xdata[testIdxs,1:endCol,drop=FALSE]
 
-      pol <- polyFit(train1,i,m,use,pcaMethod=NULL,pcaLocation=NULL,pcaPortion,glmMethod,
-                     polyMat = train1,cls=cls, dropout=0)
-      pred <- predict(pol, test1, test1)
+     pol <- polyFit(train1,i,m,use,pcaMethod=NULL,pcaLocation=NULL,
+        pcaPortion,glmMethod,polyMat=pMatShort,cls=cls)
+     pred <- predict(pol, test1)
 
     if (use == "lm") {
       acc[i] <- mean(abs(pred - test.y))
@@ -370,7 +341,7 @@ splitData <- function(xy,nHoldout,idxsOnly=FALSE)
   if (idxsOnly) return(testIdxs)
   testSet <- xy[testIdxs,]
   trainSet <- xy[-testIdxs,]
-  list(testSet=testSet,trainSet=trainSet)
+  list(testSet=testSet,trainSet=trainSet,testIdxs=testIdxs)
 }
 
 ######################  moveY() #################################

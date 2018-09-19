@@ -458,7 +458,6 @@ testGP <- function()
 #              to use for multi-class classification
 #   printTimes: whether to print the time of PCA, getPoly, lm, or glm.
 #   polyMat: if non-NULL, then polynomial matrix will be passed in 
-#   dropout: proportion of polynomial terms to randomly delete
 #   cls:  R 'parallel' cluster
 
 # return: the object of class polyFit
@@ -467,29 +466,36 @@ testGP <- function()
 # RSpectra() simply calls R's built-in eigen(), so we don't treat that
 # case here
 
+# NM, 09/19/18: removed dropout option, getting in the way and not
+# useful
+
 polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
      pcaLocation='front',pcaPortion=0.9,glmMethod="one",printTimes=TRUE,
-     polyMat=NULL,cls=NULL,dropout=0) {
+     polyMat=NULL,cls=NULL) 
+{
 
   if (!use %in% c('lm','glm','mvrlm')) 
      stop('"use" must be "lm", "glm" or "mvrlm"')
 
   y <- xy[,ncol(xy)]
+  xdata <- if (!is.null(polyMat)) polyMat$xdata else xy[,-ncol(xy)]
+
   doPCA <- !is.null(pcaMethod)
 
-  if (is.factor(y)) {  # change to numeric code for the classes
-     y <- as.numeric(y)
+  # is this a classification problem?
+  classProblem <- is.factor(y) || use == 'mvrlm'
+  if (classProblem) {
+     if (is.factor(y))  { # change to numeric code for the classes
+        y <- as.numeric(y)
+        xy[,ncol(xy)] <- y
+     }
      classes <- unique(y)
-     cat('new codes for Y: ',classes,'\n')
-     xy[,ncol(xy)] <- y
   } else classes <- FALSE
-  xdata <- xy[,-ncol(xy)]
 
-  # the bulk of the code code will consist of handling various cases,
-  # involving (a) when should the polymials be generated?, (b) how
-  # should the two different PCA methods be handled in the case in which
-  # PCA is requested? and (c) how should the various types of regression
-  # analysis, e.g. glm(), be handled?
+  # the bulk of the following code will consist of handling various
+  # cases, involving (a) when should the polymials be generated (if not
+  # already in polyMat)?, (b) how should the two different PCA methods
+  # be handled in the case in which PCA is requested
 
   # if poly matrix is not already provided, need to create it now?
   if (is.null(polyMat))  {
@@ -500,6 +506,9 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
          if (printTimes) cat('getPoly time: ',tmp,'\n')
      }
   }
+
+  # by this point, polyMat will exist either if (a) pre-provided, (b)
+  # PCA is not requested, or (c) PCA is requested with 'back
 
   if (doPCA)  {  # start PCA section
 
@@ -513,39 +522,34 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
        stop('X data must be numeric for PCA')
 
     if (pcaLocation == 'front') {
-       applyPCAOutputs <- applyPCA(xdata,pcaMethod,pcaPortion,printTimes)
-       xdata <- applyPCAOutputs$xdata
-       tmp <- system.time(
-         polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
-       )
-       if (printTimes) cat('getPoly time: ',tmp,'\n')
+       if (is.null(polyMat)) {
+          applyPCAOutputs <- applyPCA(xdata,pcaMethod,pcaPortion,printTimes)
+          xdata <- applyPCAOutputs$xdata
+          tmp <- system.time(
+            polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
+          )
+          if (printTimes) cat('getPoly time: ',tmp,'\n')
+       }  
     } else  {  # 'back'
        applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion,printTimes)
        polyMat <- applyPCAOutputs$xdata
     }
-    xy.pca <- applyPCAOutputs$xy.pca
+
+    xy.pca <- applyPCAOutputs$xy.pca  # overall output of prcomp or RSpectra
     k <- applyPCAOutputs$k
 
   # end PCA section
-  }  else { 
+  }  else {  # no PCA, thus no PCA info
      xy.pca <- NULL
      k <- 0
   }
 
+  # by now, polyMat is ready for input to lm() etc. in all cases
+
   # this is the new xy, i.e. the polynomialized and possibly PCA-ized
   # version of xy
   plm.xy <- as.data.frame(cbind(polyMat,y))
-
-  if (dropout != 0) {
-    cols <- ncol(plm.xy) - 1
-    ndropout <- floor(cols * dropout)
-    dropoutIdx <- sample(cols, ndropout, replace = FALSE)
-    # print(dropoutIdx)
-    plm.xy <- plm.xy[, -dropoutIdx, drop=FALSE]
-  }
-  else {
-    dropoutIdx <- NULL
-  }
+  browser()
 
   # OK, PCA and getPoly() taken care of, now find the fit, to be
   # assigned to ft
@@ -606,7 +610,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   me <-list(xy=xy,degree=deg,maxInteractDeg=maxInteractDeg,use=use,
     poly.xy=plm.xy,fit=ft,PCA=pcaMethod,pca.portion=pcaPrn,
     pca.xy=xy.pca,pcaCol=k,pcaLocation=pcaLocation,glmMethod=glmMethod,
-    classes=classes, dropout=dropoutIdx)
+    classProblem=classProblem,classes=classes)
   class(me) <- "polyFit"
   return(me)
 
@@ -615,7 +619,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 # 09/11/18, NM: moved this function out of polyFit(), now standalone,
 # for readability
 
-applyPCA <- function(x, pcaMethod=NULL,pcaPortion,printTimes) {
+applyPCA <- function(x, pcaMethod,pcaPortion,printTimes) {
 
   if (pcaMethod == "prcomp") { # use prcomp for pca
     tmp <- system.time(
@@ -706,15 +710,6 @@ predict.polyFit <- function(object,newdata)
        }
   }  # end doPCA
   
-
-  if (!is.null(object$dropout)) {
-    plm.newdata <- plm.newdata[,-object$dropout, drop=FALSE]
-  }
-
-  if (object$use == "lmplus") {
-    stop('lmplus not implemented')
-  } else
-
   if (object$use == "lm") {
     pred <- predict(object$fit, plm.newdata)
     return(pred)
