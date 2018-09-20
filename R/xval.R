@@ -15,9 +15,9 @@
 # note: there is no pcaLocation option; polyFit is called with 'front'
 
 xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
-                     pcaMethod = NULL,pcaPortion = 0.9, glmMethod = "one",
-                     nHoldout=min(10000,round(0.2*nrow(xy))), yCol = NULL,
-                     printTimes=TRUE,cls=NULL,startDeg=1)
+               pcaMethod = NULL,pcaLocation='front',pcaPortion = 0.9, 
+               glmMethod = "one", nHoldout=min(10000,round(0.2*nrow(xy))), 
+               yCol = NULL, cls=NULL,startDeg=1)
 {
 
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
@@ -26,25 +26,29 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
     nHoldout <- round(0.2*nrow(xy))
 
   y <- xy[,ncol(xy)]
-  if (is.factor(y)) {  # change to numeric code for the classes
-     y <- as.numeric(y)
-     xy[,ncol(xy)] <- y
-  }
+  xdata <- xy[,-ncol(xy), drop=FALSE]
+
+  # is this a classification problem?
+  classProblem <- is.factor(y) || use == 'mvrlm'
+  if (classProblem) {
+     if (is.factor(y))  { # change to numeric code for the classes
+        y <- as.numeric(y)
+        xy[,ncol(xy)] <- y
+     }
+     classes <- unique(y)
+  } else classes <- FALSE
   
   # need to set xdata = the predictor data, but first apply PCA if
   # requested; afterward, apply getPoly() to turn xdata into poly.xy,
   # including Y at the end
 
-  xdata <- xy[,-ncol(xy), drop=FALSE]
   if (!is.null(pcaMethod)) {
-     applyPCAoutput <- applyPCA(xdata,pcaMethod,pcaPortion,printTimes)
+     applyPCAoutput <- applyPCA(xdata,pcaMethod,pcaPortion)
      xdata <- applyPCAoutput$xdata
   } 
 
-  tmp <- system.time(
-       polyMat <- getPoly(xdata, maxDeg, maxInteractDeg)
-     )
-  if (printTimes) cat('getPoly time in xvalPoly: ',tmp,'\n')
+  tmp <- system.time(polyMat <- getPoly(xdata, maxDeg, maxInteractDeg))
+  cat('getPoly time in xvalPoly: ',tmp,'\n')
 
   xy <- cbind(polyMat$xdata, y)
 
@@ -61,6 +65,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
   for (i in 1:maxDeg) {  # for each degree
 
      m <- if(i > maxInteractDeg) maxInteractDeg else i
+
      endCol <- polyMat$endCols[i]
 
      # make train1, the portion of train.x for this polynomial degree i,
@@ -72,9 +77,9 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
      colnames(train1)[ncol(train1)] <- "y"
 
      pMatShort <- polyMat  # portion of polyMat for this i
-     pMatShort$xdata <- polyMat$xdata[testIdxs,1:endCol,drop=FALSE]
+     pMatShort$xdata <- polyMat$xdata[-testIdxs,1:endCol,drop=FALSE]
 
-     pol <- polyFit(train1,i,m,use,pcaMethod=NULL,pcaLocation=NULL,
+     pol <- polyFit(train1,i,m,use,pcaMethod,pcaLocation,
         pcaPortion,glmMethod,polyMat=pMatShort,cls=cls)
      pred <- predict(pol, test1)
 

@@ -436,28 +436,28 @@ testGP <- function()
 
 # arguments:
 #   xy: dataframe, response variable is in the last column; in
-#       classification case, this must be either an R factor or a
-#       numeric code for the various classes
+#      classification case, this must be either an R factor or a
+#      numeric code for the various classes
 #   deg: the degree of the polynomial terms
 #   maxInteractDeg: the max degree of dummy and nondummy predictor variables
-#                   interaction terms
+#      interaction terms
 #   use: can be "lm" for linear regreesion, "glm" for logistic
-#        regression, or "mvrlm" for multivariate-response lm()
+#      regression, or "mvrlm" for multivariate-response lm()
 #   pcaMethod: default is NULL, can be either "prcomp" (use the prcomp()
-#              function to compute PCA) or "RSectra" (use sparse Matrix and
-#              compute eigenvalues/vectors to compute PCA)
+#      function to compute PCA) or "RSectra" (use sparse Matrix and
+#      compute eigenvalues/vectors to compute PCA)
 #   pcaPortion: number of principal components to be used; if < 1, this
-#               specifies a desired proportion of explained variance,
-#               otherwise the actual number of components; if RSectra
-#               method is used, must be >= 1
+#      specifies a desired proportion of explained variance,
+#      otherwise the actual number of components; if RSectra
+#      method is used, must be >= 1
 #   pcaLocation: if 'front', compute principal comps and then form
-#                polynomial in them; if 'back', do the opposite;
-#                relevant only if pcaMethod is non-NULL
+#      polynomial in them; if 'back', do the opposite;
+#      relevant only if pcaMethod is non-NULL
 #   glmMethod: which method ("all" for all-vs-all, "one" for one-vs-all,
-#              "multlog" for multinomial logistic regression)
-#              to use for multi-class classification
-#   printTimes: whether to print the time of PCA, getPoly, lm, or glm.
-#   polyMat: if non-NULL, then polynomial matrix will be passed in 
+#      "multlog" for multinomial logistic regression)
+#      to use for multi-class classification
+#   polyMat: if non-NULL, then polynomial matrix will be passed in; note
+#      that then xy is ignored except for the Y column
 #   cls:  R 'parallel' cluster
 
 # return: the object of class polyFit
@@ -470,8 +470,7 @@ testGP <- function()
 # useful
 
 polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
-     pcaLocation='front',pcaPortion=0.9,glmMethod="one",printTimes=TRUE,
-     polyMat=NULL,cls=NULL) 
+     pcaLocation='front',pcaPortion=0.9,glmMethod="one", polyMat=NULL,cls=NULL) 
 {
 
   if (!use %in% c('lm','glm','mvrlm')) 
@@ -500,15 +499,15 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   # if poly matrix is not already provided, need to create it now?
   if (is.null(polyMat))  {
      if (!doPCA || (doPCA && pcaLocation == 'back'))  {
-         tmp <- system.time(
-           polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
-         )
-         if (printTimes) cat('getPoly time: ',tmp,'\n')
+         tmp <- 
+           system.time(polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata)
+         cat('getPoly time: ',tmp,'\n')
      }
   }
 
   # by this point, polyMat will exist either if (a) pre-provided, (b)
-  # PCA is not requested, or (c) PCA is requested with 'back
+  # PCA is not requested, or (c) PCA is requested with 'back; it is not
+  # ready if PCA and 'front' were requested
 
   if (doPCA)  {  # start PCA section
 
@@ -523,15 +522,14 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
     if (pcaLocation == 'front') {
        if (is.null(polyMat)) {
-          applyPCAOutputs <- applyPCA(xdata,pcaMethod,pcaPortion,printTimes)
+          applyPCAOutputs <- applyPCA(xdata,pcaMethod,pcaPortion)
           xdata <- applyPCAOutputs$xdata
-          tmp <- system.time(
-            polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata
-          )
-          if (printTimes) cat('getPoly time: ',tmp,'\n')
+          tmp <- 
+            system.time(polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata)
+          cat('getPoly time: ',tmp,'\n')
        }  
     } else  {  # 'back'
-       applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion,printTimes)
+       applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion)
        polyMat <- applyPCAOutputs$xdata
     }
 
@@ -548,8 +546,8 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
   # this is the new xy, i.e. the polynomialized and possibly PCA-ized
   # version of xy
-  plm.xy <- as.data.frame(cbind(polyMat,y))
   browser()
+  plm.xy <- as.data.frame(cbind(polyMat$xdata,y))
 
   # OK, PCA and getPoly() taken care of, now find the fit, to be
   # assigned to ft
@@ -558,7 +556,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
     tmp <- system.time(
        ft <- lm(y~., data = plm.xy)
     )
-    if (printTimes) cat('lm() time: ',tmp,'\n')
+    cat('lm() time: ',tmp,'\n')
     glmMethod <- NULL
   } else if (use == "glm" || use == 'mvrlm') {
        classes <- unique(y)  # see preprocessing of y, start of this ftn
@@ -566,27 +564,25 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
           if (length(classes) == 2) {
             # plm.xy$y <- as.numeric(ifelse(plm.xy$y == classes[1], 1, 0))
             plm.xy$y <- as.numeric(plm.xy$y == classes[1])
-            tmp <- system.time(
-            ft <- glm(y~., family = binomial(link = "logit"), data = plm.xy)
-            )
-            if (printTimes) cat('2-class glm() time: ',tmp,'\n')
+            tmp <- system.time(ft <- glm(y~., family = binomial,data = plm.xy))
+            cat('2-class glm() time: ',tmp,'\n')
             glmMethod <- NULL
           }  # end 2-class case
           else { # more than two classes
             if (glmMethod == "all") { # all-vs-all
               tmp <- system.time(ft <- polyAllVsAll(plm.xy, classes))
-              if (printTimes) cat('all-vs-all glm() time: ',tmp,'\n')
+              cat('all-vs-all glm() time: ',tmp,'\n')
             } else if (glmMethod == "one") { # one-vs-all
               tmp <- system.time(
                  ft <- polyOneVsAll(plm.xy, classes,cls)
               )
-              if (printTimes) cat('one-vs-all glm() time: ',tmp,'\n')
+              cat('one-vs-all glm() time: ',tmp,'\n')
             } else if (glmMethod == "multlog") { # multinomial logistics
                require(nnet)
               tmp <- system.time(
               ft <- multinom(y~., plm.xy)
               )
-              if (printTimes) cat('multlog time: ', tmp, '\n')
+              cat('multlog time: ', tmp, '\n')
             }
           } # more than two classes
       # end 'glm' case
@@ -619,14 +615,14 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 # 09/11/18, NM: moved this function out of polyFit(), now standalone,
 # for readability
 
-applyPCA <- function(x, pcaMethod,pcaPortion,printTimes) {
+applyPCA <- function(x, pcaMethod,pcaPortion) {
 
   if (pcaMethod == "prcomp") { # use prcomp for pca
     tmp <- system.time(
       #xy.pca <- prcomp(x[,-ncol(xy)])
       xy.pca <- prcomp(x)
     )
-    if (printTimes) cat('PCA time: ',tmp,'\n')
+    cat('PCA time: ',tmp,'\n')
     if (pcaPortion >= 1.0) k <- pcaPortion else {
        k <- 0
        pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
@@ -635,7 +631,7 @@ applyPCA <- function(x, pcaMethod,pcaPortion,printTimes) {
            break
        }
     }
-    if (printTimes) cat(k,' principal comps used\n')
+    cat(k,' principal comps used\n')
     xdata <- xy.pca$x[,1:k, drop=FALSE]
 
   } else { # use RSpectra for PCA
@@ -644,7 +640,7 @@ applyPCA <- function(x, pcaMethod,pcaPortion,printTimes) {
     k <- pcaPortion 
     xy.eig <- eigs(xy.cov,k)
     xy.pca <- xy.eig
-    if (printTimes) cat(k,' principal comps used\n')
+    cat(k,' principal comps used\n')
     #xdata <- as.matrix(x[,-ncol(x)]) %*% xy.eig$vectors[,1:k]
     xdata <- as.matrix(x) %*% xy.eig$vectors[,1:k]
   }
