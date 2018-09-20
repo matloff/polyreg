@@ -72,4 +72,47 @@ newx
 predict(pfout,newx)
 # [1] "NO"
 ```
+Forward stepwise regression is also available with `FSR` which also accepts polynomial degree and interaction as inputs. 
+
+```r
+out <- FSR(iris)
+
+set seed to -162982340.
+
+The dependent variable is 'Species' which will be treated as multinomial.  The data contains 150 observations (N_train == 113 and N_test == 37), which were split using seed -162982340. The data contains 4 continuous features and 2 dummy variables. Between 6 and 105 models will be estimated. Each model will add a feature, which will be included in subsequent models if it explains at least an additional 0.01 of variance out-of-sample (after adjusting for the additional term on [0, 1]).
+
+Multinomial models will be fit with 'setosa' (the sample mode of the training data) as the reference category.
+
+
+beginning Forward Stepwise Regression...
+
+
+# weights:  9 (4 variable)
+initial  value 124.143189 
+iter  10 value 66.077933
+iter  20 value 65.630757
+iter  30 value 65.615252
+final  value 65.614681 
+converged
+
+
+
+The added feature WAS accepted into model 1 
+
+(training) AIC: 139.2294 
+(training) BIC: 144.6841 
+(test) classification accuracy: 0.7027027 
+
+######### (output abbreviated) ##########
+
+The output has a data.frame out$models that contains measures of fit and information about each model, such as the formula call. The output is also a nested list such that if the output is called 'out', out$model1, out$model2, and so on, contain further metadata. The predict method will automatically use the model with the best validated fit but individual models can also be selected like so:
+
+predict(out, newdata = Xnew, model_to_use = 3) 
+
+```
+`FSR()` contains a handful of parameters which make the function more or less 'optimistic' about estimating new models. `threshold_include` sets the minimum improvment on the best model to include new features (default 0.01 in adjusted R^2^ for continuous outcomes and accuracy for multinomial outcomes, with the same adjustment applied). `threshold_estimate`, is the treshold to keep adding additional features on the same scale. For categorical outcomes, a linear probability model can also be estimated via Ordinary Least Squares for speed.
+
+```r
+out <- FSR(iris, linear_estimation=TRUE)
+```
 
