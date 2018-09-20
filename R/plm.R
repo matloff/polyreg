@@ -242,8 +242,8 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
   check_dummy <- function(xcol) {
      uxcol <- unique(xcol)
      if (length(uxcol) == 1)
-        return(uxcol == 0 || uxcol == 1) 
-     setequal(uxcol,0:1) 
+        return(uxcol == 0 || uxcol == 1)
+     setequal(uxcol,0:1)
   }
   is_dummy <- sapply(xdata, check_dummy)
   dummy <- xdata[, is_dummy, drop = FALSE]
@@ -470,10 +470,10 @@ testGP <- function()
 # useful
 
 polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
-     pcaLocation='front',pcaPortion=0.9,glmMethod="one", polyMat=NULL,cls=NULL) 
+     pcaLocation='front',pcaPortion=0.9,glmMethod="one", polyMat=NULL,cls=NULL)
 {
 
-  if (!use %in% c('lm','glm','mvrlm')) 
+  if (!use %in% c('lm','glm','mvrlm'))
      stop('"use" must be "lm", "glm" or "mvrlm"')
 
   y <- xy[,ncol(xy)]
@@ -499,7 +499,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   # if poly matrix is not already provided, need to create it now?
   if (is.null(polyMat))  {
      if (!doPCA || (doPCA && pcaLocation == 'back'))  {
-         tmp <- 
+         tmp <-
            system.time(polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata)
          cat('getPoly time: ',tmp,'\n')
      }
@@ -512,7 +512,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   if (doPCA)  {  # start PCA section
 
     if (pcaMethod == 'RSpectra' && pcaPortion < 1)
-       stop('use prcomp method for this case') 
+       stop('use prcomp method for this case')
     if (!pcaMethod %in% c('prcomp','RSpectra'))
        stop("pcaMethod should be either NULL, prcomp, or RSpectra")
     stopifnot(pcaLocation %in% c('front','back'))
@@ -524,10 +524,10 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
        if (is.null(polyMat)) {
           applyPCAOutputs <- applyPCA(xdata,pcaMethod,pcaPortion)
           xdata <- applyPCAOutputs$xdata
-          tmp <- 
+          tmp <-
             system.time(polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata)
           cat('getPoly time: ',tmp,'\n')
-       }  
+       }
     } else  {  # 'back'
        applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion)
        polyMat <- applyPCAOutputs$xdata
@@ -546,12 +546,11 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
   # this is the new xy, i.e. the polynomialized and possibly PCA-ized
   # version of xy
-  browser()
   plm.xy <- as.data.frame(cbind(polyMat$xdata,y))
 
   # OK, PCA and getPoly() taken care of, now find the fit, to be
   # assigned to ft
-  
+
   if (use == "lm") {
     tmp <- system.time(
        ft <- lm(y~., data = plm.xy)
@@ -599,7 +598,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
             eval(parse(text=cmd))
       }
 
-  }  # end 'glm'/'mvrlm' case 
+  }  # end 'glm'/'mvrlm' case
 
   # create return value and wrap up
   pcaPrn <- if(doPCA) pcaPortion else 0
@@ -637,7 +636,7 @@ applyPCA <- function(x, pcaMethod,pcaPortion) {
   } else { # use RSpectra for PCA
     require(RSpectra)
     xy.cov <- cov(x)
-    k <- pcaPortion 
+    k <- pcaPortion
     xy.eig <- eigs(xy.cov,k)
     xy.pca <- xy.eig
     cat(k,' principal comps used\n')
@@ -677,13 +676,13 @@ predict.polyFit <- function(object,newdata)
   if (!doPCA) {
     plm.newdata <-
       getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
-  } else if (object$PCA == "prcomp") {  
+  } else if (object$PCA == "prcomp") {
        if (object$pcaLocation == "front") {
          new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
          plm.newdata <-
             getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
        } else if (object$pcaLocation == "back") {
-         new_data <- 
+         new_data <-
             getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
          plm.newdata <- predict(object$pca.xy, new_data)[,1:object$pcaCol]
          plm.newdata <- as.data.frame(plm.newdata)
@@ -695,7 +694,7 @@ predict.polyFit <- function(object,newdata)
          plm.newdata <-
            getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
        } else if (object$pcaLocation == "back") {
-         new_data <- 
+         new_data <-
             getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
          ### xy.cov <- cov(new_data)
          ### xy.eig <- eigs(xy.cov,object$pcaCol)
@@ -705,18 +704,18 @@ predict.polyFit <- function(object,newdata)
          plm.newdata <- as.data.frame(plm.newdata)
        }
   }  # end doPCA
-  
+
   if (object$use == "lm") {
     pred <- predict(object$fit, plm.newdata)
     return(pred)
   }
 
-  if (object$use == "mvrlm") { 
+  if (object$use == "mvrlm") {
       pre <- predict(object$fit, plm.newdata)
       pred <- apply(pre,1,which.max)
       return(pred)
-  } 
-  
+  }
+
   # glm case
   if (is.null(object$glmMethod)) { # only two classes
     pre <- predict(object$fit, plm.newdata)
