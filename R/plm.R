@@ -476,10 +476,13 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   if (!use %in% c('lm','glm','mvrlm'))
      stop('"use" must be "lm", "glm" or "mvrlm"')
 
+  # if polyFit() called with non-NULL polyMat, the latter will come in
+  # with both xdata and endCols components; to be consistent with the
+  # NULL case, limit to xdata now
   if (!is.null(polyMat)) polyMat <- polyMat$xdata
 
   y <- xy[,ncol(xy)]
-  xdata <- if (!is.null(polyMat)) polyMat$xdata else xy[,-ncol(xy)]
+  xdata <- if (!is.null(polyMat)) polyMat else xy[,-ncol(xy)]
 
   doPCA <- !is.null(pcaMethod)
 
