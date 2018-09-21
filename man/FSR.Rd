@@ -6,9 +6,10 @@
 \usage{
 FSR(Xy, max_poly_degree = 3, max_interaction_degree = 2, outcome = NULL,
   linear_estimation = FALSE, threshold_include = 0.01,
-  threshold_estimate = 0.001, standardize = FALSE, pTraining = 0.8,
-  pValidation = 0.2, min_models = NULL, max_fails = 2, file_name = NULL,
-  store_fit = "none", max_block = 250, noisy = TRUE, seed = NULL)
+  threshold_estimate = 0.001, min_models = NULL, max_fails = 2,
+  standardize = FALSE, pTraining = 0.8, pValidation = 0.2,
+  file_name = NULL, store_fit = "none", max_block = 250, noisy = TRUE,
+  seed = NULL)
 }
 \arguments{
 \item{Xy}{matrix or data.frame; outcome must be in final column.}
@@ -25,15 +26,15 @@ FSR(Xy, max_poly_degree = 3, max_interaction_degree = 2, outcome = NULL,
 
 \item{threshold_estimate}{minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). -1.001 means 'estimate all'. Default: 0.001.}
 
+\item{min_models}{minimum number of models to estimate. Defaults to the number of features (unless P > N).}
+
+\item{max_fails}{maximum number of models to FSR() can fail on computationally before exiting. Default == 2.}
+
 \item{standardize}{if TRUE (not default), standardizes continuous variables.}
 
 \item{pTraining}{portion of data for training}
 
 \item{pValidation}{portion of data for validation}
-
-\item{min_models}{minimum number of models to estimate. Defaults to the number of features (unless P > N).}
-
-\item{max_fails}{maximum number of models to FSR() can fail on computationally before exiting. Default == 2.}
 
 \item{file_name}{If a file name (and path) is provided, saves output after each model is estimated as an .RData file. ex: file_name = "results.RData". See also store_fit for options as to how much to store in the outputted object.}
 

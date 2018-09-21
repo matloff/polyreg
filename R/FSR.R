@@ -17,11 +17,11 @@
 #' @param max_interaction_degree highest interaction order; default 2 (allow x_i*x_j). Also interacts each level of factors with continuous features.
 #' @param threshold_include minimum improvement to include a recently added term in the model (change in fit originally on 0 to 1 scale). -1.001 means 'include all'. Default: 0.01. (Adjust R^2 for linear models, Pseudo R^2 for logistic regression, out-of-sample accuracy for multinomial models. In latter two cases, the same adjustment for number of predictors is applied as pseudo-R^2.)
 #' @param threshold_estimate minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). -1.001 means 'estimate all'. Default: 0.001.
+#' @param min_models minimum number of models to estimate. Defaults to the number of features (unless P > N).
+#' @param max_fails maximum number of models to FSR() can fail on computationally before exiting. Default == 2.
 #' @param standardize if TRUE (not default), standardizes continuous variables.
 #' @param pTraining portion of data for training
 #' @param pValidation portion of data for validation
-#' @param min_models minimum number of models to estimate. Defaults to the number of features (unless P > N).
-#' @param max_fails maximum number of models to FSR() can fail on computationally before exiting. Default == 2.
 #' @param file_name If a file name (and path) is provided, saves output after each model is estimated as an .RData file. ex: file_name = "results.RData". See also store_fit for options as to how much to store in the outputted object.
 #' @param store_fit If file_name is provided, FSR() will return coefficients, measures of fit, and call details. Save entire fit objects? Options include "none" (default, just save those other items), "accepted_only" (only models that meet the threshold), and "all".
 #' @param max_block Most of the linear algebra is done recursively in blocks to ease memory managment. Default 250. Changing up or down may slow things...
@@ -35,14 +35,11 @@
 #' @export
 FSR <- function(Xy,
                 max_poly_degree = 3, max_interaction_degree = 2,
-                outcome = NULL,
-                linear_estimation = FALSE,
-                threshold_include = 0.01,
-                threshold_estimate = 0.001,
+                outcome = NULL, linear_estimation = FALSE,
+                threshold_include = 0.01, threshold_estimate = 0.001,
+                min_models = NULL, max_fails = 2,
                 standardize = FALSE,
                 pTraining = 0.8, pValidation = 0.2,
-                min_models = NULL,
-                max_fails = 2,
                 file_name = NULL,
                 store_fit = "none",
                 max_block = 250,
@@ -72,9 +69,8 @@ FSR <- function(Xy,
 
     k <- N_distinct(Xy[,i])
 
-    if(k == 2 || is.character(Xy[,i])){
-        Xy[,i] <- as.factor(Xy[,i])    # switch this to as.character() in case of nuissance
-    }
+    if(k == 2 || is.character(Xy[,i]))
+        Xy[,i] <- as.factor(Xy[,i])
 
     if(is.factor(Xy[,i]) && i == ncol(Xy)){
 
@@ -121,8 +117,7 @@ FSR <- function(Xy,
     }
   }
 
-
-  out[["seed"]] <- if(is.null(seed)) sample(.Random.seed, 1) else seed
+  out[["seed"]] <- if(is.null(seed)) sample(10^9, 1) else seed
   set.seed(out$seed)
   if(noisy) message("set seed to ", out$seed, ".\n")
 
@@ -134,6 +129,7 @@ FSR <- function(Xy,
 
   if(out$outcome == "multinomial"){
     out[["best_test_adj_accuracy"]] <- 0
+    models[["test_adj_accuracy"]] <- 0
   }else{
     out[["best_test_adjR2"]] <- 0
     # computes pseudo, most important for logit. for ols, multiple definitions of R^2 equivalent including squared correlation.
@@ -195,9 +191,14 @@ FSR <- function(Xy,
     if(out$outcome == "multinomial"){
 
       tallies <- table(Xy[out$split == "train", ncol(Xy)])
+      if(noisy && min(tallies) < 10){
+        warning("Training the model with rarely observed labels is not recommended.")
+        tables(tallies)
+      }
+
       modal_outcome <- names(tallies)[which.max(tallies)]
       out[["reference_category"]] <- modal_outcome
-      Xy[ ,ncol(Xy)] <- relevel(Xy[,ncol(Xy)], out$reference_category)
+      Xy[ , ncol(Xy)] <- relevel(Xy[,ncol(Xy)], out$reference_category)
 
       if(out$noisy) message("Multinomial models will be fit with '",
                           modal_outcome,
@@ -211,7 +212,7 @@ FSR <- function(Xy,
 
     if(out$linear_estimation){
 
-      ln_odds <- log_odds(Xy[,ncol(Xy)], split = (out$split == "train"), noisy = out$noisy)
+      ln_odds <- log_odds(Xy[,ncol(Xy)], split = (out$split == "train"), noisy = noisy)
 
       if(out$outcome == "binary"){
 
@@ -240,7 +241,7 @@ FSR <- function(Xy,
 
     if(out$outcome == "continuous"){ # fit, etc.
 
-      out <- ols(out, Xy, m, y = y_train)
+      system.time(out <- ols(out, Xy, m, y = y_train))
 
     }else{ # begin classification
 
@@ -248,13 +249,13 @@ FSR <- function(Xy,
 
         if(out$linear_estimation){
 
-          out <- ols(out, Xy, m, y = y_train)
+          system.time(out <- ols(out, Xy, m, y = y_train))
 
         }else{
 
           if(noisy) cat("\n\n")
-          out[[mod(m)]][["fit"]] <- multinom(as.formula(out$models$formula[m]),
-                                           Xy[out$split == "train", ], trace = noisy)
+          system.time(out[[mod(m)]][["fit"]] <- multinom(as.formula(out$models$formula[m]),
+                                           Xy[out$split == "train", ], trace = noisy))
           out[[mod(m)]][["coeffs"]] <- t(as.matrix(coefficients(out[[mod(m)]][["fit"]])))
           out <- post_estimation(out, Xy, m)
 
@@ -262,23 +263,23 @@ FSR <- function(Xy,
       }else{ # start binary
 
         if(out$linear_estimation){
-          out <- ols(out, Xy, m, y = y_train)
+          system.time(out <- ols(out, Xy, m, y = y_train))
         }else{
-          out[[mod(m)]][["fit"]] <- glm(as.formula(out$models$formula[m]),
-                                        Xy[out$split == "train",],
-                                        family = binomial(link = "logit"))
+          system.time(out[[mod(m)]][["fit"]] <- glm(as.formula(out$models$formula[m]),
+                                                    Xy[out$split == "train",],
+                                                    family = binomial(link = "logit")))
           out[[mod(m)]][["coeffs"]] <- out[[mod(m)]][["fit"]][["coefficients"]]
           out <- post_estimation(out, Xy, m, y_test)
         }
       } # end logit
     } # end fit, etc.
 
-    if(out$noisy)
-      summary(out, estimation_overview = FALSE,
-              results_overview = FALSE, model_number = m)
-
     out$models$estimated[m] <- complete(out[[mod(m)]][["coeffs"]])
 
+    if(out$noisy)
+      summary(out, estimation_overview = FALSE, results_overview = FALSE, model_number = m)
+
+    # saving or removing ...
     if(out$store_fit == "none")
       out[[mod(m)]][["fit"]] <- NULL
 
