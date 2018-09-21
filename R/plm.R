@@ -477,9 +477,12 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
      stop('"use" must be "lm", "glm" or "mvrlm"')
 
   y <- xy[,ncol(xy)]
-  xdata <- if (!is.null(polyMat)) polyMat$xdata else xy[,-ncol(xy)]
-
   doPCA <- !is.null(pcaMethod)
+
+  if (!is.null(polyMat)) {
+     polyMat <- polyMat$xdata
+     xdata <- polyMat
+  } else xdata <- xy[,-ncol(xy)]
 
   # is this a classification problem?
   classProblem <- is.factor(y) || use == 'mvrlm'
@@ -546,7 +549,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
   # this is the new xy, i.e. the polynomialized and possibly PCA-ized
   # version of xy
-  plm.xy <- as.data.frame(cbind(polyMat$xdata,y))
+  plm.xy <- as.data.frame(cbind(polyMat,y))
 
   # OK, PCA and getPoly() taken care of, now find the fit, to be
   # assigned to ft
@@ -614,7 +617,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 # 09/11/18, NM: moved this function out of polyFit(), now standalone,
 # for readability
 
-applyPCA <- function(x, pcaMethod,pcaPortion) {
+applyPCA <- function(x,pcaMethod,pcaPortion) {
 
   if (pcaMethod == "prcomp") { # use prcomp for pca
     tmp <- system.time(
