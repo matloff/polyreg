@@ -42,24 +42,26 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
   # requested; afterward, apply getPoly() to turn xdata into poly.xy,
   # including Y at the end
 
-  if (!is.null(pcaMethod)) {
-     applyPCAoutput <- applyPCA(xdata,pcaMethod,pcaPortion)
-     xdata <- applyPCAoutput$xdata
-  } 
 
-  tmp <- system.time(polyMat <- getPoly(xdata, maxDeg, maxInteractDeg))
-  cat('getPoly time in xvalPoly: ',tmp,'\n')
+  # NM, 09/20/18: since predict.polyFit() does its own call to
+  # getPoly(), no need to call it on the whole data; just need it on the
+  # training set
 
-  xy <- cbind(polyMat$xdata, y)
+  # xy <- cbind(polyMat$xdata, y)
 
-  split.xy <- splitData(xy, nHoldout)
-  training <- split.xy$trainSet
-  testing <- split.xy$testSet
+  testIdxs <- sample(1:nrow(xy),nHoldout,replace=FALSE)
+  training <- xy[-testIdxs,]
+  testing <- xy[testIdxs,]
   train.y <- training[,ncol(training)]
   train.x <- training[,-ncol(training)]
+  if (!is.null(pcaMethod)) {
+     applyPCAoutput <- applyPCA(train.x,pcaMethod,pcaPortion)
+     train.x <- applyPCAoutput$xdata
+  } 
+  tmp <- system.time(polyMat <- getPoly(train.x, maxDeg, maxInteractDeg))
+  cat('getPoly time in xvalPoly: ',tmp,'\n')
   test.y <- testing[,ncol(testing)]
   test.x <- testing[,-ncol(testing)]
-  testIdxs <- split.xy$testIdxs
 
   acc <- NULL
   for (i in 1:maxDeg) {  # for each degree
@@ -71,17 +73,21 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
      # make train1, the portion of train.x for this polynomial degree i,
      # and tack on Y at the end, yield train1; similar for test1, but no
      # Y
-     train1 <- cbind(training[,1:endCol], train.y)
-     test1 <- testing[,1:endCol, drop=FALSE]
+     train1 <- cbind(train.x, train.y)
+     # test1 <- testing[,1:endCol, drop=FALSE]
 
      colnames(train1)[ncol(train1)] <- "y"
 
-     pMatShort <- polyMat  # portion of polyMat for this i
-     pMatShort$xdata <- polyMat$xdata[-testIdxs,1:endCol,drop=FALSE]
+     # pMatShort <- polyMat  # portion of polyMat for this i
+     # pMatShort$xdata <- polyMat$xdata[-testIdxs,1:endCol,drop=FALSE]
 
+     # pol <- polyFit(train1,i,m,use,pcaMethod,pcaLocation,
+     #    pcaPortion,glmMethod,polyMat=pMatShort,cls=cls)
+     pMatShort <- polyMat  # portion of polyMat for this i
+     pMatShort$xdata <- polyMat$xdata[,1:endCol,drop=FALSE]
      pol <- polyFit(train1,i,m,use,pcaMethod,pcaLocation,
-        pcaPortion,glmMethod,polyMat=pMatShort,cls=cls)
-     pred <- predict(pol, test1)
+         pcaPortion,glmMethod,pMatShort,cls)
+     pred <- predict(pol, test.x)
 
     if (use == "lm") {
       acc[i] <- mean(abs(pred - test.y))
