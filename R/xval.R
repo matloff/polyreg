@@ -20,6 +20,8 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
                yCol = NULL, cls=NULL,startDeg=1)
 {
 
+stop('under construction')
+
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
 
   if(nHoldout > nrow(xy))
@@ -38,10 +40,6 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
      classes <- unique(y)
   } else classes <- FALSE
   
-  # need to set xdata = the predictor data, but first apply PCA if
-  # requested; afterward, apply getPoly() to turn xdata into poly.xy,
-  # including Y at the end
-
 
   # NM, 09/20/18: since predict.polyFit() does its own call to
   # getPoly(), no need to call it on the whole data; just need it on the
@@ -54,10 +52,12 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
   testing <- xy[testIdxs,]
   train.y <- training[,ncol(training)]
   train.x <- training[,-ncol(training)]
-  if (!is.null(pcaMethod)) {
-     applyPCAoutput <- applyPCA(train.x,pcaMethod,pcaPortion)
-     train.x <- applyPCAoutput$xdata
-  } 
+  # NM, 09/20/18: not sure why this was here; polyFit() should be the
+  # one to do this
+  # if (!is.null(pcaMethod)) {
+  #    applyPCAoutput <- applyPCA(train.x,pcaMethod,pcaPortion)
+  #    train.x <- applyPCAoutput$xdata
+  # } 
   tmp <- system.time(polyMat <- getPoly(train.x, maxDeg, maxInteractDeg))
   cat('getPoly time in xvalPoly: ',tmp,'\n')
   test.y <- testing[,ncol(testing)]
