@@ -546,7 +546,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
   # this is the new xy, i.e. the polynomialized and possibly PCA-ized
   # version of xy
-  plm.xy <- as.data.frame(cbind(polyMat$xdata,y))
+  plm.xy <- as.data.frame(cbind(polyMat,y))
 
   # OK, PCA and getPoly() taken care of, now find the fit, to be
   # assigned to ft
