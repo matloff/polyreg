@@ -476,12 +476,13 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   if (!use %in% c('lm','glm','mvrlm'))
      stop('"use" must be "lm", "glm" or "mvrlm"')
 
-  if (!is.null(polyMat)) polyMat <- polyMat$xdata
-
   y <- xy[,ncol(xy)]
-  xdata <- if (!is.null(polyMat)) polyMat else xy[,-ncol(xy)]
-
   doPCA <- !is.null(pcaMethod)
+
+  if (!is.null(polyMat)) {
+     polyMat <- polyMat$xdata
+     xdata <- polyMat
+  } else xdata <- xy[,-ncol(xy)]
 
   # is this a classification problem?
   classProblem <- is.factor(y) || use == 'mvrlm'
@@ -616,7 +617,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 # 09/11/18, NM: moved this function out of polyFit(), now standalone,
 # for readability
 
-applyPCA <- function(x, pcaMethod,pcaPortion) {
+applyPCA <- function(x,pcaMethod,pcaPortion) {
 
   if (pcaMethod == "prcomp") { # use prcomp for pca
     tmp <- system.time(
