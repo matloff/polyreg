@@ -64,7 +64,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
   test.x <- testing[,-ncol(testing)]
 
   acc <- NULL
-  for (i in 1:maxDeg) {  # for each degree
+  for (i in startDeg:maxDeg) {  # for each degree
 
      m <- if(i > maxInteractDeg) maxInteractDeg else i
 
