@@ -479,7 +479,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   if (!is.null(polyMat)) polyMat <- polyMat$xdata
 
   y <- xy[,ncol(xy)]
-  xdata <- if (!is.null(polyMat)) polyMatelse xy[,-ncol(xy)]
+  xdata <- if (!is.null(polyMat)) polyMat else xy[,-ncol(xy)]
 
   doPCA <- !is.null(pcaMethod)
 
