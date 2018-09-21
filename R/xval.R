@@ -20,7 +20,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
                yCol = NULL, cls=NULL,startDeg=1)
 {
 
-stop('under construction')
+# stop('under construction')
 
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
 
