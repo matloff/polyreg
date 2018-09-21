@@ -10,17 +10,16 @@
 #   yCol: if not NULL, Y is in this column, and will be moved to last
 
 # return: a vector of mean absolute error (for lm) or accuracy (for glm),
-#         the i-th element of the list is for degree = i
+#    the i-th element of the list is for degree = i
 
-# note: there is no pcaLocation option; polyFit is called with 'front'
+# note: there is no pcaLocation option; polyFit is called with 'back',
+# if at all
 
 xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
-               pcaMethod = NULL,pcaLocation='front',pcaPortion = 0.9, 
-               glmMethod = "one", nHoldout=min(10000,round(0.2*nrow(xy))), 
+               pcaMethod = NULL,pcaPortion = 0.9,glmMethod = "one", 
+               nHoldout=min(10000,round(0.2*nrow(xy))),pcaLocation='front',
                yCol = NULL, cls=NULL,startDeg=1)
 {
-
-# stop('under construction')
 
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
 
@@ -29,6 +28,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
 
   y <- xy[,ncol(xy)]
   xdata <- xy[,-ncol(xy), drop=FALSE]
+  ncolXY <- ncol(xy)
 
   # is this a classification problem?
   classProblem <- is.factor(y) || use == 'mvrlm'
@@ -40,62 +40,27 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
      classes <- unique(y)
   } else classes <- FALSE
   
-
-  # NM, 09/20/18: since predict.polyFit() does its own call to
-  # getPoly(), no need to call it on the whole data; just need it on the
-  # training set
-
-  # xy <- cbind(polyMat$xdata, y)
-
   testIdxs <- sample(1:nrow(xy),nHoldout,replace=FALSE)
   training <- xy[-testIdxs,]
   testing <- xy[testIdxs,]
-  train.y <- training[,ncol(training)]
-  train.x <- training[,-ncol(training)]
-  # NM, 09/20/18: not sure why this was here; polyFit() should be the
-  # one to do this
-  # if (!is.null(pcaMethod)) {
-  #    applyPCAoutput <- applyPCA(train.x,pcaMethod,pcaPortion)
-  #    train.x <- applyPCAoutput$xdata
-  # } 
-  tmp <- system.time(polyMat <- getPoly(train.x, maxDeg, maxInteractDeg))
-  cat('getPoly time in xvalPoly: ',tmp,'\n')
-  test.y <- testing[,ncol(testing)]
-  test.x <- testing[,-ncol(testing)]
+  train.y <- training[,ncolXY]
+  train.x <- training[,-ncolXY,drop=FALSE]
+  test.y <- testing[,ncolXY]
+  test.x <- testing[,-ncolXY,drop=FALSE]
 
   acc <- NULL
   for (i in startDeg:maxDeg) {  # for each degree
-
      m <- if(i > maxInteractDeg) maxInteractDeg else i
-
-     endCol <- polyMat$endCols[i]
-
-     # make train1, the portion of train.x for this polynomial degree i,
-     # and tack on Y at the end, yield train1; similar for test1, but no
-     # Y
-     train1 <- cbind(train.x, train.y)
-     # test1 <- testing[,1:endCol, drop=FALSE]
-
-     colnames(train1)[ncol(train1)] <- "y"
-
-     # pMatShort <- polyMat  # portion of polyMat for this i
-     # pMatShort$xdata <- polyMat$xdata[-testIdxs,1:endCol,drop=FALSE]
-
-     # pol <- polyFit(train1,i,m,use,pcaMethod,pcaLocation,
-     #    pcaPortion,glmMethod,polyMat=pMatShort,cls=cls)
-     pMatShort <- polyMat  # portion of polyMat for this i
-     pMatShort$xdata <- polyMat$xdata[,1:endCol,drop=FALSE]
-     pol <- polyFit(train1,i,m,use,pcaMethod,pcaLocation,
-         pcaPortion,glmMethod,pMatShort,cls)
+     pol <- polyFit(training,i,m,use,pcaMethod,pcaLocation,
+         pcaPortion,glmMethod,cls)
      pred <- predict(pol, test.x)
-
-    if (use == "lm") {
-      acc[i] <- mean(abs(pred - test.y))
-    } else
-      acc[i] <- mean(pred == test.y) # accuracy
-    cat('accuracy: ',acc[i],'\n')
-
+     if (use == "lm") {
+       acc[i] <- mean(abs(pred - test.y))
+     } else
+       acc[i] <- mean(pred == test.y) # accuracy
+     cat('accuracy: ',acc[i],'\n')
   } # for each degree
+
   return(acc)
 }
 

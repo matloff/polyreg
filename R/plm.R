@@ -191,8 +191,6 @@ only_dummy <- function(xy, deg) { # deal with dummy terms only
   return(result)
 }
 
-
-
 ##################################################################
 # polyMatrix: the class of polyMatrix from getPoly
 ##################################################################
@@ -206,8 +204,6 @@ polyMatrix <- function(x, k) {
   class(me) <- "polyMatrix"
   return(me)
 }
-
-
 
 ##################################################################
 # getPoly: generate poly terms of a data matrix / data frame
@@ -456,8 +452,6 @@ testGP <- function()
 #   glmMethod: which method ("all" for all-vs-all, "one" for one-vs-all,
 #      "multlog" for multinomial logistic regression)
 #      to use for multi-class classification
-#   polyMat: if non-NULL, then polynomial matrix will be passed in; note
-#      that then xy is ignored except for the Y column
 #   cls:  R 'parallel' cluster
 
 # return: the object of class polyFit
@@ -470,7 +464,7 @@ testGP <- function()
 # useful
 
 polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
-     pcaLocation='front',pcaPortion=0.9,glmMethod="one", polyMat=NULL,cls=NULL)
+     pcaLocation='front',pcaPortion=0.9,glmMethod="one",cls=NULL)
 {
 
   if (!use %in% c('lm','glm','mvrlm'))
@@ -478,11 +472,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
 
   y <- xy[,ncol(xy)]
   doPCA <- !is.null(pcaMethod)
-
-  if (!is.null(polyMat)) {
-     polyMat <- polyMat$xdata
-     xdata <- polyMat
-  } else xdata <- xy[,-ncol(xy)]
+  xdata <- xy[,-ncol(xy)]
 
   # is this a classification problem?
   classProblem <- is.factor(y) || use == 'mvrlm'
@@ -494,26 +484,8 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
      classes <- unique(y)
   } else classes <- FALSE
 
-  # the bulk of the following code will consist of handling various
-  # cases, involving (a) when should the polymials be generated (if not
-  # already in polyMat)?, (b) how should the two different PCA methods
-  # be handled in the case in which PCA is requested
-
-  # if poly matrix is not already provided, need to create it now?
-  if (is.null(polyMat))  {
-     if (!doPCA || (doPCA && pcaLocation == 'back'))  {
-         tmp <-
-           system.time(polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata)
-         cat('getPoly time: ',tmp,'\n')
-     }
-  }
-
-  # by this point, polyMat will exist either if (a) pre-provided, (b)
-  # PCA is not requested, or (c) PCA is requested with 'back; it is not
-  # ready if PCA and 'front' were requested
-
   if (doPCA)  {  # start PCA section
-
+    # safety checks first
     if (pcaMethod == 'RSpectra' && pcaPortion < 1)
        stop('use prcomp method for this case')
     if (!pcaMethod %in% c('prcomp','RSpectra'))
@@ -522,27 +494,28 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
     # can't do PCA with R factors or char
     if (!all(apply(xdata,2,is.numeric)))
        stop('X data must be numeric for PCA')
-
+    # now compute
     if (pcaLocation == 'front') {
-       if (is.null(polyMat)) {
-          applyPCAOutputs <- applyPCA(xdata,pcaMethod,pcaPortion)
-          xdata <- applyPCAOutputs$xdata
-          tmp <-
-            system.time(polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata)
-          cat('getPoly time: ',tmp,'\n')
-       }
+       applyPCAOutputs <- applyPCA(xdata,pcaMethod,pcaPortion)
+       xdata <- applyPCAOutputs$xdata
+       tmp <-
+         system.time(polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata)
+       cat('getPoly time: ',tmp,'\n')
     } else  {  # 'back'
-       applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion)
-       polyMat <- applyPCAOutputs$xdata
+      tmp <-
+        system.time(polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata)
+      cat('getPoly time: ',tmp,'\n')
+      applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion)
+      polyMat <- applyPCAOutputs$xdata
     }
-
     xy.pca <- applyPCAOutputs$xy.pca  # overall output of prcomp or RSpectra
     k <- applyPCAOutputs$k
-
   # end PCA section
-  }  else {  # no PCA, thus no PCA info
+  }  else {   # no-PCA section
      xy.pca <- NULL
      k <- 0
+     tmp <- system.time(polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata)
+     cat('getPoly time: ',tmp,'\n')
   }
 
   # by now, polyMat is ready for input to lm() etc. in all cases
