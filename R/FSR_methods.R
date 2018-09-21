@@ -95,10 +95,10 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
           cat("\nThe best model has pseudo R^2 (adjusted for P and N):",
               object$best_adjR2)
           cat("\nThe best model has out-of-sample accuracy:",
-              object$best_test_accuracy)
+              object$best_test_adj_accuracy)
         }else{
           cat("\nThe best model has out-of-sample accuracy (adjusted for P and N):",
-              object$best_adj_accuracy)
+              object$best_test_adj_accuracy)
         }
       }
       cat("\n\nThe output has a data.frame out$models that contains measures of fit and information about each model, such as the formula call. The output is also a nested list such that if the output is called 'out', out$model1, out$model2, and so on, contain further metadata. The predict method will automatically use the model with the best validated fit but individual models can also be selected like so:\n\npredict(z, newdata = Xnew, model_to_use = 3) \n\n")
