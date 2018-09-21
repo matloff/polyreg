@@ -33,6 +33,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
   # is this a classification problem?
   classProblem <- is.factor(y) || use == 'mvrlm'
   if (classProblem) {
+stop('under construction, classification case')
      if (is.factor(y))  { # change to numeric code for the classes
         y <- as.numeric(y)
         xy[,ncol(xy)] <- y
