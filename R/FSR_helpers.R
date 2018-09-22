@@ -263,16 +263,18 @@ ols <- function(object, Xy, m, train = TRUE, y = NULL){
     if(is.null(y))
       y <- if(train) Xy[object$split == "train", ncol(Xy)] else Xy[, ncol(Xy)]
 
-    if(ncol(X) >= length(y)){
+    if(ncol(X) >= length(y) && object$noisy){
 
-      if(object$noisy)
-        message("There are too few training observations to estimate model ",  m, ". Skipping.")
+      message("There are too few training observations to estimate further models (model == ",
+              m, "). Exiting.")
+      object$unable_to_estimate <- object$max_fails
 
     }else{
 
       XtX_inv <- block_solve(X = X, max_block = object$max_block,
                              A_inv = object$XtX_inv_accepted)
-      # initialized to NULL, which block_solve interprets as 'start from scratch'
+                                    # initialized to NULL,
+                                    # which block_solve interprets as 'start from scratch'
 
       if(!is.null(XtX_inv)){
 
@@ -280,12 +282,13 @@ ols <- function(object, Xy, m, train = TRUE, y = NULL){
 
         if(complete(object[[mod(m)]][["coeffs"]])){
 
+          object$models$estimated[m] <- TRUE
+
           object <- post_estimation(object, Xy, m)
           if(object$models$accepted[m])
             object$XtX_inv_accepted <- XtX_inv
 
           remove(XtX_inv)
-          object$models$estimated[m] <- TRUE
 
         }
       }
@@ -295,10 +298,11 @@ ols <- function(object, Xy, m, train = TRUE, y = NULL){
     warning("Unable to estimate model", m, "\n\n")
     object$unable_to_estimate <- object$unable_to_estimate + 1
   }
+  if(object$noisy) cat("\n")
   return(object)
 }
 
-post_estimation <- function(object, Xy, m, y_test = NULL){
+post_estimation <- function(object, Xy, m){
 
     P <- if(object$outcome == "multinomial")
             nrow(object[[mod(m)]][["coeffs"]]) else length(object[[mod(m)]][["coeffs"]])
