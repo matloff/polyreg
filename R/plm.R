@@ -326,16 +326,6 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg,del0cols=TRUE)
 delete0columns <- function(d) 
 {
    all0 <- function(x) all(x == 0)      
-#      i <- 1
-#      while (TRUE) {
-#         if (i > ncol(d)) break
-#         if (all0(d[,i])) {  # delete this col
-#            d[,i] <- NULL
-#         } else {
-#            i <- i + 1
-#         }
-#      }
-     
    tmp <- apply(d,2,all0)
    colsKeep <- which(!tmp)
    d[,colsKeep]
