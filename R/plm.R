@@ -196,11 +196,9 @@ only_dummy <- function(xy, deg) { # deal with dummy terms only
 ##################################################################
 
 # xy:  the actual xy matrix
-# endCols:  a list endCols[i] would be the column number of xy in
-#             which the degree-i terms end
-#' @export
-polyMatrix <- function(x, k) {
-  me <- list(xdata = x, endCols = k)
+# zeroDel:  all-0 columns created during polynomial generation were deleted
+polyMatrix <- function(x, retainedNames) {
+  me <- list(xdata = x, retainedNames = retainedNames)
   class(me) <- "polyMatrix"
   return(me)
 }
@@ -214,11 +212,16 @@ polyMatrix <- function(x, k) {
 #   xdata: the dataframe (only predictor variables)
 #   deg: the max degree of polynomial terms
 #   maxInteractDeg: the max degree of dummy and nondummy predictor variable
-#                   interaction terms
+#      interaction terms
+#   del0cols: if TRUE, all0 cols will be deleted, and the names of the
+#      remaining ones returned in the colsToKeep component of the return
+#      value; if a character vector, it will be taken to be the names of
+#      the columns to retain; this is motivated by the fact that the
+#      dummies generated from an R factor will be orthogonal
 
 # return: a polyMatrix object
 
-getPoly <- function(xdata, deg, maxInteractDeg = deg)
+getPoly <- function(xdata, deg, maxInteractDeg = deg,del0cols=TRUE)
 {
 
   if (deg < 1) {
@@ -226,7 +229,6 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
   }
 
   xdata <- as.data.frame(xdata)
-  endCols <- NULL
   #xy <- xydata[,-ncol(xydata), drop=FALSE]
   #y <- xydata[,ncol(xydata)]
   n <- ncol(xdata)
@@ -246,7 +248,6 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
   nondummy <- xdata[, !is_dummy, drop = FALSE]
 
   result <- xdata
-  endCols[1] <- ncol(xdata) # deg 1 starts at result[1] (first column)
 
   if (deg > 1) {
     for (m in 2:deg) {
@@ -295,38 +296,49 @@ getPoly <- function(xdata, deg, maxInteractDeg = deg)
           result <- cbind(result, mix)
         }
       } # end dummy & nondummy intersection
-      endCols[m] <- ncol(result)
     } # end loop 2:deg
   } # end if deg > 1
 
   rt <- as.data.frame(result)
 
-  # when some dummy variables arise originally from a categorical
-  # variable, their product will be identically 0, i.e. will result in
-  # a column of all 0s; such columns should not be returned below, and
-  # the easiest remedy is to excise them at this point, taking care to
-  # update endCols
-
-#   all0 <- function(x) all(x == 0)
-#   ec <- endCols
-#   i <- 0
-#   while (TRUE) {
-#      i <- i + 1
-#      if (i > ncol(rt)) break
-#      if (all0(rt[,i])) {
-#         tmp <- which(ec >= i)[1]
-#         lec <- length(ec)
-#         rt[,i] <- NULL
-#         ec[tmp:lec] <- ec[tmp:lec] - 1
-#      }
-#   }
-#   endCols <- ec
-
   for (i in 1:ncol(rt)) {
     colnames(rt)[i] <- paste("V", i, sep = "")
   }
 
-  return (polyMatrix(rt, endCols))
+  # when some dummy variables arise originally from a categorical
+  # variable, their product will be identically 0, i.e. will result in a
+  # column of all 0s (later resulting in NA coefficients with lm()
+  # etc.); such columns should not be returned below, and the easiest
+  # remedy is to excise them at this point, recording the retained
+  # column names for use in prediction later
+
+  if (is.logical(del0cols)) {
+     rt <- delete0columns(rt)
+     retainedNames <- names(rt)
+  } else if (is.character(del0cols)) {
+     rt <- rt[del0cols]
+  } else retainedNames <- NULL
+
+  return (polyMatrix(rt, retainedNames))
+}
+
+# deletes all-0 columns of the data frame d, returning the new data frame 
+delete0columns <- function(d) 
+{
+   all0 <- function(x) all(x == 0)      
+#      i <- 1
+#      while (TRUE) {
+#         if (i > ncol(d)) break
+#         if (all0(d[,i])) {  # delete this col
+#            d[,i] <- NULL
+#         } else {
+#            i <- i + 1
+#         }
+#      }
+     
+   tmp <- apply(d,2,all0)
+   colsKeep <- which(!tmp)
+   d[,colsKeep]
 }
 
 # parallel version of getPoly()
@@ -453,6 +465,10 @@ testGP <- function()
 #      "multlog" for multinomial logistic regression)
 #      to use for multi-class classification
 #   cls:  R 'parallel' cluster
+#   del0cols: normally this is set to TRUE during the training phase,
+#      and set to the vector of names of columns to be retained during
+#      prediction, making use of the information generated at the
+#      training phase
 
 # return: the object of class polyFit
 
@@ -464,7 +480,8 @@ testGP <- function()
 # useful
 
 polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
-     pcaLocation='front',pcaPortion=0.9,glmMethod="one",cls=NULL)
+     pcaLocation='front',pcaPortion=0.9,glmMethod="one",cls=NULL,
+     del0cols=TRUE)
 {
 
   if (!use %in% c('lm','glm','mvrlm'))
@@ -484,6 +501,10 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
      classes <- unique(y)
   } else classes <- FALSE
 
+  # note: in the several calls to getPoly() here in polyFit(), we use
+  # the default for the del0cols argument in the non-PCA case, FALSE
+  # otherwise
+
   if (doPCA)  {  # start PCA section
     # safety checks first
     if (pcaMethod == 'RSpectra' && pcaPortion < 1)
@@ -499,12 +520,18 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
        applyPCAOutputs <- applyPCA(xdata,pcaMethod,pcaPortion)
        xdata <- applyPCAOutputs$xdata
        tmp <-
-         system.time(polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata)
+         system.time(pMat <- getPoly(xdata, deg, maxInteractDeg,
+            del0cols=FALSE))
        cat('getPoly time: ',tmp,'\n')
+  polyMat <- pMat$xdata
+  retainedNames <- pMat$retainedNames
     } else  {  # 'back'
       tmp <-
-        system.time(polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata)
+        system.time(pMat <- getPoly(xdata, deg, maxInteractDeg,
+           del0cols=FALSE))
       cat('getPoly time: ',tmp,'\n')
+  polyMat <- pMat$xdata
+  retainedNames <- pMat$retainedNames
       applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion)
       polyMat <- applyPCAOutputs$xdata
     }
@@ -514,9 +541,13 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   }  else {   # no-PCA section
      xy.pca <- NULL
      k <- 0
-     tmp <- system.time(polyMat <- getPoly(xdata, deg, maxInteractDeg)$xdata)
+     tmp <- system.time(pMat <- getPoly(xdata, deg, maxInteractDeg,
+        del0cols=TRUE))
      cat('getPoly time: ',tmp,'\n')
+  polyMat <- pMat$xdata
+  retainedNames <- pMat$retainedNames
   }
+  
 
   # by now, polyMat is ready for input to lm() etc. in all cases
 
@@ -581,7 +612,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   me <-list(xy=xy,degree=deg,maxInteractDeg=maxInteractDeg,use=use,
     poly.xy=plm.xy,fit=ft,PCA=pcaMethod,pca.portion=pcaPrn,
     pca.xy=xy.pca,pcaCol=k,pcaLocation=pcaLocation,glmMethod=glmMethod,
-    classProblem=classProblem,classes=classes)
+    classProblem=classProblem,classes=classes,retainedNames=retainedNames)
   class(me) <- "polyFit"
   return(me)
 
@@ -650,16 +681,18 @@ predict.polyFit <- function(object,newdata)
   doPCA <- !is.null(object$PCA)
 
   if (!doPCA) {
-    plm.newdata <-
-      getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
+    plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg,
+       object$del0cols)$xdata
   } else if (object$PCA == "prcomp") {
        if (object$pcaLocation == "front") {
          new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
          plm.newdata <-
-            getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+            getPoly(new_data, object$degree, object$maxInteractDeg,
+               del0cols=FALSE)$xdata
        } else if (object$pcaLocation == "back") {
          new_data <-
-            getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
+            getPoly(newdata, object$degree, object$maxInteractDeg,
+               del0cols=FALSE)$xdata
          plm.newdata <- predict(object$pca.xy, new_data)[,1:object$pcaCol]
          plm.newdata <- as.data.frame(plm.newdata)
        } else stop('invalid pcaLocation')
@@ -668,10 +701,12 @@ predict.polyFit <- function(object,newdata)
          xy.eig <- object$pca.xy
          new_data <- as.matrix(newdata) %*% xy.eig$vectors
          plm.newdata <-
-           getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+           getPoly(new_data, object$degree, object$maxInteractDeg,
+              del0cols=FALSE)$xdata
        } else if (object$pcaLocation == "back") {
          new_data <-
-            getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
+            getPoly(newdata, object$degree, object$maxInteractDeg,
+               del0cols=FALSE)$xdata
          ### xy.cov <- cov(new_data)
          ### xy.eig <- eigs(xy.cov,object$pcaCol)
          xy.eig <- object$pca.xy
