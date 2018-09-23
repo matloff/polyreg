@@ -247,7 +247,7 @@ block_solve  <- function(S = NULL, X = NULL, max_block = 250, A_inv = NULL, recu
 
 
 
-ols <- function(object, Xy, m, train = TRUE, y = NULL){
+ols <- function(object, Xy, m, train = TRUE, y = NULL, y_test = NULL){
 
   X <- if(train){
           model_matrix(formula(object$models$formula[m]),
@@ -284,7 +284,7 @@ ols <- function(object, Xy, m, train = TRUE, y = NULL){
 
           object$models$estimated[m] <- TRUE
 
-          object <- post_estimation(object, Xy, m)
+          object <- post_estimation(object, Xy, m, y_test)
           if(object$models$accepted[m])
             object$XtX_inv_accepted <- XtX_inv
 
@@ -302,7 +302,7 @@ ols <- function(object, Xy, m, train = TRUE, y = NULL){
   return(object)
 }
 
-post_estimation <- function(object, Xy, m){
+post_estimation <- function(object, Xy, m, y_test = NULL){
 
     P <- if(object$outcome == "multinomial")
             nrow(object[[mod(m)]][["coeffs"]]) else length(object[[mod(m)]][["coeffs"]])
