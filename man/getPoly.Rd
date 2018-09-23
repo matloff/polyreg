@@ -9,21 +9,39 @@ Generate polynomial terms of predictor variables for a dataframe or data matrix.
 }
 
 \usage{
-getPoly(xydata, deg, maxInteractDeg = deg)
+getPoly(xydata, deg, maxInteractDeg = deg, del0cols=TRUE)
 }
 
 \arguments{
   \item{xydata}{Data matrix or dataframe without response variable.}
   \item{deg}{The max degree to generate polynomial terms.}
-  \item{maxInteractDeg}{The max degree of dummny and nondummy interaction predictor variables.}
+  \item{maxInteractDeg}{The max degree of dummy and nondummy interaction 
+        predictor variables.}
+   \item{del0cols}{Delete all-0 columns from output.  If TRUE, determine
+        such columns during computation; if a character vector, delete
+        the colums with those names.}
 }
 
 \details{
 
    The \code{getPoly} function takes in a dataframe or data matrix and
-   generates polynomial terms of predictor variables, and it gets rid of
-   redundant terms for categorical variables. For example, for a predictor
-   variable with only 0 and 1, its square and cubic terms are the same.
+   generates polynomial terms of predictor variables. 
+   
+   Note the subtleties involving dummy variables.  The square, cubic and
+   so on terms are the same as the original variable, and the various
+   duplicates must be eliminated.  
+   
+   Similarly, after dummy variable are created from a categorical
+   variable having more than two levels, the resulting columns will be
+   orthogonal to each other.  In most cases, the result all-0 columns
+   should be eliminated, hence the argument \code{del0cols}.  In typical
+   usage, one would set this argument to TRUE at the training stage, and
+   then for all predictions use the vector of names in the
+   \code{retainedNames} component in the return value of this function;
+   \code{predict.polyFit} does the latter automatically, so
+   \code{getPoly} must set \code{del0cols} to TRUE in the training
+   phase.
+
    Also, this function treats predictor variables that have only two kinds
    of values categorical variables, so the data needs preprocessing to
    multiple dummy variables if needed.
