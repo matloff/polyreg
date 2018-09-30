@@ -23,8 +23,7 @@ The question is, Can we discern from the plots that originally we had a
 plot() without col = the original class labels.  We then add in the
 labels to reveal how well the plots did.
 
-sw <- read.table('~/Research/PolyReg/polyreg/data/SwissRoll/Surendran.txt',
-   header=T)
+sw <- read.table('Surendran.txt',header=T)
 sw[,4] <- as.factor(sw[,4])
 
 PCA is a failure, just displays a spiral swirl 
