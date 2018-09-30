@@ -23,24 +23,27 @@
 #             must be an R factor, unless nIntervals is non-NULL, in
 #             which case Y will be discretized to make labels
 #    deg:  degree of polynomial expansion
+#    scale:  if TRUE, first call scale() on the X data
 #    nSubSam:  number of rows to randomly select; 0 means get all
 #    nIntervals: in regression case, number of intervals to use for
 #                partioning Y range to create labels
 #    saveOutputs: if TRUE, return list with gpOut = output of getPoly(), 
-#                  prout = output of prcomp()
+#                 prout = output of prcomp()
 #    cex: argument to R plot(), controlling point size
 
-prVis <- function(xy,labels=FALSE,deg=2,nSubSam=0,nIntervals=NULL,
+prVis <- function(xy,labels=FALSE,deg=2,scale=FALSE,nSubSam=0,nIntervals=NULL,
    saveOutputs=FALSE,cex=0.5)
 {  
   nrxy <- nrow(xy)
   ncxy <- ncol(xy)
 
   rns <- row.names(xy)
-  if (labels) {
-     xy[,-ncxy] <- scale(xy[,-ncxy])
-  } else xy <- scale(xy)
-  row.names(xy) <- rns
+  if (scale) {
+     if (labels) {
+        xy[,-ncxy] <- scale(xy[,-ncxy])
+     } else xy <- scale(xy)
+     row.names(xy) <- rns
+  }
 
   if (nSubSam < nrxy && nSubSam > 0)  
      xy <- xy[sample(1:nrxy,nSubSam),]
@@ -71,9 +74,9 @@ prVis <- function(xy,labels=FALSE,deg=2,nSubSam=0,nIntervals=NULL,
 
 # intended to be used when a plot produced by prVis() is on the screen;
 # chooses np points at random from the PCA output, writing their row
-# numbers on the plot; if nSubSam > 0 note that these are the numbers
-# from the full dataset; the argument savedPrVisOut is the return value
-# of prVis()
+# numbers on the plot; these are the numbers from the full dataset, even
+# if nSubSam > 0; the argument savedPrVisOut is the return value of
+# prVis()
 
 addRowNums <- function(np,savedPrVisOut) 
 {
