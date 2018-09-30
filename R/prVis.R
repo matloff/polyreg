@@ -6,7 +6,7 @@
 
 # t-sne, e.g. in the Rtsne package, applied in dimension k, attempts to
 # find a k-dimensional manifold for which most of the data are "near";
-# for visualization purposes, typically k = 2, which is assumed heree
+# for visualization purposes, typically k = 2, which is assumed here
 
 # the idea here is to expand the data with polynomial terms, using
 # getPoly(), then apply PCA to the result

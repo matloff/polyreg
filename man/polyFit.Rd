@@ -5,7 +5,7 @@
 \title{Polynomial Fit}
 
 \description{
-Fit polynomial regression using a linear or logistic model; predict on 
+Fit polynomial regression using a linear or logistic model; predict 
 new data.}
 
 \usage{
