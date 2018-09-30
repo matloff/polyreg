@@ -38,12 +38,29 @@ approach based on polynomials may be effective too.  Specifically,
 \code{prVis} first expands \code{xy} to polynomial terms, then applies
 PCA to the result.
 
+Once a plot is displayed, \code{addRowNums} can be used to add
+row-number IDs of random points, to gain further insight into the data.
+
 }
 
 \value{
+If \code{saveOutputs} is set, an R list is returned, with comppnents
+\code{gpOut}, the generated polynomial matrix, and \code{prout}, the
+return value from the call to \code{prcomp}.
 }
 
 \examples{
 
+getPE()  # prgeng data, included in pkg
+# may want to predict wage; look at some predictors
+pe1 <- pe[,c(1,2,6:16)]
+z <- prVis(pe1,nSubSam=2000,saveOutputs=T,labels=FALSE)  
+# get a bunch of streaks; why?
+# call addRowNums() (not shown); discover that points on the same streak
+# tend to have same combination of sex, education and occupation; moving
+# along a streak mainly consists of variying age
+
+print('see data/SwissRoll for another example')
 
 }
+
