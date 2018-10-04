@@ -71,10 +71,12 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
         " continuous features and ", object$P_factor,
         " dummy variables. Between ", object$min_models, " and ",
         min(nrow(object$models), object$N_train - 1),
-        " models will be estimated. Each model will add a feature, ",
+        " models will be considered. Each model will add a feature, ",
         "which will be included in subsequent models if it explains at least an additional ",
         object$threshold_include,
-        " of variance out-of-sample (after adjusting for the additional term on [0, 1]).\n\n", sep="")
+        " of variance out-of-sample (after adjusting for the additional term on [0, 1]).",
+        " Note: x3*x7, for example, will not be included if x3 and and x7 were not previously included.\n\n",
+        sep="")
 
   }
 
