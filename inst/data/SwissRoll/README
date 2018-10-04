@@ -1,0 +1,41 @@
+
+Data derived from Dinoj Surendran's site,
+
+http://people.cs.uchicago.edu/~dinoj/manifold/swissroll.html
+
+Famous example for visual testing of dimensionality reduction
+algorithms. A 4-component bivariate Gaussian mixture is generated,
+creating a dataset with columns x and y.  Then a new dataset is
+generated, with columns (x cos x, y, x sin x).  We then apply PCA and
+various "nonlinear" alternatives, including umap and our prVis.
+
+
+Sources of umap code:
+
+1.  umapr, by @CivicAngela etc.
+
+2.  umap, by Tomasz Konopka 
+
+3.  uwot, by James Melville
+
+The question is, Can we discern from the plots that originally we had a
+4-component mixture?  So we first pretend we don't know this, and call
+plot() without col = the original class labels.  We then add in the
+labels to reveal how well the plots did.
+
+sw <- read.table('Surendran.txt',header=T)
+sw[,4] <- as.factor(sw[,4])
+
+PCA is a failure, just displays a spiral swirl 
+
+umap/umapr pkgs:
+
+z <- umap(sw[,-4]) 
+plot(z$layout)  # not clear, e.g. is upper-right a loop or sep. comp.?
+plot(z$layout,col=sw[,4])  # ah, the latter
+
+polyreg:
+
+prVis(sw[,-4],labels=F)  # 4 concentric, tangential circles?
+prVis(sw,labels=T)   # yes!
+
