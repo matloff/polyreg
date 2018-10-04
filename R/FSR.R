@@ -94,11 +94,9 @@ FSR <- function(Xy,
   out[["P_factor"]] <- P_factor <- sum(x_factors)
   P <- P_continuous + P_factor # P does not reflect intercept, interactions, or poly
 
-
   if(standardize){
-    for(i in which(!unlist(lapply(Xy, is.factor)))){
-      Xy[,i] <- scale(Xy[,i])
-    }
+    tmp <- which(unlist(lapply(Xy, is_continuous)))
+    Xy[,tmp] <- scale(Xy[,tmp])
   }
 
   if(is.null(outcome)){
