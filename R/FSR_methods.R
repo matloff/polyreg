@@ -93,9 +93,9 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
       }else{
         if(object$outcome == "binary"){
           cat("\nThe best model has pseudo R^2 (adjusted for P and N):",
-              object$best_adjR2)
+              object$best_test_adjR2)
           cat("\nThe best model has out-of-sample accuracy:",
-              object$best_test_adj_accuracy)
+              object$models$test_accuracy[which(object$best_formula == object$models$formula)])
         }else{
           cat("\nThe best model has out-of-sample accuracy (adjusted for P and N):",
               object$best_test_adj_accuracy)
@@ -108,8 +108,9 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
   if(!is.null(model_number)){
 
     m <- model_number
-    cat("\n\n\nThe added feature", ifelse(object$models$accepted[m], "WAS", "WAS NOT"),
-        "accepted into model", m, "\n\n")
+    cat("\n\n\nThe added coefficient, corresponding to ", object$models$features[m],
+        ifelse(object$models$accepted[m], ", WAS", ", WAS NOT"),
+        " accepted into model ", m, ".\n\n", sep="")
 
     if(object$outcome == "continuous"){
 

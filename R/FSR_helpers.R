@@ -35,9 +35,9 @@ model_matrix <- function(f, d, noisy=TRUE){
 isolate_interaction <- function(elements, degree){
 
   f <- paste(elements, collapse = " * ")
-  for(i in 1:degree){
-    tmp <- combn(elements, i)
-    if(i > 1)
+  for(d in 1:degree){
+    tmp <- combn(elements, d)
+    if(d > 1)
       tmp <- apply(tmp, 2, paste, collapse="*")
     f <- paste(f, "-", paste(tmp, collapse=" - "))
   }

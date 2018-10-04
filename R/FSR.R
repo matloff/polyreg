@@ -62,26 +62,42 @@ FSR <- function(Xy,
   out[["N"]] <- n <- nrow(Xy)
 
   Xy <- as.data.frame(Xy)
-  P_factor <- 0
   factor_features <- c() # stores individual levels, omitting one
 
+  Xy_distincts <- unlist(lapply(Xy, N_distinct))
+  Xy_ch <- unlist(lapply(Xy, is.character))
   for(i in 1:ncol(Xy)){
+    if(Xy_distincts[i] == 2 || Xy_ch[i]){
+      Xy[,i] <- as.factor(Xy[,i])
+    }
+  }
+  x_factors <- unlist(lapply(Xy[,-ncol(Xy)], is.factor))
+  for(i in which(x_factors)){
 
-    k <- N_distinct(Xy[,i])
-
-    if(k == 2 || is.character(Xy[,i]))
-        Xy[,i] <- as.factor(Xy[,i])
-
-    if(is.factor(Xy[,i]) && i == ncol(Xy)){
-
-      P_factor <- P_factor + k - 1
+    if(Xy_distincts[i] > 2){
       tmp <- paste(colnames(Xy)[i], "==", paste0("\'", levels(Xy[,i])[-1], "\'"))
       tmp <- paste0("(", tmp, ")")
       factor_features <- c(factor_features, tmp)
-
     }else{
-      if(standardize)
-        Xy[,i] <- scale(Xy[,i])
+      factor_features <- c(factor_features, colnames(Xy)[i])
+    }
+  }
+
+  # below code can probably
+  continuous_features <- cf <- colnames(Xy)[-ncol(Xy)][!x_factors]
+  P_continuous <- length(continuous_features)
+
+  out[["continuous_features"]] <- continuous_features
+  out[["factors"]] <- colnames(Xy)[-ncol(Xy)][unlist(lapply(Xy[-ncol(Xy)], is.factor))]
+  out[["y"]] <- colnames(Xy)[ncol(Xy)]
+  out[["P_continuous"]] <- P_continuous
+  out[["P_factor"]] <- P_factor <- sum(x_factors)
+  P <- P_continuous + P_factor # P does not reflect intercept, interactions, or poly
+
+
+  if(standardize){
+    for(i in which(!unlist(lapply(Xy, is.factor)))){
+      Xy[,i] <- scale(Xy[,i])
     }
   }
 
@@ -95,25 +111,13 @@ FSR <- function(Xy,
 
   out[["y_scale"]] <- if(standardize && out$outcome == "continuous") sd(Xy[ ,ncol(Xy)]) else 1
 
-  continuous_features <- cf <- colnames(Xy)[-ncol(Xy)][unlist(lapply(Xy[-ncol(Xy)], is_continuous))]
-  P_continuous <- length(continuous_features)
-  out[["continuous_features"]] <- continuous_features
-  out[["factors"]] <- colnames(Xy)[-ncol(Xy)][unlist(lapply(Xy[-ncol(Xy)], is.factor))]
-  out[["y"]] <- colnames(Xy)[ncol(Xy)]
-  P <- P_continuous + P_factor # count without intercept
-  # P does not reflect interactions or poly
-  out[["P_continuous"]] <- P_continuous
-  out[["P_factor"]] <- P_factor
-
   for(i in 2:max_poly_degree)
     continuous_features <- c(continuous_features, paste("pow(", cf, ",", i, ")"))
 
-  features <- c(continuous_features, factor_features)
+  features <- f <- c(continuous_features, factor_features)
   if(max_interaction_degree > 1){
     for(i in 2:max_interaction_degree){
-      features <- c(features,
-                    apply(combn(c(continuous_features, factor_features), i),
-                        2, isolate_interaction, i))
+      features <- c(f, apply(combn(f, i), 2, paste, collapse = " * "))
     }
   }
 
@@ -124,7 +128,9 @@ FSR <- function(Xy,
   out[["split"]] <- sample(c("train", "test"), n, replace=TRUE,
                   prob = c(pTraining, pValidation))
 
-  models <- data.frame(features = features, stringsAsFactors = FALSE)
+  models <- data.frame(features = features,
+                       test_adjR2 = NA,
+                       stringsAsFactors = FALSE)
   models[["estimated"]]<- FALSE # will be updated based on whether successful ...
 
   if(out$outcome == "multinomial"){
@@ -235,60 +241,78 @@ FSR <- function(Xy,
         out$unable_to_estimate < out$max_fails){
 
     out[[mod(m)]] <- list()
-    out$models$formula[m] <- if(sum(out$models$accepted))
-                                paste(out[["best_formula"]], "+", out$models$features[m]) else
-                                  paste(out$y_name, "~", out$models$features[m])
 
-    if(out$outcome == "continuous"){ # fit, etc.
+    if(sum(out$models$accepted)){
 
-      system.time(out <- ols(out, Xy, m, y = y_train))
+      if(grepl("\\*", out$models$features[m])){
 
-    }else{ # begin classification
-
-      if(out$outcome == "multinomial"){
-
-        if(out$linear_estimation){
-
-          system.time(out <- ols(out, Xy, m, y = y_train))
-
+        tmp <- unlist(strsplit(out$models$features[m], "\\*"))
+        if(mean(tmp %in% out$models$features[out$models$accepted]) == 1){
+          out$models$formula[m] <- paste(out[["best_formula"]], "+", out$models$features[m])
         }else{
-
-          if(noisy) cat("\n\n")
-          system.time(out[[mod(m)]][["fit"]] <- multinom(as.formula(out$models$formula[m]),
-                                           Xy[out$split == "train", ], trace = noisy))
-          out[[mod(m)]][["coeffs"]] <- t(as.matrix(coefficients(out[[mod(m)]][["fit"]])))
-          out <- post_estimation(out, Xy, m)
-
+          if(noisy) message("Skipping ", out$models$features[m], "\n")
         }
-      }else{ # start binary
+      }else{
+        out$models$formula[m] <- paste(out[["best_formula"]], "+", out$models$features[m])
+      }
+    }else{
+      out$models$formula[m] <- paste(out$y_name, "~", out$models$features[m])
+    }
 
-        if(out$linear_estimation){
-          system.time(out <- ols(out, Xy, m, y = y_train))
-        }else{
-          system.time(out[[mod(m)]][["fit"]] <- glm(as.formula(out$models$formula[m]),
-                                                    Xy[out$split == "train",],
-                                                    family = binomial(link = "logit")))
-          out[[mod(m)]][["coeffs"]] <- out[[mod(m)]][["fit"]][["coefficients"]]
-          out <- post_estimation(out, Xy, m, y_test)
-        }
-      } # end logit
-    } # end fit, etc.
+    if(!is.na(out$models$formula[m])){
 
-    out$models$estimated[m] <- complete(out[[mod(m)]][["coeffs"]])
+      if(out$outcome == "continuous"){ # fit, etc.
 
-    if(out$noisy)
-      summary(out, estimation_overview = FALSE, results_overview = FALSE, model_number = m)
+        system.time(out <- ols(out, Xy, m, y = y_train))
 
-    # saving or removing ...
-    if(out$store_fit == "none")
-      out[[mod(m)]][["fit"]] <- NULL
+      }else{ # begin classification
 
-    if(out$store_fit == "accepted" && !out$models$accepted[m])
-      out[[mod(m)]][["fit"]] <- NULL
+        if(out$outcome == "multinomial"){
 
-    if(!is.null(out$file_name)){
-      if(out$noisy) message("\n\nsaving (updated) results as ", out$file_name, "\n\n")
-      save(out, file=out$file_name)
+          if(out$linear_estimation){
+
+            system.time(out <- ols(out, Xy, m, y = y_train))
+
+          }else{
+
+            if(noisy) cat("\n\n")
+            system.time(out[[mod(m)]][["fit"]] <- multinom(as.formula(out$models$formula[m]),
+                                                           Xy[out$split == "train", ], trace = noisy))
+            out[[mod(m)]][["coeffs"]] <- t(as.matrix(coefficients(out[[mod(m)]][["fit"]])))
+            out <- post_estimation(out, Xy, m)
+
+          }
+        }else{ # start binary
+
+          if(out$linear_estimation){
+            system.time(out <- ols(out, Xy, m, y = y_train))
+          }else{
+            system.time(out[[mod(m)]][["fit"]] <- glm(as.formula(out$models$formula[m]),
+                                                      Xy[out$split == "train",],
+                                                      family = binomial(link = "logit")))
+            out[[mod(m)]][["coeffs"]] <- out[[mod(m)]][["fit"]][["coefficients"]]
+            out <- post_estimation(out, Xy, m, y_test)
+          }
+        } # end logit
+      } # end fit, etc.
+
+      out$models$estimated[m] <- complete(out[[mod(m)]][["coeffs"]])
+
+      if(out$noisy)
+        summary(out, estimation_overview = FALSE, results_overview = FALSE, model_number = m)
+
+      # saving or removing ...
+      if(out$store_fit == "none")
+        out[[mod(m)]][["fit"]] <- NULL
+
+      if(out$store_fit == "accepted" && !out$models$accepted[m])
+        out[[mod(m)]][["fit"]] <- NULL
+
+      if(!is.null(out$file_name)){
+        if(out$noisy) message("\n\nsaving (updated) results as ", out$file_name, "\n\n")
+        save(out, file=out$file_name)
+      }
+
     }
     m <- m + 1
 
