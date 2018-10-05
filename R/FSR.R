@@ -94,11 +94,6 @@ FSR <- function(Xy,
   out[["P_factor"]] <- P_factor <- sum(x_factors)
   P <- P_continuous + P_factor # P does not reflect intercept, interactions, or poly
 
-  if(standardize){
-    tmp <- which(unlist(lapply(Xy, is_continuous)))
-    Xy[,tmp] <- scale(Xy[,tmp])
-  }
-
   if(is.null(outcome)){
     out[["outcome"]] <- if(is.factor(Xy[,ncol(Xy)])) if(N_distinct(Xy[,ncol(Xy)]) > 2) "multinomial" else "binary" else "continuous"
   }
@@ -108,6 +103,11 @@ FSR <- function(Xy,
     out[["XtX_inv_accepted"]] <- NULL
 
   out[["y_scale"]] <- if(standardize && out$outcome == "continuous") sd(Xy[ ,ncol(Xy)]) else 1
+
+  if(standardize){
+    tmp <- which(unlist(lapply(Xy, is_continuous)))
+    Xy[,tmp] <- scale(Xy[,tmp])
+  }
 
   for(i in 2:max_poly_degree)
     continuous_features <- c(continuous_features, paste("pow(", cf, ",", i, ")"))
