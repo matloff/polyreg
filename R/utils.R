@@ -12,11 +12,23 @@ factorsToDummies <- function(df)
          outDF <- cbind(outDF,dfi) 
          names(outDF)[ncol(outDF)] <- names(df)[i]
       } else {
-         dumms <- dummy(dfi)
-         outDF <- cbind(outDF,dumms[,-ncol(dumms),drop=FALSE])
+         dumms <- factorToDummies(dfi,names(df)[i])
+         outDF <- cbind(outDF,dumms)
       }
    }
    outDF[,1] <- NULL  # delete filler
    outDF
 }
+
+factorToDummies <- function (f,fname) 
+{
+    n <- length(f)
+    fl <- levels(f)
+    ndumms <- length(fl) - 1
+    dms <- matrix(nrow = n, ncol = ndumms)
+    for (i in 1:ndumms) dms[, i] <- as.integer(f == fl[i])
+    colnames(dms) <- paste(fname,'.', fl[-(length(fl))], sep = "")
+    dms
+}
+
 
