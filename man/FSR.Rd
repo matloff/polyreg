@@ -7,9 +7,8 @@
 FSR(Xy, max_poly_degree = 3, max_interaction_degree = 2, outcome = NULL,
   linear_estimation = FALSE, threshold_include = 0.01,
   threshold_estimate = 0.001, min_models = NULL, max_fails = 2,
-  standardize = FALSE, pTraining = 0.8, pValidation = 0.2,
-  file_name = NULL, store_fit = "none", max_block = 250, noisy = TRUE,
-  seed = NULL)
+  standardize = FALSE, pTraining = 0.8, file_name = NULL,
+  store_fit = "none", max_block = 250, noisy = TRUE, seed = NULL)
 }
 \arguments{
 \item{Xy}{matrix or data.frame; outcome must be in final column.}
@@ -33,8 +32,6 @@ FSR(Xy, max_poly_degree = 3, max_interaction_degree = 2, outcome = NULL,
 \item{standardize}{if TRUE (not default), standardizes continuous variables.}
 
 \item{pTraining}{portion of data for training}
-
-\item{pValidation}{portion of data for validation}
 
 \item{file_name}{If a file name (and path) is provided, saves output after each model is estimated as an .RData file. ex: file_name = "results.RData". See also store_fit for options as to how much to store in the outputted object.}
 

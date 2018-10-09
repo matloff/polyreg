@@ -6,8 +6,20 @@
 #' @param noisy Display output?
 #' @return y_hat (predictions using chosen model estimates).
 #' @method predict FSR
+#' @examples
+#' out <- FSR(mtcars[1:20,])
+#' forecast <- predict(out, mtcars[21:nrow(mtcars),])
 #' @export
 predict.FSR <- function(object, newdata, model_to_use=NULL, standardize=NULL, noisy=TRUE){
+
+
+  if(!is.null(standardize) && object$standardize){
+    for(var_name in names(object[["train_scales"]])){
+      if(var_name %in% colnames(newdata)){
+        newdata[[var_name]] <- (newdata[[var_name]] - object[["train_scales"]][[var_name]][["mean"]])/object[["train_scales"]][[var_name]][["sd"]]
+      }
+    }
+  }
 
   m <- if(is.null(model_to_use)) which(object$best_formula == object$models$formula) else model_to_use
 
@@ -16,10 +28,6 @@ predict.FSR <- function(object, newdata, model_to_use=NULL, standardize=NULL, no
   f <- strsplit(f, "~")[[1]][2]
   f <- formula(paste("~", f))
   X_test <- model_matrix(f = f, d = newdata, noisy = noisy)
-
-  if(!is.null(standardize) && object$standardize)
-    for(i in which(apply(X_test, 2, N_distinct) > 2))
-      X_test[,i] <- scale(X_test[,i])
 
   y_hat <- X_test %*% object[[mod(m)]][["coeffs"]]
 

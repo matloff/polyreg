@@ -21,7 +21,6 @@
 #' @param max_fails maximum number of models to FSR() can fail on computationally before exiting. Default == 2.
 #' @param standardize if TRUE (not default), standardizes continuous variables.
 #' @param pTraining portion of data for training
-#' @param pValidation portion of data for validation
 #' @param file_name If a file name (and path) is provided, saves output after each model is estimated as an .RData file. ex: file_name = "results.RData". See also store_fit for options as to how much to store in the outputted object.
 #' @param store_fit If file_name is provided, FSR() will return coefficients, measures of fit, and call details. Save entire fit objects? Options include "none" (default, just save those other items), "accepted_only" (only models that meet the threshold), and "all".
 #' @param max_block Most of the linear algebra is done recursively in blocks to ease memory managment. Default 250. Changing up or down may slow things...
@@ -39,7 +38,7 @@ FSR <- function(Xy,
                 threshold_include = 0.01, threshold_estimate = 0.001,
                 min_models = NULL, max_fails = 2,
                 standardize = FALSE,
-                pTraining = 0.8, pValidation = 0.2,
+                pTraining = 0.8,
                 file_name = NULL,
                 store_fit = "none",
                 max_block = 250,
@@ -47,8 +46,9 @@ FSR <- function(Xy,
 
   if(!is.matrix(Xy) && !is.data.frame(Xy))
     stop("Xy must be a matrix or data.frame. Either way, y must be the final column.")
-  if(min(pTraining, pValidation) < 0 || max(pTraining, pValidation) > 1)
-    stop("pTraining and pValidation should all be between 0 and 1 and sum to 1.")
+  if(pTraining <= 0 || pTraining > 1)
+    stop("pTraining should all be between 0 and 1.")
+  pValidation <- 1 - pTraining
   stopifnot(is.numeric(threshold_estimate))
   stopifnot(is.numeric(threshold_include))
   stopifnot(is.logical(linear_estimation))
@@ -60,6 +60,13 @@ FSR <- function(Xy,
   class(out) <- "FSR" # nested list, has S3 method
   out[["standardize"]] <- standardize
   out[["N"]] <- n <- nrow(Xy)
+
+  out[["seed"]] <- if(is.null(seed)) sample(10^9, 1) else seed
+  set.seed(out$seed)
+  if(noisy) message("set seed to ", out$seed, ".\n")
+  out[["split"]] <- sample(c("train", "test"), n, replace=TRUE,
+                           prob = c(pTraining, pValidation))
+
 
   Xy <- as.data.frame(Xy)
   factor_features <- c() # stores individual levels, omitting one
@@ -102,10 +109,15 @@ FSR <- function(Xy,
   if(out$linear_estimation)
     out[["XtX_inv_accepted"]] <- NULL
 
-  out[["y_scale"]] <- if(standardize && out$outcome == "continuous") sd(Xy[ ,ncol(Xy)]) else 1
+  out[["y_scale"]] <- if(standardize && out$outcome == "continuous") sd(Xy[out$split == "train", ncol(Xy)]) else 1
 
+  out[["train_scales"]] <- list()
   if(standardize){
     tmp <- which(unlist(lapply(Xy, is_continuous)))
+    for(i in tmp){
+      out[["train_scales"]][[colnames(Xy)[i]]][["mean"]] <- mean(Xy[,i], na.rm=TRUE)
+      out[["train_scales"]][[colnames(Xy)[i]]][["sd"]] <- sd(Xy[,i], na.rm=TRUE)
+    }
     Xy[,tmp] <- scale(Xy[,tmp])
   }
 
@@ -119,12 +131,6 @@ FSR <- function(Xy,
     }
   }
 
-  out[["seed"]] <- if(is.null(seed)) sample(10^9, 1) else seed
-  set.seed(out$seed)
-  if(noisy) message("set seed to ", out$seed, ".\n")
-
-  out[["split"]] <- sample(c("train", "test"), n, replace=TRUE,
-                  prob = c(pTraining, pValidation))
 
   models <- data.frame(features = features,
                        test_adjR2 = NA,

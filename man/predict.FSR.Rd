@@ -24,3 +24,7 @@ y_hat (predictions using chosen model estimates).
 \description{
 predict.FSR
 }
+\examples{
+out <- FSR(mtcars[1:20,])
+forecast <- predict(out, mtcars[21:nrow(mtcars),])
+}
