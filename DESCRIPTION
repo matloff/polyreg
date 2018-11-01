@@ -8,7 +8,7 @@ Authors@R: c(person("Norman", "Matloff", email = "matloff@cs.ucdavis.edu", role 
            person("Matthew", "Kotila", email = "mrkotila@ucdavis.edu", role = c("aut")), 
            person("Robin", "Yancey", email = "reyancey@ucdavis.edu", role = c("aut")) 
            )
-Author: Norm Matloff [aut,cre],
+Author: Norman Matloff [aut,cre],
    Xi Cheng [aut],
    Pete Mohanty [aut],
    Bohdan Khomtchouk [aut],
