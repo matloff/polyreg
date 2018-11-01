@@ -1,6 +1,6 @@
 Package: polyreg
 Title: Polynomial Regression
-Version: 0.0.0.9600
+Version: 0.2
 Authors@R: c(person("Norman", "Matloff", email = "matloff@cs.ucdavis.edu", role = c("aut", "cre")),
            person("Xi", "Cheng", email = "xicheng0821@gmail.com", role = c("aut")),
            person("Pete", "Mohanty", email = "pete.mohanty@gmail.com", role = c("aut")),
