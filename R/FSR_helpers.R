@@ -1,5 +1,6 @@
-N_distinct <- function(x) length(unique(x))
-is_continuous <- function(x) if(is.numeric(x)) length(unique(x)) > 2 else FALSE
+N_distinct <- function(x) if(ncol(as.matrix(x)) == 1) length(unique(x)) else unlist(lapply(x, N_distinct))
+#is_continuous <- function(x) if(is.numeric(x)) N_distict(x) > 2 else FALSE
+is_continuous <- function(x) unlist(lapply(x, is.numeric)) & N_distinct(x) > 2
 mod <- function(m) paste0("model", m)
 complete <- function(x) !is.null(x) && sum(is.na(x)) == 0
 match_arg <- function(arg, choices){if(is.null(arg)) arg else match.arg(arg, choices)}
@@ -27,17 +28,64 @@ model_matrix <- function(f, d, noisy=TRUE){
     if(noisy) cat("model.matrix() reported the following error:\n", tried, "\n\n")
     return(NULL)
   } else {
+    attr(tried, which="formula") <- f
     return(tried)
   }
 
 }
 
+get_interactions <- function(features, maxInteractDeg, factors){
+
+  interactions <- list()
+
+  for(i in 2:maxInteractDeg){
+
+    combos <- combn(features, i) # i x choose(n, i) matrix
+    combos <- combos[ , which_non_zero(combos, factors)]
+
+    interactions[[i]] <- apply(combos, 2, paste, collapse = " * ")
+
+  }
+
+  return(unlist(interactions))
+
+}
+
+which_non_zero <- function(combos, factors){
+# prevents multiplication of mutually exclusive categorical variables' levels
+# suppose you have a factor variable, party with levels D, R, I
+# at this point, factor features are strings formatted
+# (party == 'D') and (party == 'R')
+# but identical((party == 'D') * (party == 'R'), rep(0, N)) == TRUE
+# this function uses grepl() to prevent such 0 columns from entering
+# the formula subsequently...
+
+  keepers <- 1:ncol(combos)
+
+  if(length(factors) == 0){
+
+    return(keepers)
+
+  }else{
+
+    to_drop <- list()
+
+    for(i in 1:length(factors)){
+      to_drop[[i]] <- which(colSums(apply(combos, 2, grepl, pattern = factors[i])) > 1)
+    }
+    to_drop <- unique(unlist(to_drop))
+
+    if(length(to_drop)) return(keepers[-to_drop]) else return(keepers)
+  }
+}
+
+# depracated
 isolate_interaction <- function(elements, degree){
 
   f <- paste(elements, collapse = " * ")
-  for(d in 1:degree){
-    tmp <- combn(elements, d)
-    if(d > 1)
+  for(i in 1:degree){
+    tmp <- combn(elements, i)
+    if(i > 1)
       tmp <- apply(tmp, 2, paste, collapse="*")
     f <- paste(f, "-", paste(tmp, collapse=" - "))
   }
