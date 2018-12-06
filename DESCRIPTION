@@ -1,6 +1,6 @@
 Package: polyreg
 Title: Polynomial Regression
-Version: 0.0.0.9600
+Version: 0.2
 Authors@R: c(person("Norman", "Matloff", email = "matloff@cs.ucdavis.edu", role = c("aut", "cre")),
            person("Xi", "Cheng", email = "xicheng0821@gmail.com", role = c("aut")),
            person("Pete", "Mohanty", email = "pete.mohanty@gmail.com", role = c("aut")),
@@ -8,6 +8,13 @@ Authors@R: c(person("Norman", "Matloff", email = "matloff@cs.ucdavis.edu", role 
            person("Matthew", "Kotila", email = "mrkotila@ucdavis.edu", role = c("aut")), 
            person("Robin", "Yancey", email = "reyancey@ucdavis.edu", role = c("aut")) 
            )
+Author: Norman Matloff [aut,cre],
+   Xi Cheng [aut],
+   Pete Mohanty [aut],
+   Bohdan Khomtchouk [aut],
+   Matt Kotila [aut],
+   Robin Yancey [aut]
+Maintainer: Norm Matloff <matloff@cs.ucdavis.edu>
 Description: Automate formation and evaluation of polynomial regression models.
 Depends: regtools
 License: GPL (>= 2)
