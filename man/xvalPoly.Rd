@@ -12,11 +12,11 @@ Separate the dataset to training and test set, and obtain the mean absolute erro
 \usage{
 xvalPoly(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm", pcaMethod =
    FALSE, pcaPortion = 0.9, glmMethod = "all",nHoldout=10000,yCol=NULL)
-xvalKf(xy, nHoldout = min(10000, round(0.2 * nrow(xy))), yCol = NULL, 
-    units, activation, dropout) 
-xvalDnet(x,y,hidden,output="\\"sigm\\"",numepochs=3,pcaMethod = FALSE, 
-    pcaPortion=0.9,scaleXMat=TRUE,nHoldout=min(10000, 
-    round(0.2*nrow(x)))) 
+xvalKf(xy, nHoldout = min(10000, round(0.2 * nrow(xy))), yCol = NULL,
+    units, activation, dropout)
+xvalDnet(x,y,hidden,output="\\"sigm\\"",numepochs=3,pcaMethod = FALSE,
+    pcaPortion=0.9,scaleXMat=TRUE,nHoldout=min(10000,
+    round(0.2*nrow(x))))
 }
 
 \arguments{
@@ -63,9 +63,9 @@ error (for \code{lm}) or probability of correct classification
 }
 
 \examples{
-y <- mtcars[,1]
+y <- mtcars[,1] # make mpg the outcome
 data <- cbind(mtcars[,-1], y) # make y column the last column
-pf1 <- xvalPoly(data,2,2,"lm",0.8,FALSE)
-pf2 <- xvalPoly(data,5,3,"lm",0.8,TRUE,0.9)
+xvalPoly(data,2,2,"lm") # not using pca
+xvalPoly(data,2,2,"lm", "prcomp", 0.8) # using pca on X first
 }
 
