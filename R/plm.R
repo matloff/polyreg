@@ -224,7 +224,7 @@ polyMatrix <- function(x, retainedNames) {
 getPoly <- function(xdata, deg, maxInteractDeg = deg,del0cols=TRUE)
 {
 
-  if (maxInteractDeg <- deg)
+  if (maxInteractDeg < deg)
      stop('currently cannot have maxInteractDeg < deg')
   if (deg < 1) {
     stop("deg must be larger than or equal to 1.")
