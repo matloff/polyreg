@@ -20,7 +20,7 @@ pow <- function(X, degree){
 
 }
 
-model_matrix <- function(f, d, noisy=TRUE){
+model_matrix <- function(f, d, noisy=TRUE, intercept){
 
   tried <- try(model.matrix(f, d, na.action = "na.omit"), silent=TRUE)
 
@@ -29,7 +29,7 @@ model_matrix <- function(f, d, noisy=TRUE){
     return(NULL)
   } else {
     attr(tried, which="formula") <- f
-    return(tried)
+    if(intercept) return(tried) else return(tried[,-1])
   }
 
 }
