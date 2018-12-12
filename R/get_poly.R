@@ -15,6 +15,8 @@
 #     so YMMV if the formula is not generated on the training data by get_poly().
 #     Also, providing model_formula bypasses deg and maxInteractDeg.
 #   standardize: standardize all continuous variables? (Default: FALSE.)
+#   intercept: Include intercept? Default: FALSE.
+#   ... additional arguments to be passed to model.matrix() via polyreg:::model_matrix(). Note na.action = "na.omit".
 # return: a model matrix, with the model formula as an additional attribute
 # examples:
 # X = get_poly(mtcars, 2)
@@ -24,7 +26,8 @@
 # X_test <- get_poly(mtcars[21:32,],
 #                    model_formula = attributes(X_train)$formula)
 get_poly <- function(xdata = NULL, deg=1, maxInteractDeg = deg,
-                     Xy = NULL, model_formula = NULL, standardize = FALSE){
+                     Xy = NULL, model_formula = NULL, standardize = FALSE,
+                     noisy = TRUE, intercept = FALSE, ...){
 
   if(sum(is.null(xdata) + is.null(Xy)) != 1)
     stop("please provide get_poly() xdata or Xy (but not both).")
@@ -35,10 +38,9 @@ get_poly <- function(xdata = NULL, deg=1, maxInteractDeg = deg,
     W[,to_z] <- scale(W[,to_z])
   }
 
-
   if(is.null(model_formula)){
 
-    x_cols <- if(is.null(xdata)) 1:(ncol(Xy) - 1) else 1:ncol(xdata)
+    x_cols <- 1:(ncol(W) - is.null(xdata))
     y_name <- if(is.null(xdata)) colnames(Xy)[ncol(Xy)] else NULL
 
     remove(xdata)
@@ -47,9 +49,10 @@ get_poly <- function(xdata = NULL, deg=1, maxInteractDeg = deg,
     # coerce binary or character variables into factors
     W_distincts <- N_distinct(W)
     to_factor <- which((W_distincts == 2) | unlist(lapply(W, is.character)))
+    #x_factors <- vector("logical", length(x_cols))
     for(i in to_factor)
       W[,i] <- as.factor(W[,i])
-    x_factors <- unlist(lapply(W[,x_cols], is.factor))
+    x_factors <- if(ncol(W) > 1) unlist(lapply(W[,x_cols], is.factor)) else is.factor(W[[1]])
     P_factor <- sum(x_factors)
 
     factor_features <- c()
@@ -78,9 +81,12 @@ get_poly <- function(xdata = NULL, deg=1, maxInteractDeg = deg,
     P <- P_continuous + P_factor
     # P does not reflect intercept, interactions, or polynomial terms
 
-    for(i in 2:deg)
-      continuous_features <- c(continuous_features,
-                               paste("pow(", cf, ",", i, ")"))
+    if(length(continuous_features)){
+      for(i in 2:deg)
+        continuous_features <- c(continuous_features,
+                                 paste("pow(", cf, ",", i, ")"))
+    }
+
     # pow() is a helper function that deals with the nuissance
     # that lm(y ~ x + x^2 + x^3)
     # will only estimate one slope but we want three...
@@ -89,18 +95,18 @@ get_poly <- function(xdata = NULL, deg=1, maxInteractDeg = deg,
 
     features <- c(continuous_features, factor_features)
 
-    if(maxInteractDeg > 1)
+    if(maxInteractDeg > 1 && ncol(W) > 1)
       features <- get_interactions(features, maxInteractDeg, names(x_factors[x_factors]))
 
-    if(length(features) > nrow(W))
-      warning("P > N. With polynomial terms and interactions, P is ",
-              length(features))
+    if(noisy && (length(features) > nrow(W)))
+      cat("P > N. With polynomial terms and interactions, P is ",
+              length(features), ".\n\n", sep="")
 
     model_formula <- as.formula(paste0(y_name, " ~ ",
+                                      # ifelse(intercept, "", "-1 +"), # https://stats.stackexchange.com/questions/174976/why-does-the-intercept-column-in-model-matrix-replace-the-first-factor
                                       paste(features, collapse=" + ")))
 
   }
-
-  return(model_matrix(model_formula, W))
+  return(model_matrix(model_formula, W, noisy, intercept))
 
 }
