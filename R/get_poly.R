@@ -5,15 +5,15 @@
 # arguments:
 
 #   xdata: the dataframe (only predictor variables). Factors with more than two levels should not be inputted as integers.
-#   deg: the max degree of polynomial terms.
+#   maxDeg: the max degree of polynomial terms.
 #   maxInteractDeg: the max degree of dummy and nondummy predictor variable
 #      interaction terms
 #   Xy: the dataframe with the response in the final column (provide xdata or Xy but not both).
 #     Factors with more than two levels should not be inputted as integers.
-#   model_formula: Internal use. Formula used to generate the training model matrix.
+#   modelFormula: Internal use. Formula used to generate the training model matrix.
 #     Note: anticipates that polynomial terms are generated using internal functions of library(polyreg)
 #     so YMMV if the formula is not generated on the training data by get_poly().
-#     Also, providing model_formula bypasses deg and maxInteractDeg.
+#     Also, providing modelFormula bypasses maxDeg and maxInteractDeg.
 #   standardize: standardize all continuous variables? (Default: FALSE.)
 #   intercept: Include intercept? Default: FALSE.
 #   ... additional arguments to be passed to model.matrix() via polyreg:::model_matrix(). Note na.action = "na.omit".
@@ -24,9 +24,9 @@
 # ncol(W) < ncol(X)          # TRUE
 # X_train <- get_poly(mtcars[1:20,], 4, 2)
 # X_test <- get_poly(mtcars[21:32,],
-#                    model_formula = attributes(X_train)$formula)
-get_poly <- function(xdata = NULL, deg=1, maxInteractDeg = deg,
-                     Xy = NULL, model_formula = NULL, standardize = FALSE,
+#                    modelFormula = attributes(X_train)$formula)
+get_poly <- function(xdata = NULL, maxDeg=1, maxInteractDeg = maxDeg,
+                     Xy = NULL, modelFormula = NULL, standardize = FALSE,
                      noisy = TRUE, intercept = FALSE, ...){
 
   if(sum(is.null(xdata) + is.null(Xy)) != 1)
@@ -38,7 +38,7 @@ get_poly <- function(xdata = NULL, deg=1, maxInteractDeg = deg,
     W[,to_z] <- scale(W[,to_z])
   }
 
-  if(is.null(model_formula)){
+  if(is.null(modelFormula)){
 
     x_cols <- 1:(ncol(W) - is.null(xdata))
     y_name <- if(is.null(xdata)) colnames(Xy)[ncol(Xy)] else NULL
@@ -82,7 +82,7 @@ get_poly <- function(xdata = NULL, deg=1, maxInteractDeg = deg,
     # P does not reflect intercept, interactions, or polynomial terms
 
     if(length(continuous_features)){
-      for(i in 2:deg)
+      for(i in 2:maxDeg)
         continuous_features <- c(continuous_features,
                                  paste("pow(", cf, ",", i, ")"))
     }
@@ -102,11 +102,11 @@ get_poly <- function(xdata = NULL, deg=1, maxInteractDeg = deg,
       cat("P > N. With polynomial terms and interactions, P is ",
               length(features), ".\n\n", sep="")
 
-    model_formula <- as.formula(paste0(y_name, " ~ ",
+    modelFormula <- as.formula(paste0(y_name, " ~ ",
                                       # ifelse(intercept, "", "-1 +"), # https://stats.stackexchange.com/questions/174976/why-does-the-intercept-column-in-model-matrix-replace-the-first-factor
                                       paste(features, collapse=" + ")))
 
   }
-  return(model_matrix(model_formula, W, noisy, intercept))
+  return(model_matrix(modelFormula, W, noisy, intercept))
 
 }
