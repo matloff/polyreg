@@ -5,6 +5,8 @@ mod <- function(m) paste0("model", m)
 complete <- function(x) !is.null(x) && sum(is.na(x)) == 0
 match_arg <- function(arg, choices){if(is.null(arg)) arg else match.arg(arg, choices)}
 
+# ensure unique column names with pow
+# degree may be vector
 pow <- function(X, degree){
 
   if(length(degree) == 1){
@@ -16,9 +18,10 @@ pow <- function(X, degree){
       out[[i]] <- as.matrix(pow(X, degree[i]))
     X <- do.call(cbind, out)
   }
-  return(X)    # ensure unique column names
+  return(X)
 
 }
+`%^%` <- function(X, degree) pow(X, degree)
 
 model_matrix <- function(f, d, noisy=TRUE, intercept){
 
