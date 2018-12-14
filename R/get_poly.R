@@ -7,7 +7,7 @@
 #   xdata: the dataframe (only predictor variables). Factors with more than two levels should not be inputted as integers.
 #   maxDeg: the max degree of polynomial terms.
 #   maxInteractDeg: the max degree of dummy and nondummy predictor variable
-#      interaction terms
+#      interaction terms. x1 * x2 is degree 2.
 #   Xy: the dataframe with the response in the final column (provide xdata or Xy but not both).
 #     Factors with more than two levels should not be inputted as integers.
 #   modelFormula: Internal use. Formula used to generate the training model matrix.
@@ -96,7 +96,9 @@ get_poly <- function(xdata = NULL, maxDeg=1, maxInteractDeg = maxDeg,
     features <- c(continuous_features, factor_features)
 
     if(maxInteractDeg > 1 && ncol(W) > 1)
-      features <- get_interactions(features, maxInteractDeg, names(x_factors[x_factors]))
+      features <- get_interactions(features, maxInteractDeg,
+                                   c(cf, names(x_factors[x_factors])))
+    #  features <- get_interactions(features, maxInteractDeg, names(x_factors[x_factors]))
 
     if(noisy && (length(features) > nrow(W)))
       cat("P > N. With polynomial terms and interactions, P is ",

@@ -37,14 +37,14 @@ model_matrix <- function(f, d, noisy=TRUE, intercept){
 
 }
 
-get_interactions <- function(features, maxInteractDeg, factors){
+get_interactions <- function(features, maxInteractDeg, may_not_repeat = NULL){
 
   interactions <- list()
 
   for(i in 2:maxInteractDeg){
 
     combos <- combn(features, i) # i x choose(n, i) matrix
-    combos <- combos[ , which_non_zero(combos, factors)]
+    combos <- combos[ , which_include(combos, may_not_repeat)]
 
     interactions[[i]] <- apply(combos, 2, paste, collapse = " * ")
 
@@ -54,7 +54,7 @@ get_interactions <- function(features, maxInteractDeg, factors){
 
 }
 
-which_non_zero <- function(combos, factors){
+which_include <- function(combos, may_not_repeat){
 # prevents multiplication of mutually exclusive categorical variables' levels
 # suppose you have a factor variable, party with levels D, R, I
 # at this point, factor features are strings formatted
@@ -62,10 +62,13 @@ which_non_zero <- function(combos, factors){
 # but identical((party == 'D') * (party == 'R'), rep(0, N)) == TRUE
 # this function uses grepl() to prevent such 0 columns from entering
 # the formula subsequently...
+#
+# also, different monomials of the same variable should not interact
+# raising the polynomial degree beyond user specification
 
   keepers <- 1:ncol(combos)
 
-  if(length(factors) == 0){
+  if(length(may_not_repeat) == 0){
 
     return(keepers)
 
@@ -73,8 +76,8 @@ which_non_zero <- function(combos, factors){
 
     to_drop <- list()
 
-    for(i in 1:length(factors)){
-      to_drop[[i]] <- which(colSums(apply(combos, 2, grepl, pattern = factors[i])) > 1)
+    for(i in 1:length(may_not_repeat)){
+      to_drop[[i]] <- which(colSums(apply(combos, 2, grepl, pattern = may_not_repeat[i])) > 1)
     }
     to_drop <- unique(unlist(to_drop))
 
