@@ -109,7 +109,7 @@ get_poly <- function(xdata = NULL, maxDeg=1, maxInteractDeg = maxDeg,
                                       paste(features, collapse=" + ")))
 
   }
-  X <- model_matrix(modelFormula, W, noisy, intercept)
+  X <- model_matrix(modelFormula, W, intercept, noisy, ...)
   if(!("formula" %in% names(attributes)))
     attr(X, which="formula") <- modelFormula # patch, should be addressed in model_matrix()
   return(X)
