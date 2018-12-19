@@ -19,8 +19,8 @@
 #   ... additional arguments to be passed to model.matrix() via polyreg:::model_matrix(). Note na.action = "na.omit".
 # return: a model matrix, with the model formula as an additional attribute
 # examples:
-# X = get_poly(mtcars, 2)
-# W = get_poly(Xy=mtcars, 2) # treats final column as response
+# X <- get_poly(mtcars, 2)
+# W <- get_poly(Xy=mtcars, maxDeg=2) # treats final column as response
 # ncol(W) < ncol(X)          # TRUE
 # X_train <- get_poly(mtcars[1:20,], 4, 2)
 # X_test <- get_poly(mtcars[21:32,],
@@ -109,6 +109,9 @@ get_poly <- function(xdata = NULL, maxDeg=1, maxInteractDeg = maxDeg,
                                       paste(features, collapse=" + ")))
 
   }
-  return(model_matrix(modelFormula, W, noisy, intercept))
+  X <- model_matrix(modelFormula, W, noisy, intercept)
+  if(!("formula" %in% names(attributes)))
+    attr(X, which="formula") <- modelFormula # patch, should be addressed in model_matrix()
+  return(X)
 
 }

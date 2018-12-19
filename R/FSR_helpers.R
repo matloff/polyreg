@@ -23,7 +23,7 @@ pow <- function(X, degree){
 }
 `%^%` <- function(X, degree) pow(X, degree)
 
-model_matrix <- function(f, d, noisy=TRUE, intercept){
+model_matrix <- function(f, d, intercept, noisy=TRUE){
 
   tried <- try(model.matrix(f, d, na.action = "na.omit"), silent=TRUE)
 
@@ -31,7 +31,9 @@ model_matrix <- function(f, d, noisy=TRUE, intercept){
     if(noisy) cat("model.matrix() reported the following error:\n", tried, "\n\n")
     return(NULL)
   } else {
-    attr(tried, which="formula") <- f
+
+    attr(tried, which = "formula") <- f # works in local but not global environment, fix
+
     if(intercept) return(tried) else return(tried[,-1])
   }
 
