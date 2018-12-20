@@ -27,7 +27,7 @@ predict.FSR <- function(object, newdata, model_to_use=NULL, standardize=NULL, no
 
   f <- strsplit(f, "~")[[1]][2]
   f <- formula(paste("~", f))
-  X_test <- model_matrix(f = f, d = newdata, noisy = noisy)
+  X_test <- model_matrix(f = f, d = newdata, noisy = noisy, intercept = TRUE)
 
   y_hat <- X_test %*% object[[mod(m)]][["coeffs"]]
 

@@ -308,10 +308,10 @@ ols <- function(object, Xy, m, train = TRUE, y = NULL, y_test = NULL){
   X <- if(train){
           model_matrix(formula(object$models$formula[m]),
                         Xy[object$split == "train", ],
-                        noisy = object$noisy)
+                        noisy = object$noisy, intercept=TRUE)
        }else{
           model_matrix(formula(object$models$formula[m]),
-                        Xy, noisy = object$noisy)
+                        Xy, noisy = object$noisy, intercept=TRUE)
        }
 
   if(exists("X")){

@@ -1,5 +1,5 @@
 ##################################################################
-# get_poly: generate poly terms of a data matrix / data frame
+# getPoly: generate poly terms of a data matrix / data frame
 ##################################################################
 
 # arguments:

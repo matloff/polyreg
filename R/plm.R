@@ -337,10 +337,6 @@ testGP <- function()
 #      "multlog" for multinomial logistic regression)
 #      to use for multi-class classification
 #   cls:  R 'parallel' cluster
-#   del0cols: normally this is set to TRUE during the training phase,
-#      and set to the vector of names of columns to be retained during
-#      prediction, making use of the information generated at the
-#      training phase
 
 # return: the object of class polyFit
 
@@ -351,9 +347,8 @@ testGP <- function()
 # NM, 09/19/18: removed dropout option, getting in the way and not
 # useful
 
-polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
-     pcaLocation='front',pcaPortion=0.9,glmMethod="one",cls=NULL,
-     del0cols=TRUE)
+polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
+     pcaLocation='front', pcaPortion=0.9, glmMethod="one", cls=NULL)
 {
 
   if (!use %in% c('lm','glm','mvrlm'))
@@ -373,10 +368,6 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
      classes <- unique(y)
   } else classes <- FALSE
 
-  # note: in the several calls to getPoly() here in polyFit(), we use
-  # the default for the del0cols argument in the non-PCA case, FALSE
-  # otherwise
-
   if (doPCA)  {  # start PCA section
     # safety checks first
     if (pcaMethod == 'RSpectra' && pcaPortion < 1)
@@ -392,15 +383,13 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
        applyPCAOutputs <- applyPCA(xdata,pcaMethod,pcaPortion)
        xdata <- applyPCAOutputs$xdata
        tmp <-
-         system.time(pMat <- getPoly(xdata, deg, maxInteractDeg,
-            del0cols=FALSE))
+         system.time(pMat <- getPoly(xdata, deg, maxInteractDeg))
        cat('getPoly time: ',tmp,'\n')
   polyMat <- pMat$xdata
   retainedNames <- pMat$retainedNames
     } else  {  # 'back'
       tmp <-
-        system.time(pMat <- getPoly(xdata, deg, maxInteractDeg,
-           del0cols=FALSE))
+        system.time(pMat <- getPoly(xdata, deg, maxInteractDeg))
       cat('getPoly time: ',tmp,'\n')
   polyMat <- pMat$xdata
   retainedNames <- pMat$retainedNames
@@ -413,8 +402,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   }  else {   # no-PCA section
      xy.pca <- NULL
      k <- 0
-     tmp <- system.time(pMat <- getPoly(xdata, deg, maxInteractDeg,
-        del0cols=TRUE))
+     tmp <- system.time(pMat <- getPoly(xdata, deg, maxInteractDeg))
      cat('getPoly time: ',tmp,'\n')
   polyMat <- pMat$xdata
   retainedNames <- pMat$retainedNames
@@ -553,18 +541,15 @@ predict.polyFit <- function(object,newdata)
   doPCA <- !is.null(object$PCA)
 
   if (!doPCA) {
-    plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg,
-       object$del0cols)$xdata
+    plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
   } else if (object$PCA == "prcomp") {
        if (object$pcaLocation == "front") {
          new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
          plm.newdata <-
-            getPoly(new_data, object$degree, object$maxInteractDeg,
-               del0cols=FALSE)$xdata
+            getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
        } else if (object$pcaLocation == "back") {
          new_data <-
-            getPoly(newdata, object$degree, object$maxInteractDeg,
-               del0cols=FALSE)$xdata
+            getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
          plm.newdata <- predict(object$pca.xy, new_data)[,1:object$pcaCol]
          plm.newdata <- as.data.frame(plm.newdata)
        } else stop('invalid pcaLocation')
@@ -573,12 +558,10 @@ predict.polyFit <- function(object,newdata)
          xy.eig <- object$pca.xy
          new_data <- as.matrix(newdata) %*% xy.eig$vectors
          plm.newdata <-
-           getPoly(new_data, object$degree, object$maxInteractDeg,
-              del0cols=FALSE)$xdata
+           getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
        } else if (object$pcaLocation == "back") {
          new_data <-
-            getPoly(newdata, object$degree, object$maxInteractDeg,
-               del0cols=FALSE)$xdata
+            getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
          ### xy.cov <- cov(new_data)
          ### xy.eig <- eigs(xy.cov,object$pcaCol)
          xy.eig <- object$pca.xy

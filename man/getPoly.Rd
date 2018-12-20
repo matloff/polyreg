@@ -5,42 +5,36 @@
 \title{Get polynomial terms}
 
 \description{
-Generate polynomial terms of predictor variables for a 
+Generate polynomial terms of predictor variables for a
 data frame or data matrix.
 }
 
 \usage{
-getPoly(xydata, deg, maxInteractDeg = deg, del0cols=TRUE)
+getPoly(xydata, deg, maxInteractDeg = deg)
 }
 
 \arguments{
   \item{xydata}{Data matrix or data frame without response variable.}
   \item{deg}{The max degree of power terms.}
   \item{maxInteractDeg}{The max degree of nondummy interaction terms.}
-   \item{del0cols}{Delete all-0 columns from output.  If TRUE, determine
-        such columns during computation; if a character vector, delete
-        the columns with those names.}
 }
 
 \details{
 
    The \code{getPoly} function takes in a data frame or data matrix and
-   generates polynomial terms of predictor variables. 
-   
+   generates polynomial terms of predictor variables.
+
    Note the subtleties involving dummy variables.  The square, cubic and
    so on terms are the same as the original variable, and the various
-   duplicates must be eliminated.  
-   
+   duplicates must be eliminated.
+
    Similarly, after dummy variable are created from a categorical
    variable having more than two levels, the resulting columns will be
-   orthogonal to each other.  In almost all cases, the resulting all-0 columns
-   should be eliminated, hence the argument \code{del0cols}.  In almost
+   orthogonal to each other.  In almost
    all cases, this argument should be set to TRUE at the training stage, and
    then in predictions one should use the vector of names in the
-   \code{retainedNames} component in the return value;
-   \code{predict.polyFit} does the latter automatically, so
-   \code{getPoly} must set \code{del0cols} to TRUE in the training
-   phase.
+   component in the return value;
+   \code{predict.polyFit} does the latter automatically.
 
    % Also, this function treats predictor variables that have only two kinds
    % of values categorical variables, so the data needs preprocessing to
@@ -48,10 +42,10 @@ getPoly(xydata, deg, maxInteractDeg = deg, del0cols=TRUE)
 }
 
 \value{
-The return value of \code{getPoly} is a \code{polyMatrix} 
+The return value of \code{getPoly} is a \code{polyMatrix}
 object.  This is an S3 class containing a data frame \code{
-xdata} of the generated polynomial terms. The predictor 
-variables have column names V1, V2, etc. The object also contains 
+xdata} of the generated polynomial terms. The predictor
+variables have column names V1, V2, etc. The object also contains
 a vector \code{retainedNames}, the names of the non-all-0 columns.
 }
 

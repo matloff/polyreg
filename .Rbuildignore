@@ -6,3 +6,4 @@ R/newplm.R
 R/get_poly.R
 R/poly_poly_testscript.R
 unit_tests/
+polyreg.Rcheck/
