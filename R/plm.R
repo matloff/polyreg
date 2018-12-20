@@ -354,10 +354,12 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
   if (!use %in% c('lm','glm','mvrlm'))
      stop('"use" must be "lm", "glm" or "mvrlm"')
 
-  y <- xy[,ncol(xy)]
   doPCA <- !is.null(pcaMethod)
   xdata <- xy[,-ncol(xy)]
 
+  y <- xy[,ncol(xy)]
+  if(is.character(y))
+    y <- as.factor(y)
   # is this a classification problem?
   classProblem <- is.factor(y) || use == 'mvrlm'
   if (classProblem) {
@@ -388,13 +390,14 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
   polyMat <- pMat$xdata
   retainedNames <- pMat$retainedNames
     } else  {  # 'back'
-      tmp <-
-        system.time(pMat <- getPoly(xdata, deg, maxInteractDeg))
+
+      tmp <- system.time(pMat <- getPoly(xdata, deg, maxInteractDeg))
       cat('getPoly time: ',tmp,'\n')
-  polyMat <- pMat$xdata
-  retainedNames <- pMat$retainedNames
+      polyMat <- pMat$xdata
+      retainedNames <- pMat$retainedNames
       applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion)
       polyMat <- applyPCAOutputs$xdata
+
     }
     xy.pca <- applyPCAOutputs$xy.pca  # overall output of prcomp or RSpectra
     k <- applyPCAOutputs$k

@@ -16,7 +16,7 @@
 # if at all
 
 xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
-               pcaMethod = NULL,pcaPortion = 0.9,glmMethod = "one", 
+               pcaMethod = NULL,pcaPortion = 0.9,glmMethod = "one",
                nHoldout=min(10000,round(0.2*nrow(xy))),pcaLocation='front',
                yCol = NULL, cls=NULL,startDeg=1)
 {
@@ -40,7 +40,7 @@ stop('under construction, classification case')
      }
      classes <- unique(y)
   } else classes <- FALSE
-  
+
   testIdxs <- sample(1:nrow(xy),nHoldout,replace=FALSE)
   training <- xy[-testIdxs,]
   testing <- xy[testIdxs,]
@@ -50,6 +50,9 @@ stop('under construction, classification case')
   test.x <- testing[,-ncolXY,drop=FALSE]
 
   acc <- NULL
+
+  browser()
+
   for (i in startDeg:maxDeg) {  # for each degree
      m <- if(i > maxInteractDeg) maxInteractDeg else i
      pol <- polyFit(training,i,m,use,pcaMethod,pcaLocation,
@@ -134,7 +137,7 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 # classification, 2 hidden layers, with 3rd layer for forming the
 # predictions
 # xvalKf(pe,units=c(15,15,NA),activation=c('relu','relu','softmax'),
-#    dropout=c(0.1,0.1,NA)) 
+#    dropout=c(0.1,0.1,NA))
 
 # regression, 3 hidden layers, with 4th layer for forming the
 # predictions
@@ -175,7 +178,7 @@ xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,
   trainingy <- training[,yCol]
   classcase <- is.factor(trainingy)
   # loss <- 'NULL'
-  cmd <- 
+  cmd <-
      paste0('kfout <- kms(',yName,' ~ .,data=training,',layers,')')
   eval(parse(text=cmd))
   preds <- predict(kfout,testingx)$fit
@@ -209,7 +212,7 @@ kmswrapper <- function(model, x_test, y_test) {
   } else {
     y <- y_test
   }
-    
+
   n <- length(model$layers)
   for (i in 1:n) {
     layer_model <- keras_model(inputs = model$input,

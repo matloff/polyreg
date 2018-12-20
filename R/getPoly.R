@@ -112,6 +112,6 @@ getPoly <- function(xdata = NULL, maxDeg = 1, maxInteractDeg = maxDeg,
   X <- model_matrix(modelFormula, W, intercept, noisy, ...)
   if(!("formula" %in% names(attributes)))
     attr(X, which="formula") <- modelFormula # patch, should be addressed in model_matrix()
-  return(X)
+  return(list(xdata = X, retainedNames = colnames(X)))
 
 }
