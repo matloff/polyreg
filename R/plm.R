@@ -203,131 +203,11 @@ polyMatrix <- function(x, retainedNames) {
   return(me)
 }
 
-##################################################################
-# getPoly: generate poly terms of a data matrix / data frame
-##################################################################
 
-# arguments:
-
-#   xdata: the dataframe (only predictor variables)
-#   deg: the max degree of polynomial terms
-#   maxInteractDeg: the max degree of dummy and nondummy predictor variable
-#      interaction terms
-#   del0cols: if TRUE, all0 cols will be deleted, and the names of the
-#      remaining ones returned in the colsToKeep component of the return
-#      value; if a character vector, it will be taken to be the names of
-#      the columns to retain; this is motivated by the fact that the
-#      dummies generated from an R factor will be orthogonal
-
-# return: a polyMatrix object
-
-getPoly <- function(xdata, deg, maxInteractDeg = deg,del0cols=TRUE)
+# deletes all-0 columns of the data frame d, returning the new data frame
+delete0columns <- function(d)
 {
-
-  if (maxInteractDeg < deg)
-     stop('currently cannot have maxInteractDeg < deg')
-  if (deg < 1) {
-    stop("deg must be larger than or equal to 1.")
-  }
-
-  xdata <- as.data.frame(xdata)
-  #xy <- xydata[,-ncol(xydata), drop=FALSE]
-  #y <- xydata[,ncol(xydata)]
-  n <- ncol(xdata)
-  # separate dummy variables and continuous variables
-  # anticipating parallel verion: a chunk might have a nondummy with
-  # only 2 values in that chunk
-  # is_dummy <- (lapply(lapply(xdata, table), length)==2)
-  # utst <- transits(mntst[,-785]),28,28
-  check_dummy <- function(xcol) {
-     uxcol <- unique(xcol)
-     if (length(uxcol) == 1)
-        return(uxcol == 0 || uxcol == 1)
-     setequal(uxcol,0:1)
-  }
-  is_dummy <- sapply(xdata, check_dummy)
-  dummy <- xdata[, is_dummy, drop = FALSE]
-  nondummy <- xdata[, !is_dummy, drop = FALSE]
-
-  result <- xdata
-
-  if (deg > 1) {
-    for (m in 2:deg) {
-      i <- ifelse(m > maxInteractDeg, maxInteractDeg, m)
-
-      if (ncol(nondummy) > 0) # for nondummy case
-        result <- cbind(result, deg_plm(nondummy,m))
-
-      if (ncol(dummy) > 0 && i <= ncol(dummy)) # for dummy case
-        result <- cbind(result, only_dummy(dummy,m))
-
-      # for dummy & nondummy intersection
-      if (ncol(nondummy) > 0 && ncol(dummy) > 0 && maxInteractDeg > 1) {
-        for (j in 1:(i-1)) {
-          if (j == 1 && i - j == 1) {
-            r_dummy <- dummy
-            r_nondummy <- nondummy
-          }
-          else if (j == 1) { # when dummy is only distributed 1 deg
-            r_dummy <- dummy
-            r_nondummy <- deg_plm(nondummy,i-j)
-          }
-          else if (i - j == 1) { # the case when nondummy is
-                                 # only distributed 1 deg
-            r_dummy <- only_dummy(dummy, j)
-            r_nondummy <- nondummy
-          }
-          else {
-            r_nondummy <- deg_plm(nondummy,i-j)
-            r_dummy <- only_dummy(dummy, j)
-          }
-          mix <- as.numeric(r_dummy[,1]) * as.numeric(r_nondummy[,1])
-          skip <- 1
-          n_dummy <- ncol(r_dummy)
-          n_nondummy <- ncol(r_nondummy)
-          for (a in 1:n_dummy) {
-            for (b in 1:n_nondummy) {
-              if (skip == 1) {
-                skip <- skip - 1
-                next
-              }
-              mix <- cbind(mix,
-                 as.numeric(r_dummy[,a]) * as.numeric(r_nondummy[,b]))
-            }
-          }
-          result <- cbind(result, mix)
-        }
-      } # end dummy & nondummy intersection
-    } # end loop 2:deg
-  } # end if deg > 1
-
-  rt <- as.data.frame(result)
-
-  for (i in 1:ncol(rt)) {
-    colnames(rt)[i] <- paste("V", i, sep = "")
-  }
-
-  # when some dummy variables arise originally from a categorical
-  # variable, their product will be identically 0, i.e. will result in a
-  # column of all 0s (later resulting in NA coefficients with lm()
-  # etc.); such columns should not be returned below, and the easiest
-  # remedy is to excise them at this point, recording the retained
-  # column names for use in prediction later
-
-  if (is.logical(del0cols)) {
-     rt <- delete0columns(rt)
-     retainedNames <- names(rt)
-  } else if (is.character(del0cols)) {
-     rt <- rt[del0cols]
-  } else retainedNames <- NULL
-
-  return (polyMatrix(rt, retainedNames))
-}
-
-# deletes all-0 columns of the data frame d, returning the new data frame 
-delete0columns <- function(d) 
-{
-   all0 <- function(x) all(x == 0)      
+   all0 <- function(x) all(x == 0)
    tmp <- apply(d,2,all0)
    colsKeep <- which(!tmp)
    d[,colsKeep]
@@ -539,7 +419,7 @@ polyFit <- function(xy,deg,maxInteractDeg=deg,use = "lm",pcaMethod=NULL,
   polyMat <- pMat$xdata
   retainedNames <- pMat$retainedNames
   }
-  
+
 
   # by now, polyMat is ready for input to lm() etc. in all cases
 

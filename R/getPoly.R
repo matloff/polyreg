@@ -25,7 +25,7 @@
 # X_train <- get_poly(mtcars[1:20,], 4, 2)
 # X_test <- get_poly(mtcars[21:32,],
 #                    modelFormula = attributes(X_train)$formula)
-get_poly <- function(xdata = NULL, maxDeg=1, maxInteractDeg = maxDeg,
+getPoly <- function(xdata = NULL, maxDeg = 1, maxInteractDeg = maxDeg,
                      Xy = NULL, modelFormula = NULL, standardize = FALSE,
                      noisy = TRUE, intercept = FALSE, ...){
 
