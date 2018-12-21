@@ -25,6 +25,6 @@ y_hat (predictions using chosen model estimates).
 predict.FSR
 }
 \examples{
-out <- FSR(mtcars[1:20,])
-forecast <- predict(out, mtcars[21:nrow(mtcars),])
+out <- FSR(mtcars[1:25,])
+forecast <- predict(out, mtcars[26:nrow(mtcars),])
 }
