@@ -10,7 +10,7 @@ new data.}
 
 \usage{
 polyFit(xy,deg,maxInteractDeg,use='lm',pcaMethod=NULL,pcaLocation='front',
-   pcaPortion=0.9,glmMethod='one',cls=NULL,del0cols=TRUE)
+   pcaPortion=0.9,glmMethod='one',cls=NULL)
 predict.polyFit(object,newdata)
 }
 
@@ -33,9 +33,6 @@ predict.polyFit(object,newdata)
      an integer of 1 or more.}
   \item{cls}{Virtual cluster, for parallel computation (One Vs. All
      case).}
-  \item{del0cols}{Delete all-0 columns in polynomial data frame.
-     See \code{\link[=exportAttribute]{getPoly}}
-     documentation.}
   \item{newdata}{Data frame, one row for each "X" to be predicted.  Must
      have the same column names as in \code{xy} (without "Y").}
 }
