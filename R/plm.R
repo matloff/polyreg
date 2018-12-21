@@ -544,7 +544,8 @@ predict.polyFit <- function(object,newdata)
   doPCA <- !is.null(object$PCA)
 
   if (!doPCA) {
-    plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
+    f <- paste("~", paste(object$retainedNames, collapse=" + "))
+    plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg, modelFormula = f)$xdata
   } else if (object$PCA == "prcomp") {
        if (object$pcaLocation == "front") {
          new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
