@@ -11,5 +11,15 @@ export(xvalDnet)
 export(xvalDnet)
 export(xvalKf)
 export(xvalPoly)
-importFrom(stats,glm)
+importFrom(stats,glm,alias,as.formula,binomial,coefficients,
+             cor,cov,formula,lm,model.matrix,prcomp,
+             predict,sd)
 importFrom(stats,relevel)
+importFrom(utils,combn)
+importFrom(nnet,multinom)
+importFrom(parallel,clusterEvalQ)
+importFrom(kerasformula,kms)
+importFrom(keras,keras_model,get_layer)
+importFrom(deepnet,nn.train,nn.test,nn.predict)
+importFrom(RSpectra,eigs)
+

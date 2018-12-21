@@ -203,7 +203,7 @@ FSR <- function(Xy,
       tallies <- table(Xy[out$split == "train", ncol(Xy)])
       if(noisy && min(tallies) < 10){
         warning("Training the model with rarely observed labels is not recommended.")
-        tables(tallies)
+        table(tallies)
       }
 
       modal_outcome <- names(tallies)[which.max(tallies)]
