@@ -89,7 +89,7 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
                      scaleXMat=FALSE,nHoldout=min(10000,round(0.2*nrow(xy))),
                      yCol = NULL)
 {
-  requireNamespace(nnet)
+#  requireNamespace(nnet)
   ncxy <- ncol(xy)
 
   if(nHoldout > nrow(xy))
@@ -147,7 +147,7 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,
    units,activation,dropout)
 {
-  requireNamespace(kerasformula)
+  # requireNamespace(kerasformula)
 
   # build up the 'layers' argument for kms()
   u <- paste0('units=c(',paste0(units,collapse=','),')')
@@ -205,7 +205,7 @@ xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,
 #         of each layer.
 
 kmswrapper <- function(model, x_test, y_test) {
-  requireNamespace(car)
+  # requireNamespace(car)
   result <- list()
   if (!is.null(dim(y_test))) {
     y <- apply(y_test, 1, which.max) # y_test has been to_categorical
@@ -272,7 +272,7 @@ xvalDnet <- function(x,y,hidden,output='"sigm"',numepochs=3,
                      scaleXMat = TRUE,
                      nHoldout=min(10000,round(0.2*nrow(x))))
 {
-  requireNamespace(deepnet)
+  # requireNamespace(deepnet)
 
   if (scaleXMat) x <- scale(x)
 

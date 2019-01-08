@@ -302,7 +302,7 @@ polyOneVsAll <- function(plm.xy, classes,cls=NULL) {
 
 testGP <- function()
 {
-   requireNamespace(dummies)
+#   requireNamespace(dummies)
    x <-
       data.frame(a=sample(1:20,5),b=factor(c('u','v','w','u','w')),c=2:6)
    tmp <- dummy(x$b)
@@ -447,7 +447,7 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
               )
               cat('one-vs-all glm() time: ',tmp,'\n')
             } else if (glmMethod == "multlog") { # multinomial logistics
-               requireNamespace(nnet)
+               #requireNamespace(nnet)
               tmp <- system.time(
               ft <- multinom(y~., plm.xy)
               )
@@ -456,7 +456,7 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
           } # more than two classes
       # end 'glm' case
       }  else  {  # 'mvrlm' case
-            requireNamespace(dummies)
+            #requireNamespace(dummies)
             dms <- dummy(y)
             dms <- as.data.frame(dms)
             dxy <- cbind(plm.xy[,-ncol(plm.xy)],dms)
@@ -504,7 +504,7 @@ applyPCA <- function(x,pcaMethod,pcaPortion) {
     xdata <- xy.pca$x[,1:k, drop=FALSE]
 
   } else { # use RSpectra for PCA
-    requireNamespace(RSpectra)
+    #requireNamespace(RSpectra)
     xy.cov <- cov(x)
     k <- pcaPortion
     xy.eig <- eigs(xy.cov,k)
