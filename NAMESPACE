@@ -16,10 +16,11 @@ importFrom(stats,glm,alias,as.formula,binomial,coefficients,
              predict,sd)
 importFrom(stats,relevel)
 importFrom(utils,combn)
-importFrom(nnet,multinom)
-importFrom(parallel,clusterEvalQ)
+importFrom(nnet,nnet,multinom)
+importFrom(parallel,clusterEvalQ,clusterExport,clusterApply)
 importFrom(kerasformula,kms)
 importFrom(keras,keras_model,get_layer)
 importFrom(deepnet,nn.train,nn.test,nn.predict)
 importFrom(RSpectra,eigs)
+importFrom(partools,distribsplit)
 
