@@ -1,9 +1,9 @@
 Package: polyreg
 Title: Polynomial Regression
-Version: 0.3
+Version: 0.3.1
 Authors@R: c(person("Norman", "Matloff", email = "matloff@cs.ucdavis.edu", role = c("aut", "cre")),
            person("Xi", "Cheng", email = "xicheng0821@gmail.com", role = c("aut")),
-           person("Pete", "Mohanty", email = "pete.mohanty@gmail.com", role = c("aut")),
+           person("Pete", "Mohanty", email = "pmohanty@stanford.edu", role = c("aut")),
            person("Bohdan", "Khomtchouk", email = "bohdan@stanford.edu", role = c("aut")), 
            person("Matthew", "Kotila", email = "mrkotila@ucdavis.edu", role = c("aut")), 
            person("Robin", "Yancey", email = "reyancey@ucdavis.edu", role = c("aut")) 
@@ -18,9 +18,9 @@ Maintainer: Norman Matloff <matloff@cs.ucdavis.edu>
 Description: Automate formation and evaluation of polynomial regression models.
 License: GPL (>= 2)
 Encoding: UTF-8
-Depends: regtools
 LazyData: true
+Depends: regtools
 URL: https://github.com/matloff/polyreg
 BugReports: https://github.com/matloff/polyreg/issues
 RoxygenNote: 6.0.1
-Imports: deepnet, dummies, keras, kerasformula, nnet, parallel, partools, regtools, RSpectra, stats, utils
+Imports: deepnet, dummies, keras, kerasformula, nnet, parallel, partools, RSpectra, stats, utils

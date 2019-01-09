@@ -16,8 +16,8 @@ importFrom(kerasformula,kms)
 importFrom(nnet,nnet,multinom)
 importFrom(parallel,clusterEvalQ,clusterExport,clusterApply)
 importFrom(partools,distribsplit)
-#importFrom(regtools,getPE)
 importFrom(RSpectra,eigs)
+importFrom(regtools,getPE)
 importFrom(stats,glm,alias,as.formula,binomial,coefficients,
              cor,cov,formula,lm,model.matrix,prcomp,
              predict,sd,relevel)
