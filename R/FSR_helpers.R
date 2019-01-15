@@ -25,7 +25,7 @@ pow <- function(X, degree){
 
 model_matrix <- function(f, d, intercept, noisy=TRUE){
 
-  tried <- try(model.matrix(f, d, na.action = "na.omit"), silent=TRUE)
+  tried <- try(model.matrix(as.formula(f), d, na.action = "na.omit"), silent=TRUE)
 
   if(inherits(tried, "try-error")){
     if(noisy) cat("model.matrix() reported the following error:\n", tried, "\n\n")

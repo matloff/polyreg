@@ -555,7 +555,6 @@ predict.polyFit <- function(object,newdata)
          new_data <-
             getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
          plm.newdata <- predict(object$pca.xy, new_data)[,1:object$pcaCol]
-         plm.newdata <- as.data.frame(plm.newdata)
        } else stop('invalid pcaLocation')
   } else if (object$PCA == "RSpectra") {
        if (object$pcaLocation == "front") {
@@ -571,9 +570,9 @@ predict.polyFit <- function(object,newdata)
          xy.eig <- object$pca.xy
          plm.newdata <-
             as.matrix(new_data) %*% xy.eig$vectors[,1:object$pcaCol]
-         plm.newdata <- as.data.frame(plm.newdata)
        }
   }  # end doPCA
+  plm.newdata <- as.data.frame(plm.newdata)
 
   if (object$use == "lm") {
     pred <- predict(object$fit, plm.newdata)
