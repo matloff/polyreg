@@ -250,7 +250,7 @@ FSR <- function(Xy,
 
       if(grepl("\\*", out$models$features[m])){
 
-        tmp <- unlist(strsplit(out$models$features[m], "\\*"))
+        tmp <- unlist(strsplit(out$models$features[m], "[ ]*\\*[ ]*"))
         if(mean(tmp %in% out$models$features[out$models$accepted]) == 1){
           out$models$formula[m] <- paste(out[["best_formula"]], "+", out$models$features[m])
         }else{
