@@ -16,7 +16,7 @@ getPoly(xydata, deg, maxInteractDeg = deg)
 \arguments{
   \item{xydata}{Data matrix or data frame without response variable.}
   \item{deg}{The max degree of power terms.}
-  \item{maxInteractDeg}{The max degree of nondummy interaction terms.}
+  \item{maxInteractDeg}{The max degree of nondummy interaction terms. x1 * x2 is degree 2. x1^3 * x2^2 is degree 5.}
 }
 
 \details{

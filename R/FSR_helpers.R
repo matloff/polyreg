@@ -39,7 +39,21 @@ model_matrix <- function(f, d, intercept, noisy=TRUE){
 
 }
 
-get_interactions <- function(features, maxInteractDeg, may_not_repeat = NULL){
+get_degree <- function(combo){
+
+  if(grepl("\\^", combo)){
+
+    ch <- unlist(strsplit(combo, "^"))
+    start <- match("^", ch) + 1
+    end <- match(")", ch) - 1
+    return(as.numeric(paste(ch[start:end], collapse="")))
+
+  }else{
+    return(1)
+  }
+}
+
+get_interactions <- function(features, maxInteractDeg, may_not_repeat = NULL, maxDeg = NULL){
 
   interactions <- list()
 
@@ -48,11 +62,15 @@ get_interactions <- function(features, maxInteractDeg, may_not_repeat = NULL){
     combos <- combn(features, i) # i x choose(n, i) matrix
     combos <- combos[ , which_include(combos, may_not_repeat)]
 
+    if(!is.null(maxDeg)) # drop combos for which sum of degrees > maxDeg
+      combos <- combos[,-which(colSums(apply(combos, 1:2, get_degree)) > maxDeg)]
+
     interactions[[i]] <- apply(combos, 2, paste, collapse = " * ")
 
   }
+  interactions <- unlist(interactions)
 
-  return(unlist(interactions))
+  return(interactions)
 
 }
 

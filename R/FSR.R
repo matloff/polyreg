@@ -122,7 +122,8 @@ FSR <- function(Xy,
   }
 
   for(i in 2:max_poly_degree)
-    continuous_features <- c(continuous_features, paste("pow(", cf, ",", i, ")"))
+    continuous_features <- c(continuous_features, paste0("I(", cf, "^", i, ")"))
+#    continuous_features <- c(continuous_features, paste("pow(", cf, ",", i, ")"))
 
   features <- f <- c(continuous_features, factor_features)
   if(max_interaction_degree > 1){

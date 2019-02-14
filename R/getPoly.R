@@ -7,7 +7,7 @@
 #   xdata: the dataframe (only predictor variables). Factors with more than two levels should not be inputted as integers.
 #   maxDeg: the max degree of polynomial terms.
 #   maxInteractDeg: the max degree of dummy and nondummy predictor variable
-#      interaction terms. x1 * x2 is degree 2.
+#      interaction terms. x1 * x2 is degree 2. x1^3 * x2^2 is degree 5.
 #   Xy: the dataframe with the response in the final column (provide xdata or Xy but not both).
 #     Factors with more than two levels should not be inputted as integers.
 #   modelFormula: Internal use. Formula used to generate the training model matrix.
@@ -25,6 +25,7 @@
 # X_train <- get_poly(mtcars[1:20,], 4, 2)
 # X_test <- get_poly(mtcars[21:32,],
 #                    modelFormula = attributes(X_train)$formula)
+#' @export
 getPoly <- function(xdata = NULL, maxDeg = 1, maxInteractDeg = maxDeg,
                      Xy = NULL, modelFormula = NULL, standardize = FALSE,
                      noisy = TRUE, intercept = FALSE, ...){
@@ -83,8 +84,10 @@ getPoly <- function(xdata = NULL, maxDeg = 1, maxInteractDeg = maxDeg,
 
     if(length(continuous_features)){
       for(i in 2:maxDeg)
-        continuous_features <- c(continuous_features,
-                                 paste("pow(", cf, ",", i, ")"))
+        continuous_features <- c(continuous_features, paste0("I(", cf, "^", i, ")"))
+#        continuous_features <- c(continuous_features,
+#                                 paste("pow(", cf, ",", i, ")"))
+#     old version used pow(), deprecating...
     }
 
     # pow() is a helper function that deals with the nuissance
@@ -97,7 +100,8 @@ getPoly <- function(xdata = NULL, maxDeg = 1, maxInteractDeg = maxDeg,
 
     if(maxInteractDeg > 1 && ncol(W) > 1)
       features <- get_interactions(features, maxInteractDeg,
-                                   c(cf, names(x_factors[x_factors])))
+                                   c(cf, names(x_factors[x_factors])),
+                                   maxDeg)
     #  features <- get_interactions(features, maxInteractDeg, names(x_factors[x_factors]))
 
     if(noisy && (length(features) > nrow(W)))

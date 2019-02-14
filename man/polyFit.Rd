@@ -19,7 +19,7 @@ predict.polyFit(object,newdata)
      column.  In the classification case, response is class ID, stored
      in a vector, not as a factor.}
   \item{maxDeg}{The max degree for polynomial terms.}
-  \item{maxInteractDeg}{The max degree of interaction  terms}
+  \item{maxInteractDeg}{The max degree of interaction terms.}
   \item{use}{Set to 'lm' for linear regression, 'glm' for
      logistic regression, or 'mvrlm' for multivariate-response \code{lm}.}
   \item{pcaMethod}{NULL for no PCA. For PCA, can be either 'prcomp'
@@ -71,13 +71,13 @@ the predicted class labels, 1,2,3,...
 
 \examples{
 
-getPE(Dummies = TRUE)  # prgeng data
-pe1 <- pe[,c(1,2,4,6,7,12:16,3)]   # select some predictors
-pfout <- polyFit(pe1,2)
+#getPE(Dummies = TRUE)  # prgeng data from library(regtools)
+#pe1 <- pe[,c(1,2,4,6,7,12:16,3)]   # select some predictors
+#pfout <- polyFit(pe1,2)
 # predict worker like pe1[1,] but age 42 with MS degree
-newdata <- pe1[1,-11]
-newdata[1,1] <- 42
-newdata[1,4] <- 1
-predict(pfout,newdata[,-11])  # 81022.27
+#newdata <- pe1[1,-11]
+#newdata[1,1] <- 42
+#newdata[1,4] <- 1
+#predict(pfout,newdata[,-11])  # 81022.27
 
 }
