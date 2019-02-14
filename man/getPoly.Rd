@@ -17,6 +17,11 @@ getPoly(xydata, deg, maxInteractDeg = deg)
   \item{xydata}{Data matrix or data frame without response variable.}
   \item{deg}{The max degree of power terms.}
   \item{maxInteractDeg}{The max degree of nondummy interaction terms. x1 * x2 is degree 2. x1^3 * x2^2 is degree 5.}
+  \item{Xy}{ the dataframe with the response in the final column (provide xdata or Xy but not both). Factors with more than two levels should not be inputted as integers.}
+  \item{modelFormula}{ Internal use. Formula used to generate the training model matrix. Note: anticipates that polynomial terms are generated using internal functions of library(polyreg). Also, providing modelFormula bypasses maxDeg and maxInteractDeg.}
+  \item{standardize}{ standardize all continuous variables? (Default: FALSE.)}
+  \item{intercept}{Include intercept? Default: FALSE.}
+  \item{...}{ additional arguments to be passed to model.matrix() via polyreg:::model_matrix(). Note na.action = "na.omit".}
 }
 
 \details{
