@@ -2,31 +2,8 @@
 # getPoly: generate poly terms of a data matrix / data frame
 ##################################################################
 
-# arguments:
-
-#   xdata: the dataframe (only predictor variables). Factors with more than two levels should not be inputted as integers.
-#   maxDeg: the max degree of polynomial terms.
-#   maxInteractDeg: the max degree of dummy and nondummy predictor variable
-#      interaction terms. x1 * x2 is degree 2. x1^3 * x2^2 is degree 5.
-#   Xy: the dataframe with the response in the final column (provide xdata or Xy but not both).
-#     Factors with more than two levels should not be inputted as integers.
-#   modelFormula: Internal use. Formula used to generate the training model matrix.
-#     Note: anticipates that polynomial terms are generated using internal functions of library(polyreg)
-#     so YMMV if the formula is not generated on the training data by get_poly().
-#     Also, providing modelFormula bypasses maxDeg and maxInteractDeg.
-#   standardize: standardize all continuous variables? (Default: FALSE.)
-#   intercept: Include intercept? Default: FALSE.
-#   ... additional arguments to be passed to model.matrix() via polyreg:::model_matrix(). Note na.action = "na.omit".
-# return: a model matrix, with the model formula as an additional attribute
-# examples:
-# X <- get_poly(mtcars, 2)
-# W <- get_poly(Xy=mtcars, maxDeg=2) # treats final column as response
-# ncol(W) < ncol(X)          # TRUE
-# X_train <- get_poly(mtcars[1:20,], 4, 2)
-# X_test <- get_poly(mtcars[21:32,],
-#                    modelFormula = attributes(X_train)$formula)
 #' @export
-getPoly <- function(xdata = NULL, maxDeg = 1, maxInteractDeg = maxDeg,
+getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
                      Xy = NULL, modelFormula = NULL, standardize = FALSE,
                      noisy = TRUE, intercept = FALSE, ...){
 
@@ -83,7 +60,7 @@ getPoly <- function(xdata = NULL, maxDeg = 1, maxInteractDeg = maxDeg,
     # P does not reflect intercept, interactions, or polynomial terms
 
     if(length(continuous_features)){
-      for(i in 2:maxDeg)
+      for(i in 2:deg)
         continuous_features <- c(continuous_features, paste0("I(", cf, "^", i, ")"))
 #        continuous_features <- c(continuous_features,
 #                                 paste("pow(", cf, ",", i, ")"))
@@ -101,7 +78,7 @@ getPoly <- function(xdata = NULL, maxDeg = 1, maxInteractDeg = maxDeg,
     if(maxInteractDeg > 1 && ncol(W) > 1)
       features <- get_interactions(features, maxInteractDeg,
                                    c(cf, names(x_factors[x_factors])),
-                                   maxDeg)
+                                   deg)
     #  features <- get_interactions(features, maxInteractDeg, names(x_factors[x_factors]))
 
     if(noisy && (length(features) > nrow(W)))
