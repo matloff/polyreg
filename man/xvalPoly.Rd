@@ -10,13 +10,10 @@ Cross validation on Polynomial regression
 Separate the dataset to training and test set, and obtain the mean absolute error (for linear regression) or accuracy (for logistic regression).
 }
 \usage{
-xvalPoly(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm", pcaMethod =
-   FALSE, pcaPortion = 0.9, glmMethod = "all",nHoldout=10000,yCol=NULL)
-xvalKf(xy, nHoldout = min(10000, round(0.2 * nrow(xy))), yCol = NULL,
-    units, activation, dropout)
-xvalDnet(x,y,hidden,output="\\"sigm\\"",numepochs=3,pcaMethod = FALSE,
-    pcaPortion=0.9,scaleXMat=TRUE,nHoldout=min(10000,
-    round(0.2*nrow(x))))
+xvalPoly(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
+               pcaMethod = NULL,pcaPortion = 0.9,glmMethod = "one",
+               nHoldout=min(10000,round(0.2*nrow(xy))),pcaLocation='front',
+               yCol = NULL, cls=NULL,startDeg=1)
 }
 
 \arguments{

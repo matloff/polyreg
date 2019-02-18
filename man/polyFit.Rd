@@ -9,8 +9,8 @@ Fit polynomial regression using a linear or logistic model; predict
 new data.}
 
 \usage{
-polyFit(xy,deg,maxInteractDeg,use='lm',pcaMethod=NULL,pcaLocation='front',
-   pcaPortion=0.9,glmMethod='one',cls=NULL)
+polyFit(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
+     pcaLocation='front', pcaPortion=0.9, glmMethod="one", cls=NULL)
 predict.polyFit(object,newdata)
 }
 
@@ -18,7 +18,7 @@ predict.polyFit(object,newdata)
   \item{xy}{Data frame with response variable in the last
      column.  In the classification case, response is class ID, stored
      in a vector, not as a factor.}
-  \item{maxDeg}{The max degree for polynomial terms.}
+  \item{deg}{The max degree for polynomial terms.}
   \item{maxInteractDeg}{The max degree of interaction terms.}
   \item{use}{Set to 'lm' for linear regression, 'glm' for
      logistic regression, or 'mvrlm' for multivariate-response \code{lm}.}
@@ -31,10 +31,12 @@ predict.polyFit(object,newdata)
      so as to achieve this portion of total variance.  Otherwise, use
      this many components.  In the 'RSpectra' case, this value must be
      an integer of 1 or more.}
+  \item{glmMethod}{Defaults to "one."}
   \item{cls}{Virtual cluster, for parallel computation (One Vs. All
      case).}
   \item{newdata}{Data frame, one row for each "X" to be predicted.  Must
      have the same column names as in \code{xy} (without "Y").}
+  \item{object}{An item of class 'polyFit' containing output. Can be used with predict().}
 }
 
 \details{
