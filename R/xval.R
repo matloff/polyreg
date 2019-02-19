@@ -102,6 +102,7 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
   testingx <- tmp$testSet[,-ncxy]
   testingy <- tmp$testSet[,ncxy]
 
+  nnout <- NULL
   yName <- names(xy)[ncol(xy)]
   cmd <- paste0('nnout <- nnet(',yName,' ~ .,data=training,size=')
   cmd <- paste0(cmd,size,',linout=',linout,')')
@@ -142,10 +143,9 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 # xvalKf(pe,units=c(25,25,5,NA),activation=c('relu','relu','relu','linear'),
 #    dropout=c(0.4,0.3,0.3,NA))
 
-xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,
-   units,activation,dropout)
+xvalKf <- function(xy, nHoldout = min(10000, round(0.2*nrow(xy))),
+                   yCol=NULL, units, activation, dropout)
 {
-  # requireNamespace(kerasformula)
 
   # build up the 'layers' argument for kms()
   u <- paste0('units=c(',paste0(units,collapse=','),')')
@@ -176,8 +176,8 @@ xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,
   trainingy <- training[,yCol]
   classcase <- is.factor(trainingy)
   # loss <- 'NULL'
-  cmd <-
-     paste0('kfout <- kms(',yName,' ~ .,data=training,',layers,')')
+  kfout <- NULL
+  cmd <- paste0('kfout <- kms(',yName,' ~ .,data=training,',layers,')')
   eval(parse(text=cmd))
   preds <- predict(kfout,testingx)$fit
   if (!classcase) {  # regression case
@@ -200,7 +200,7 @@ xvalKf <- function(xy,nHoldout=min(10000,round(0.2*nrow(xy))),yCol=NULL,
 #     y_test: the response variable of test set
 
 # return: a list. Each element of the list is the output and VIF values
-#         of each layer.
+#         of each layer. (VIF currently deprecated)
 
 kmswrapper <- function(model, x_test, y_test) {
   # requireNamespace(car)
@@ -234,11 +234,13 @@ kmswrapper <- function(model, x_test, y_test) {
           sep="-"
         )
       )
-      mod <- lm(formula.new,data = df)
+      mod <- lm(formula.new, data = df)
     }
 
-    vifs <- vif(mod)
-    result[[i]] <- list(output = output, vif = vifs)
+    # need code
+    # vifs <- vif(mod)
+    message("vif() not found (library(polyreg) is under construction). Returning output without variance inflation factor.")
+    result[[i]] <- list(output = output) #, vif = vifs)
 
   }
   return(result)
@@ -281,6 +283,7 @@ xvalDnet <- function(x,y,hidden,output='"sigm"',numepochs=3,
   trainingy <- ym[-tmp,]
   testingy <- ym[tmp,]
 
+  nnout <- NULL
   cmd <- paste0('nnout <- nn.train(trainingx,trainingy,')
   cmd <- paste0(cmd,'hidden=',hidden,',')
   cmd <- paste0(cmd,'output=',output,',')
