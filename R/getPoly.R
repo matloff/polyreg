@@ -8,7 +8,7 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
                      noisy = TRUE, intercept = FALSE, ...){
 
   if(sum(is.null(xdata) + is.null(Xy)) != 1)
-    stop("please provide get_poly() xdata or Xy (but not both).")
+    stop("please provide getPoly() xdata or Xy (but not both).")
 
   W <- if(is.null(xdata)) as.data.frame(Xy) else as.data.frame(xdata)
   if(standardize){
@@ -53,33 +53,27 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
       }
     }
 
-    continuous_features <- cf <- colnames(W)[x_cols][!x_factors]
+    continuous_features <- cf <- colnames(W)[x_cols][!x_factors] # cf needed as copy below
     P_continuous <- length(continuous_features)
 
     P <- P_continuous + P_factor
     # P does not reflect intercept, interactions, or polynomial terms
 
-    if(length(continuous_features)){
+    if(length(continuous_features) > 0){
       for(i in 2:deg)
         continuous_features <- c(continuous_features, paste0("I(", cf, "^", i, ")"))
-#        continuous_features <- c(continuous_features,
-#                                 paste("pow(", cf, ",", i, ")"))
-#     old version used pow(), deprecating...
     }
-
-    # pow() is a helper function that deals with the nuissance
-    # that lm(y ~ x + x^2 + x^3)
-    # will only estimate one slope but we want three...
+    # generate "I(x^2)", "I(x^3)", and so on
     # the string above will be used to make the appropriate formula
-    # y ~ x + pow(x, 2) + pow(x, 3)
+    # y ~ x + I(x^2) + I(x^3)
 
     features <- c(continuous_features, factor_features)
 
-    if(maxInteractDeg > 1 && ncol(W) > 1)
-      features <- get_interactions(features, maxInteractDeg,
-                                   c(cf, names(x_factors[x_factors])),
-                                   deg)
-    #  features <- get_interactions(features, maxInteractDeg, names(x_factors[x_factors]))
+    #if(maxInteractDeg > 1 && ncol(W) > 1) # checks now in get_interactions
+    features <- get_interactions(features, maxInteractDeg,
+                                 c(cf, names(x_factors[x_factors])),
+                                 maxDeg = deg)
+    # get_interactions now returns original features too by default
 
     if(noisy && (length(features) > nrow(W)))
       cat("P > N. With polynomial terms and interactions, P is ",

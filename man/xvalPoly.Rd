@@ -11,38 +11,31 @@ Separate the dataset to training and test set, and obtain the mean absolute erro
 }
 \usage{
 xvalPoly(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
-               pcaMethod = NULL,pcaPortion = 0.9,glmMethod = "one",
-               nHoldout=min(10000,round(0.2*nrow(xy))),pcaLocation='front',
-               yCol = NULL, cls=NULL,startDeg=1)
+               pcaMethod = NULL, pcaPortion = 0.9,
+               glmMethod = "one",
+               nHoldout = min(10000, round(0.2*nrow(xy))),
+               pcaLocation='front',
+               yCol = NULL, cls=NULL, startDeg=1)
 }
 
 \arguments{
   \item{xy}{Data matrix or dataframe with response variable in the last column.}
   \item{maxDeg}{Max degree for power terms.}
   \item{maxInteractDeg}{Max degree of interaction terms.}
+  \item{startDeg}{Starting degree. Enables user to skip lower degree models. (But defaults to 1.)}
   \item{use}{Can be "lm" for using linear regreesion, and "glm" for
      using logistic regression.}
-  \item{trnProp}{Proportion of data to be used as training set.}
-  \item{pcaMethod}{If TRUE, use PCA.}
-  \item{pcaPortion}{If pcaMethod is TRUE, use components up to this
+  \item{pcaMethod}{Should be either NULL (no PCA), "prcomp" (base R implementation of PCA), or "RSpectra" (recent implementation of PCA).}
+  \item{pcaPortion}{If pcaMethod is provided, use components up to this
      proportion of total variance.}
+  \item{pcaLocation}{Is PCA performed before or after the (polynomial) model matrix is constructed?}
   \item{glmMethod}{For classification problems.  If there are more than
      two classes, this can be "all" for All-vs-All method,
      or "one" for One-vs-All method.}
   \item{nHoldout}{Size of test test.}
-  \item{units}{Vector specifying number of units per layer. There is one
-     element for each hidden layer, then an element for the dummy layer
-     that produces the predictions; specify this as NA.}
-  \item{activation}{Vector specifying the activiation functions. One
-     element for each hidden layer, then one function producing the
-     final prediction, e.g. \code{'linear'} for regression and
-     \code{'softmax'} for classification.}
-  \item{units}{Vector specifying number of units per layer.}
-  \item{x}{Numerical matrix of predictor values.}
-  \item{y}{Numerical vector (regression case) or matrix (classification
-     case) of response values.  In the classification, if there are
-     \code{q} classes then the matrix will have \code{q} columns,
-     exactly one 1 per row.}
+  \item{yCol}{If provided, the column where y is found (i.e., other than the last colum, where it is expected).}
+  \item{cls}{cluster (for clusterEvalQ()).}
+
 }
 
 \details{
@@ -61,8 +54,8 @@ error (for \code{lm}) or probability of correct classification
 
 \examples{
 y <- mtcars[,1] # make mpg the outcome
-data <- cbind(mtcars[,-1], y) # make y column the last column
-xvalPoly(data,2,2,"lm") # not using pca
-xvalPoly(data,2,2,"lm", "prcomp", 0.8) # using pca on X first
+Xy <- as.data.frame(cbind(mtcars[,-1], y)) # make y column the last column
+xvalPoly(Xy,2,use="lm") # not using pca
+xvalPoly(Xy,2, use="lm", pcaMethod="prcomp", 0.8) # using pca on X first
 }
 

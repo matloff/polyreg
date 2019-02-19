@@ -26,7 +26,6 @@ pow <- function(X, degree){
 model_matrix <- function(f, d, intercept, noisy=TRUE){
 
   tried <- try(model.matrix(f, d, na.action = "na.omit"), silent=TRUE)
-
   if(inherits(tried, "try-error")){
     if(noisy) cat("model.matrix() reported the following error:\n", tried, "\n\n")
     return(NULL)
@@ -53,24 +52,26 @@ get_degree <- function(combo){
   }
 }
 
-get_interactions <- function(features, maxInteractDeg, may_not_repeat = NULL, maxDeg = NULL){
+get_interactions <- function(features, maxInteractDeg, may_not_repeat = NULL, maxDeg = NULL, include_features = TRUE){
 
   interactions <- list()
 
-  for(i in 2:maxInteractDeg){
+  if(length(features) > 1 && maxInteractDeg > 1){
+    for(i in 2:maxInteractDeg){
 
-    combos <- combn(features, i) # i x choose(n, i) matrix
-    combos <- combos[ , which_include(combos, may_not_repeat)]
+      combos <- combn(features, i) # i x choose(n, i) matrix
+      combos <- combos[ , which_include(combos, may_not_repeat)]
 
-    if(!is.null(maxDeg)) # drop combos for which sum of degrees > maxDeg
-      combos <- combos[,-which(colSums(apply(combos, 1:2, get_degree)) > maxDeg)]
+      if(!is.null(maxDeg)) # drop combos for which sum of degrees > maxDeg
+        combos <- combos[,-which(colSums(apply(combos, 1:2, get_degree)) > maxDeg)]
 
-    interactions[[i]] <- apply(combos, 2, paste, collapse = " * ")
+      interactions[[i]] <- apply(combos, 2, paste, collapse = " * ")
 
+    }
   }
   interactions <- unlist(interactions)
 
-  return(interactions)
+  if(include_features) return(c(features, interactions)) else return(interactions)
 
 }
 
@@ -85,6 +86,8 @@ which_include <- function(combos, may_not_repeat){
 #
 # also, different monomials of the same variable should not interact
 # raising the polynomial degree beyond user specification
+
+  combos <- as.matrix(combos)
 
   keepers <- 1:ncol(combos)
 

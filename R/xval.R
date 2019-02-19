@@ -16,9 +16,9 @@
 # if at all
 
 xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
-               pcaMethod = NULL,pcaPortion = 0.9,glmMethod = "one",
-               nHoldout=min(10000,round(0.2*nrow(xy))),pcaLocation='front',
-               yCol = NULL, cls=NULL,startDeg=1)
+               pcaMethod = NULL, pcaPortion = 0.9, glmMethod = "one",
+               nHoldout = min(10000, round(0.2*nrow(xy))),
+               pcaLocation='front', yCol = NULL, cls = NULL, startDeg = 1)
 {
 
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
@@ -31,9 +31,9 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
   ncolXY <- ncol(xy)
 
   # is this a classification problem?
-  classProblem <- is.factor(y) || use == 'mvrlm'
+  classProblem <- is.factor(y) || is.character(y) || use == 'mvrlm'
   if (classProblem) {
-stop('under construction, classification case')
+    stop('under construction, classification case. For now, please see FSR().')
      if (is.factor(y))  { # change to numeric code for the classes
         y <- as.numeric(y)
         xy[,ncol(xy)] <- y
@@ -51,10 +51,9 @@ stop('under construction, classification case')
 
   acc <- NULL
 
-  browser()
-
   for (i in startDeg:maxDeg) {  # for each degree
      m <- if(i > maxInteractDeg) maxInteractDeg else i
+     browser()
      pol <- polyFit(training,i,m,use,pcaMethod,pcaLocation,
          pcaPortion,glmMethod,cls)
      pred <- predict(pol, test.x)
@@ -102,7 +101,6 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
   training <- tmp$trainSet
   testingx <- tmp$testSet[,-ncxy]
   testingy <- tmp$testSet[,ncxy]
-
 
   yName <- names(xy)[ncol(xy)]
   cmd <- paste0('nnout <- nnet(',yName,' ~ .,data=training,size=')

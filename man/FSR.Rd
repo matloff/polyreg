@@ -4,11 +4,12 @@
 \alias{FSR}
 \title{FSR}
 \usage{
-FSR(Xy, max_poly_degree = 3, max_interaction_degree = 2, outcome = NULL,
-  linear_estimation = FALSE, threshold_include = 0.01,
-  threshold_estimate = 0.001, min_models = NULL, max_fails = 2,
-  standardize = FALSE, pTraining = 0.8, file_name = NULL,
-  store_fit = "none", max_block = 250, noisy = TRUE, seed = NULL)
+FSR(Xy, max_poly_degree = 3, max_interaction_degree = 2,
+  outcome = NULL, linear_estimation = FALSE,
+  threshold_include = 0.01, threshold_estimate = 0.001,
+  min_models = NULL, max_fails = 2, standardize = FALSE,
+  pTraining = 0.8, file_name = NULL, store_fit = "none",
+  max_block = 250, noisy = TRUE, seed = NULL)
 }
 \arguments{
 \item{Xy}{matrix or data.frame; outcome must be in final column.}

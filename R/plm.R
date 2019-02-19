@@ -531,8 +531,7 @@ applyPCA <- function(x,pcaMethod,pcaPortion) {
 
 # return: predicted values of newdata, IN THE FORM OF NUMERICAL CLASS
 # CODES, 1,2,3,...
-
-predict.polyFit <- function(object,newdata)
+predict.polyFit <- function(object, newdata)
 {
   use <- object$use
 
@@ -544,25 +543,36 @@ predict.polyFit <- function(object,newdata)
   doPCA <- !is.null(object$PCA)
 
   if (!doPCA) {
+
+    browser()
+
     f <- paste("~", paste(object$retainedNames, collapse=" + "))
     plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg, modelFormula = f)$xdata
+
   } else if (object$PCA == "prcomp") {
+
+        message("Beginning PCA\n\n", timestamp())
+
        if (object$pcaLocation == "front") {
+
          new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
-         plm.newdata <-
-            getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+         plm.newdata <- getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+
        } else if (object$pcaLocation == "back") {
-         new_data <-
-            getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
+
+         new_data <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
          plm.newdata <- predict(object$pca.xy, new_data)[,1:object$pcaCol]
          plm.newdata <- as.data.frame(plm.newdata)
-       } else stop('invalid pcaLocation')
+
+       } else stop('invalid pcaLocation. Should be "front" or "back".')
   } else if (object$PCA == "RSpectra") {
+
        if (object$pcaLocation == "front") {
+
          xy.eig <- object$pca.xy
          new_data <- as.matrix(newdata) %*% xy.eig$vectors
-         plm.newdata <-
-           getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+         plm.newdata <- getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+
        } else if (object$pcaLocation == "back") {
          new_data <-
             getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
@@ -574,6 +584,8 @@ predict.polyFit <- function(object,newdata)
          plm.newdata <- as.data.frame(plm.newdata)
        }
   }  # end doPCA
+  message("Finished with PCA and model matrix construction.\n\n", timestamp())
+
 
   if (object$use == "lm") {
     pred <- predict(object$fit, plm.newdata)
