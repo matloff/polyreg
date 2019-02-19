@@ -10,15 +10,6 @@ Authors@R: c(person("Norman", "Matloff", email = "matloff@cs.ucdavis.edu", role 
            person("Robert", "Tucker", email = "ratucker@ucdavis.edu", role = c("aut")),
            person("Allan", "Zhao", email = "awxzhao@ucdavis.edu", role = c("aut")),
            person("Tiffany", "Jiang", email = "thjiang@ucdavis.edu", role = c("ctb")))
-Author: Norman Matloff [aut, cre],
-   Xi Cheng [aut],
-   Pete Mohanty [aut],
-   Bohdan Khomtchouk [aut],
-   Matthew Kotila [aut],
-   Robin Yancey [aut],
-   Robert Tucker [aut],
-   Allan Zhao [aut],
-   Tiffany Jiang [ctb]
 Maintainer: Norman Matloff <matloff@cs.ucdavis.edu>
 Description: Automate formation and evaluation of polynomial regression models.
 License: GPL (>= 2)

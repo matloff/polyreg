@@ -531,7 +531,7 @@ applyPCA <- function(x,pcaMethod,pcaPortion) {
 
 # return: predicted values of newdata, IN THE FORM OF NUMERICAL CLASS
 # CODES, 1,2,3,...
-predict.polyFit <- function(object, newdata)
+predict.polyFit <- function(object, newdata, ...)
 {
   use <- object$use
 
@@ -547,7 +547,7 @@ predict.polyFit <- function(object, newdata)
     browser()
 
     f <- paste("~", paste(object$retainedNames, collapse=" + "))
-    plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg, modelFormula = f)$xdata
+    plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg, modelFormula = f, ...)$xdata
 
   } else if (object$PCA == "prcomp") {
 
@@ -556,11 +556,11 @@ predict.polyFit <- function(object, newdata)
        if (object$pcaLocation == "front") {
 
          new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
-         plm.newdata <- getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+         plm.newdata <- getPoly(new_data, object$degree, object$maxInteractDeg, ...)$xdata
 
        } else if (object$pcaLocation == "back") {
 
-         new_data <- getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
+         new_data <- getPoly(newdata, object$degree, object$maxInteractDeg, ...)$xdata
          plm.newdata <- predict(object$pca.xy, new_data)[,1:object$pcaCol]
          plm.newdata <- as.data.frame(plm.newdata)
 
@@ -574,8 +574,7 @@ predict.polyFit <- function(object, newdata)
          plm.newdata <- getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
 
        } else if (object$pcaLocation == "back") {
-         new_data <-
-            getPoly(newdata, object$degree, object$maxInteractDeg)$xdata
+         new_data <- getPoly(newdata, object$degree, object$maxInteractDeg, ...)$xdata
          ### xy.cov <- cov(new_data)
          ### xy.eig <- eigs(xy.cov,object$pcaCol)
          xy.eig <- object$pca.xy

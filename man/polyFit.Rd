@@ -11,7 +11,7 @@ new data.}
 \usage{
 polyFit(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
      pcaLocation='front', pcaPortion=0.9, glmMethod="one", cls=NULL)
-predict.polyFit(object,newdata)
+\method{predict}{polyFit}(object, newdata, ...)
 }
 
 \arguments{
@@ -37,6 +37,7 @@ predict.polyFit(object,newdata)
   \item{newdata}{Data frame, one row for each "X" to be predicted.  Must
      have the same column names as in \code{xy} (without "Y").}
   \item{object}{An item of class 'polyFit' containing output. Can be used with predict().}
+  \item{...}{Additional arguments for getPoly().}
 }
 
 \details{

@@ -1,16 +1,5 @@
-#' predict.FSR
-#' @param object FSR output. Predictions will be made based on object$best_formula unless model_to_use is provided (as an integer).
-#' @param newdata New Xdata.
-#' @param model_to_use Integer optionally indicating a model to use if object$best_formula is not selected. Example: model_to_use = 3 will use object$models$formula[3].
-#' @param standardize Logical--standardize numeric variables? (If NULL, the default, bypasses and decides based on object$standardize.)
-#' @param noisy Display output?
-#' @return y_hat (predictions using chosen model estimates).
-#' @method predict FSR
-#' @examples
-#' out <- FSR(mtcars[1:20,])
-#' forecast <- predict(out, mtcars[21:nrow(mtcars),])
 #' @export
-predict.FSR <- function(object, newdata, model_to_use=NULL, standardize=NULL, noisy=TRUE){
+predict.FSR <- function(object, newdata, model_to_use=NULL, standardize=NULL, noisy=TRUE,...){
 
 
   if(!is.null(standardize) && object$standardize){
@@ -59,14 +48,8 @@ predict.FSR <- function(object, newdata, model_to_use=NULL, standardize=NULL, no
 }
 
 
-#' summary.FSR
-#' @param object an FSR object
-#' @param estimation_overview logical: describe how many models were planned, sample size, etc.?
-#' @param results_overview logical: give overview of best fit model, etc?
-#' @param model_number If non-null, an integer indicating which model to display a summary of.
-#' @method summary FSR
 #' @export
-summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE, model_number = NULL){
+summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE, model_number = NULL, ...){
 
   if(estimation_overview){
 

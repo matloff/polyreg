@@ -22,4 +22,4 @@ importFrom(regtools,getPE)
 importFrom(stats,glm,alias,as.formula,binomial,coefficients,
              cor,cov,formula,lm,model.matrix,prcomp,
              predict,sd,relevel)
-importFrom(utils,combn)
+importFrom(utils,combn,timestamp)

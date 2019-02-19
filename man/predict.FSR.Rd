@@ -5,7 +5,7 @@
 \title{predict.FSR}
 \usage{
 \method{predict}{FSR}(object, newdata, model_to_use = NULL,
-  standardize = NULL, noisy = TRUE)
+  standardize = NULL, noisy = TRUE, ...)
 }
 \arguments{
 \item{object}{FSR output. Predictions will be made based on object$best_formula unless model_to_use is provided (as an integer).}
@@ -17,6 +17,8 @@
 \item{standardize}{Logical--standardize numeric variables? (If NULL, the default, bypasses and decides based on object$standardize.)}
 
 \item{noisy}{Display output?}
+
+\item{...}{ignore}
 }
 \value{
 y_hat (predictions using chosen model estimates).
