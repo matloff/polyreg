@@ -1,7 +1,7 @@
 Package: polyreg
 Title: Polynomial Regression
 Version: 0.4.0
-Authors@R: c(person("Norman", "Matloff", email = "matloff@cs.ucdavis.edu", role = c("aut", "cre"), comment = c(ORCID = "0000-0001-9179-6785")),
+Authors@R: c(person("Norm", "Matloff", email = "matloff@cs.ucdavis.edu", role = c("aut", "cre"), comment = c(ORCID = "0000-0001-9179-6785")),
            person("Xi", "Cheng", email = "xicheng0821@gmail.com", role = c("aut")),
            person("Pete", "Mohanty", email = "pmohanty@stanford.edu", role = c("aut"), comment = c(ORCID = "0000-0002-4985-5160")),
            person("Bohdan", "Khomtchouk", email = "bohdan@stanford.edu", role = c("aut")), 
@@ -19,4 +19,4 @@ Depends: regtools
 URL: https://github.com/matloff/polyreg
 BugReports: https://github.com/matloff/polyreg/issues
 RoxygenNote: 6.0.1
-Imports: dummies, parallel, partools, RSpectra, stats, utils
+Imports: nnet,dummies, parallel, partools, RSpectra, stats, utils
