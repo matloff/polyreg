@@ -544,8 +544,6 @@ predict.polyFit <- function(object, newdata, ...)
 
   if (!doPCA) {
 
-    browser()
-
     f <- paste("~", paste(object$retainedNames, collapse=" + "))
     plm.newdata <- getPoly(newdata, object$degree, object$maxInteractDeg, modelFormula = f, ...)$xdata
 
