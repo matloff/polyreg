@@ -3,7 +3,7 @@ Title: Polynomial Regression
 Version: 0.4.0
 Authors@R: c(person("Norm", "Matloff", email = "matloff@cs.ucdavis.edu", role = c("aut", "cre"), comment = c(ORCID = "0000-0001-9179-6785")),
            person("Xi", "Cheng", email = "xicheng0821@gmail.com", role = c("aut")),
-           person("Pete", "Mohanty", email = "pmohanty@stanford.edu", role = c("aut"), comment = c(ORCID = "0000-0002-4985-5160")),
+           person("Pete", "Mohanty", email = "pmohanty@stanford.edu", role = c("aut"), comment = c(ORCID = "0000-0001-8531-3345")),
            person("Bohdan", "Khomtchouk", email = "bohdan@stanford.edu", role = c("aut")), 
            person("Matthew", "Kotila", email = "mrkotila@ucdavis.edu", role = c("aut")), 
            person("Robin", "Yancey", email = "reyancey@ucdavis.edu", role = c("aut")),
