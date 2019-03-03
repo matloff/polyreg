@@ -12,7 +12,7 @@ FSR(Xy, max_poly_degree = 3, max_interaction_degree = 2,
   max_block = 250, noisy = TRUE, seed = NULL)
 }
 \arguments{
-\item{Xy}{matrix or data.frame; outcome must be in final column.}
+\item{Xy}{matrix or data.frame; outcome must be in final column. Categorical variables (> 2 levels) should be passed as factors, not dummy variables or integers, to ensure the polynomial matrix is constructed properly.}
 
 \item{max_poly_degree}{highest power to raise continuous features; default 3 (cubic).}
 

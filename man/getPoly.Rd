@@ -18,10 +18,10 @@ getPoly(xdata = NULL, deg = 1, maxInteractDeg = deg,
 
 
 \arguments{
-  \item{xdata}{Data matrix or data frame without response variable.}
+  \item{xdata}{Data matrix or data frame without response variable. Categorical variables (> 2 levels) should be passed as factors, not dummy variables or integers, to ensure the polynomial matrix is constructed properly.}
   \item{deg}{The max degree of power terms. Default 1 so just returns model matrix by default.}
   \item{maxInteractDeg}{The max degree of nondummy interaction terms. x1 * x2 is degree 2. x1^3 * x2^2 is degree 5. Implicitly constrained by deg. For example, if deg = 3 and maxInteractDegree = 2, x1^1 * x2^2 (i.e., degree 3) will be included but x1^2 * x2^2 (i.e., degree 4) will not.}
-  \item{Xy}{ the dataframe with the response in the final column (provide xdata or Xy but not both). Factors with more than two levels should not be inputted as integers.}
+  \item{Xy}{ the dataframe with the response in the final column (provide xdata or Xy but not both).Categorical variables (> 2 levels) should be passed as factors, not dummy variables or integers, to ensure the polynomial matrix is constructed properly.}
   \item{modelFormula}{ Internal use. Formula used to generate the training model matrix. Note: anticipates that polynomial terms are generated using internal functions of library(polyreg). Also, providing modelFormula bypasses deg and maxInteractDeg.}
   \item{standardize}{ standardize all continuous variables? (Default: FALSE.)}
   \item{noisy}{Output progress updates? Defaults to TRUE.}
