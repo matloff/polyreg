@@ -300,15 +300,15 @@ polyOneVsAll <- function(plm.xy, classes,cls=NULL) {
 # attr(,"class")
 # [1] "polyMatrix"
 
-testGP <- function()
-{
+#testGP <- function()
+#{
 #   requireNamespace(dummies)
-   x <-
-      data.frame(a=sample(1:20,5),b=factor(c('u','v','w','u','w')),c=2:6)
-   tmp <- dummy(x$b)
-   x <- cbind(x,tmp[,-3])
-   x$b <- NULL
-}
+#   x <-
+#      data.frame(a=sample(1:20,5),b=factor(c('u','v','w','u','w')),c=2:6)
+#   tmp <- dummy(x$b)
+#   x <- cbind(x,tmp[,-3])
+#   x$b <- NULL
+#}
 
 ##################################################################
 # polyFit: generate polynomial terms of data and fit models
@@ -384,11 +384,10 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
     if (pcaLocation == 'front') {
        applyPCAOutputs <- applyPCA(xdata,pcaMethod,pcaPortion)
        xdata <- applyPCAOutputs$xdata
-       tmp <-
-         system.time(pMat <- getPoly(xdata, deg, maxInteractDeg))
+       tmp <- system.time(pMat <- getPoly(xdata, deg, maxInteractDeg))
        cat('getPoly time: ',tmp,'\n')
-  polyMat <- pMat$xdata
-  retainedNames <- pMat$retainedNames
+       polyMat <- pMat$xdata
+       retainedNames <- pMat$retainedNames
     } else  {  # 'back'
 
       tmp <- system.time(pMat <- getPoly(xdata, deg, maxInteractDeg))
@@ -407,8 +406,8 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
      k <- 0
      tmp <- system.time(pMat <- getPoly(xdata, deg, maxInteractDeg))
      cat('getPoly time: ',tmp,'\n')
-  polyMat <- pMat$xdata
-  retainedNames <- pMat$retainedNames
+     polyMat <- pMat$xdata
+     retainedNames <- pMat$retainedNames
   }
 
 
@@ -457,7 +456,8 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
       # end 'glm' case
       }  else  {  # 'mvrlm' case
             #requireNamespace(dummies)
-            dms <- dummy(y)
+            # dms <- dummy(y)
+            dms <- model.matrix(~ as.factor(y) - 1, y)
             dms <- as.data.frame(dms)
             dxy <- cbind(plm.xy[,-ncol(plm.xy)],dms)
             nms <- names(dms)
