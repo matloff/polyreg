@@ -74,13 +74,9 @@ the predicted class labels, 1,2,3,...
 
 \examples{
 
-#getPE(Dummies = TRUE)  # prgeng data from library(regtools)
-#pe1 <- pe[,c(1,2,4,6,7,12:16,3)]   # select some predictors
-#pfout <- polyFit(pe1,2)
-# predict worker like pe1[1,] but age 42 with MS degree
-#newdata <- pe1[1,-11]
-#newdata[1,1] <- 42
-#newdata[1,4] <- 1
-#predict(pfout,newdata[,-11])  # 81022.27
+data(prgeng) # engineer wages
+pfout <- polyFit(prgeng,2)
+typicalX <- colMeans(prgeng)[-ncol(prgeng)]
+# predict(pfout, typicalX)  
 
 }
