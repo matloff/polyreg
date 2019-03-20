@@ -1,3 +1,5 @@
+# helper function used by FSR() and getPoly()
+
 N_distinct <- function(x) if(ncol(as.matrix(x)) == 1) length(unique(x)) else unlist(lapply(x, N_distinct))
 #is_continuous <- function(x) if(is.numeric(x)) N_distict(x) > 2 else FALSE
 is_continuous <- function(x) unlist(lapply(x, is.numeric)) & N_distinct(x) > 2
@@ -5,33 +7,16 @@ mod <- function(m) paste0("model", m)
 complete <- function(x) !is.null(x) && sum(is.na(x)) == 0
 match_arg <- function(arg, choices){if(is.null(arg)) arg else match.arg(arg, choices)}
 
-# ensure unique column names with pow
-# degree may be vector
-pow <- function(X, degree){
 
-  if(length(degree) == 1){
-    X <- as.matrix(X)^degree
-    colnames(X) <- paste0(colnames(X), "_deg_", degree)
-  }else{
-    out <- list()
-    for(i in 1:length(degree))
-      out[[i]] <- as.matrix(pow(X, degree[i]))
-    X <- do.call(cbind, out)
-  }
-  return(X)
+model_matrix <- function(modelFormula, d, intercept, noisy=TRUE){
 
-}
-`%^%` <- function(X, degree) pow(X, degree)
-
-model_matrix <- function(f, d, intercept, noisy=TRUE){
-
-  tried <- try(model.matrix(f, d, na.action = "na.omit"), silent=TRUE)
+  tried <- try(model.matrix(modelFormula, d, na.action = "na.omit"), silent=TRUE)
   if(inherits(tried, "try-error")){
     if(noisy) cat("model.matrix() reported the following error:\n", tried, "\n\n")
     return(NULL)
   } else {
 
-    attr(tried, which = "formula") <- f # works in local but not global environment, fix
+    attr(tried, which = "formula") <- modelFormula # works in local but not global environment, fix
 
     if(intercept) return(tried) else return(tried[,-1])
   }
@@ -52,7 +37,9 @@ get_degree <- function(combo){
   }
 }
 
-get_interactions <- function(features, maxInteractDeg, may_not_repeat = NULL, maxDeg = NULL, include_features = TRUE){
+get_interactions <- function(features, maxInteractDeg, 
+                             may_not_repeat = NULL, maxDeg = NULL, 
+                             include_features = TRUE){
 
   interactions <- list()
 
@@ -456,4 +443,39 @@ post_estimation <- function(object, Xy, m, y_test = NULL){
   return(object)
 }
 
+# 09/11/18, NM: moved this function out of polyFit(), now standalone,
+# for readability
+
+applyPCA <- function(x,pcaMethod,pcaPortion) {
+  
+  if (pcaMethod == "prcomp") { # use prcomp for pca
+    tmp <- system.time(
+      #xy.pca <- prcomp(x[,-ncol(xy)])
+      xy.pca <- prcomp(x)
+    )
+    cat('PCA time: ',tmp,'\n')
+    if (pcaPortion >= 1.0) k <- pcaPortion else {
+      k <- 0
+      pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
+      for (k in 1:length(pcNo)) {
+        if (pcNo[k] >= pcaPortion)
+          break
+      }
+    }
+    cat(k,' principal comps used\n')
+    xdata <- xy.pca$x[,1:k, drop=FALSE]
+    
+  } else { # use RSpectra for PCA
+    #requireNamespace(RSpectra)
+    xy.cov <- cov(x)
+    k <- pcaPortion
+    xy.eig <- eigs(xy.cov,k)
+    xy.pca <- xy.eig
+    cat(k,' principal comps used\n')
+    #xdata <- as.matrix(x[,-ncol(x)]) %*% xy.eig$vectors[,1:k]
+    xdata <- as.matrix(x) %*% xy.eig$vectors[,1:k]
+  }
+  
+  return(list(xdata=xdata,xy.pca=xy.pca,k=k))
+}
 

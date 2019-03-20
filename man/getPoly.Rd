@@ -11,8 +11,9 @@ data frame or data matrix.
 
 \usage{
 getPoly(xdata = NULL, deg = 1, maxInteractDeg = deg,
-                     Xy = NULL, modelFormula = NULL, standardize = FALSE,
-                     noisy = TRUE, intercept = FALSE, ...)
+                     Xy = NULL, standardize = FALSE,
+                     noisy = TRUE, intercept = FALSE, returnDF = TRUE, 
+                     modelFormula = NULL, retainedNames = NULL, ...)
 }
 
 
@@ -22,10 +23,12 @@ getPoly(xdata = NULL, deg = 1, maxInteractDeg = deg,
   \item{deg}{The max degree of power terms. Default 1 so just returns model matrix by default.}
   \item{maxInteractDeg}{The max degree of nondummy interaction terms. x1 * x2 is degree 2. x1^3 * x2^2 is degree 5. Implicitly constrained by deg. For example, if deg = 3 and maxInteractDegree = 2, x1^1 * x2^2 (i.e., degree 3) will be included but x1^2 * x2^2 (i.e., degree 4) will not.}
   \item{Xy}{ the dataframe with the response in the final column (provide xdata or Xy but not both).Categorical variables (> 2 levels) should be passed as factors, not dummy variables or integers, to ensure the polynomial matrix is constructed properly.}
-  \item{modelFormula}{ Internal use. Formula used to generate the training model matrix. Note: anticipates that polynomial terms are generated using internal functions of library(polyreg). Also, providing modelFormula bypasses deg and maxInteractDeg.}
   \item{standardize}{ standardize all continuous variables? (Default: FALSE.)}
-  \item{noisy}{Output progress updates? Defaults to TRUE.}
-  \item{intercept}{Include intercept? Default: FALSE.}
+  \item{noisy}{Output progress updates? (Default: TRUE.)}
+  \item{intercept}{Include intercept? (Default: FALSE.)}
+  \item{returnDF}{Return a data.frame (as opposed to model.matrix)? (Default: TRUE.)}
+  \item{modelFormula}{ Internal use. Formula used to generate the training model matrix. Note: anticipates that polynomial terms are generated using internal functions of library(polyreg). Also, providing modelFormula bypasses deg and maxInteractDeg.}
+  \item{retainedNames}{ Internal use. colnames of polyMatrix object$xdata. Requires modelFormula be inputted as well.}
   \item{...}{ additional arguments to be passed to model.matrix() via polyreg:::model_matrix(). Note na.action = "na.omit".}
 }
 
@@ -53,28 +56,61 @@ getPoly(xdata = NULL, deg = 1, maxInteractDeg = deg,
 
 \value{
 The return value of \code{getPoly} is a \code{polyMatrix}
-object.  This is an S3 class containing a data frame \code{
+object.  This is an S3 class containing a model.matrix \code{
 xdata} of the generated polynomial terms. The predictor
 variables have column names V1, V2, etc. The object also contains
-a vector \code{retainedNames}, the names of the non-all-0 columns.
+\code{modelFormula}, the formula used to construct the model matrix, and 
+\code{XtestFormula}, the formula which should be used out-of-sample 
+(when y_test is not available).
 }
 
 \examples{
+N <- 125
+rawdata <- data.frame(x1 = rnorm(N), 
+                      x2 = rnorm(N),
+                      group = sample(letters[1:5], N, replace=TRUE),
+                      z = sample(c("treatment", "control"), N, replace=TRUE),
+                      result = sample(c("win", "lose", "tie"), N, replace=TRUE))
+head(rawdata)
 
-x1 <- 1:4
-z1 <- c(0,1,0,0)
-z2 <- c(1,0,0,0)
-z3 <- c(0,0,1,0)
-xz <- cbind(x1,z1,z2,z3)
-getPoly(xz,2)
-# xdata component of output:
-#   V1 V2 V3 V4 V5 V9 V10 V11
-# 1  1  0  1  0  1  0   1   0
-# 2  2  1  0  0  4  2   0   0
-# 3  3  0  0  1  9  0   0   3
-# 4  4  0  0  0 16  0   0   0
-# V1-V4 are copies of x1,z1,z2,z3, 1st-degree terms; V5 is x1^2; V9 is
-# product x1 * z2; etc.; note that, V6-V8 were  not retained
+P <- length(levels(rawdata$group)) - 1 + 
+     length(levels(rawdata$z)) - 1 + 
+     length(levels(rawdata$result)) - 1 + 
+     sum(unlist(lapply(rawdata, is.numeric)))
+
+# quadratic polynomial, includes interactions 
+# since maxInteractDeg defaults to deg
+X <- getPoly(rawdata, 2)$xdata 
+ncol(X) # 40
+
+# cubic polynomial, no interactions
+X <- getPoly(rawdata, 3, 1)$xdata
+ncol(X) # 13
+
+# cubic polynomial, interactions
+X <- getPoly(rawdata, 3, 2)$xdata
+ncol(X) # 58
+
+# cubic polynomial, interactions
+X <- getPoly(rawdata, 3)$xdata
+ncol(X) # 101
+
+# making final column the response variable, y
+# results in TRUE (fewer columns)
+ncol(getPoly(Xy=rawdata, deg=2)$xdata) < ncol(getPoly(rawdata, 2)$xdata)
+
+# preparing polynomial matrices for crossvalidation
+# getPoly() returns a polyMatrix() object containing XtestFormula
+# which should be used to ensure factors are handled correctly out-of-sample
+Xtrain <- getPoly(rawdata[1:100,],2)
+Xtest <- getPoly(rawdata[101:125,], 2, modelFormula = Xtrain$XtestFormula)
+    
+# additional spot checks
+stopifnot(ncol(getPoly(rawdata, 1, 1)$xdata) == P)
+stopifnot(ncol(getPoly(rawdata, 1, 1, returnDF = FALSE)$xdata) == P)
+stopifnot(length(getPoly(rawdata, 1, 1)$retainedNames) == P)    
+stopifnot(identical(colnames(Xtrain), colnames(Xtest)))
+
 
 }
 

@@ -1,7 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 experiments
-data/
 R/newplm.R
 R/get_poly.R
 R/poly_poly_testscript.R
@@ -9,3 +8,6 @@ unit_tests/
 polyreg.Rcheck/
 README.md
 polyreg.Rcheck/
+data/prgeng.csv
+man/getPE.Rd
+R/getPE.R

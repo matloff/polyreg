@@ -12,11 +12,11 @@ predict.FSR <- function(object, newdata, model_to_use=NULL, standardize=NULL, no
 
   m <- if(is.null(model_to_use)) which(object$best_formula == object$models$formula) else model_to_use
 
-  f <- if(is.null(m)) object$best_formula else object$models$formula[m]
+  mf <- if(is.null(m)) object$best_formula else object$models$formula[m]
 
-  f <- strsplit(f, "~")[[1]][2]
-  f <- formula(paste("~", f))
-  X_test <- model_matrix(f = f, d = newdata, noisy = noisy, intercept = TRUE)
+  mf <- strsplit(mf, "~")[[1]][2]
+  mf <- formula(paste("~", mf))
+  X_test <- model_matrix(modelFormula = mf, d = newdata, noisy = noisy, intercept = TRUE)
 
   y_hat <- X_test %*% object[[mod(m)]][["coeffs"]]
 
@@ -143,4 +143,126 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
       }
     }
   }
+}
+
+##################################################################
+# predict.polyFit: predict the fitted models on newdata
+##################################################################
+
+predict.polyFit <- function(object, newdata, ...)
+{
+  use <- object$use
+  
+  # the next couple dozen lines are devoted to forming plm.newdata, which
+  # will ultimately be fed into predict.lm(), predict.glm() or whatever;
+  # to do this, newdata, the argument above, must be expanded to
+  # polynomial form, and possibly run through PCA
+  
+  doPCA <- !is.null(object$PCA)
+  
+  if (!doPCA) {
+    
+    plm.newdata <- getPoly(newdata, object$degree, 
+                           object$maxInteractDeg, 
+                           modelFormula = object$XtestFormula,
+                           retainedNames = object$retainedNames,
+                           ...)$xdata
+    
+  } else if (object$PCA == "prcomp") {
+    
+    message("Beginning PCA\n\n", timestamp())
+    
+    if (object$pcaLocation == "front") {
+      
+      new_data <- predict(object$pca.xy, newdata)[,1:object$pcaCol]
+      plm.newdata <- getPoly(new_data, object$degree, object$maxInteractDeg, ...)$xdata
+      
+    } else if (object$pcaLocation == "back") {
+      
+      new_data <- getPoly(newdata, object$degree, object$maxInteractDeg, ...)$xdata
+      plm.newdata <- predict(object$pca.xy, new_data)[,1:object$pcaCol]
+      plm.newdata <- as.data.frame(plm.newdata)
+      
+    } else stop('invalid pcaLocation. Should be "front" or "back".')
+  } else if (object$PCA == "RSpectra") {
+    
+    if (object$pcaLocation == "front") {
+      
+      xy.eig <- object$pca.xy
+      new_data <- as.matrix(newdata) %*% xy.eig$vectors
+      plm.newdata <- getPoly(new_data, object$degree, object$maxInteractDeg)$xdata
+      
+    } else if (object$pcaLocation == "back") {
+      new_data <- getPoly(newdata, object$degree, object$maxInteractDeg, ...)$xdata
+      ### xy.cov <- cov(new_data)
+      ### xy.eig <- eigs(xy.cov,object$pcaCol)
+      xy.eig <- object$pca.xy
+      plm.newdata <-
+        as.matrix(new_data) %*% xy.eig$vectors[,1:object$pcaCol]
+      plm.newdata <- as.data.frame(plm.newdata)
+    }
+  message("Finished with PCA and model matrix construction.\n\n", timestamp())
+  }  # end doPCA
+
+  
+  
+  if (object$use == "lm") {
+    pred <- predict(object$fit, plm.newdata)
+    return(pred)
+  }
+  
+  if (object$use == "mvrlm") {
+    pre <- predict(object$fit, plm.newdata)
+    pred <- apply(pre,1,which.max)
+    return(pred)
+  }
+  
+  # glm case
+  if (is.null(object$glmMethod)) { # only two classes
+    pre <- predict(object$fit, plm.newdata)
+    pred <- ifelse(pre > 0.5, object$classes[1], object$classes[2])
+  } else { # more than two classes
+    len <- length(object$classes)
+    if (object$glmMethod == "multlog") { # multinomial logistics
+      pr <- predict(object$fit, plm.newdata, type="probs")
+      idx <- apply(pr,1, which.max)
+      col.name <- colnames(pr)
+      lc <- length(col.name)
+      tempM <- matrix(rep(col.name, length(idx)), ncol=lc, byrow = TRUE)
+      pred <- NULL
+      for (r in 1:nrow(tempM)) {
+        pred[r] <- tempM[r,idx[r]]
+      }
+      return(pred)
+    } # end multinomial logistics
+    else if (object$glmMethod == "all") { # all-vs-all method
+      votes <- matrix(0, nrow = nrow(plm.newdata), ncol = len)
+      for (i in 1:len) {
+        for (j in 1:len) {
+          if (i == j)
+            next
+          pre <- predict(object$fit[[i]][[j]], plm.newdata, type="response")
+          votes[,i] <- votes[,i] + ifelse(pre > 0.5, 1, 0)
+        } # for i
+      } # for j
+      winner <- apply(votes, 1, which.max)
+      
+    } else if (object$glmMethod == "one") { # one-vs-all method
+      prob <- matrix(0, nrow=nrow(plm.newdata), ncol=len)
+      for (i in 1:len) {
+        # prob[,i] <- parSapplyLB(object$fit[[i]],
+        prob[,i] <- predict(object$fit[[i]],
+                            plm.newdata, type = "response")
+      }
+      winner <- apply(prob, 1, which.max)
+    } # one-vs-all method
+    # calculate pred for all-vs-all & one-vs-all
+    pred <- NULL
+    for (k in 1:nrow(plm.newdata)) {
+      pred[k] <- object$classes[winner[k]]
+    }
+  } # end more than two classes
+  return(pred)
+  # end glm case
+  
 }

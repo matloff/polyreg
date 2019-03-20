@@ -74,9 +74,24 @@ the predicted class labels, 1,2,3,...
 
 \examples{
 
-data(prgeng) # engineer wages
-pfout <- polyFit(prgeng,2)
-typicalX <- colMeans(prgeng)[-ncol(prgeng)]
-# predict(pfout, typicalX)  
+N <- 125
+xyTrain <- data.frame(x1 = rnorm(N), 
+                      x2 = rnorm(N),
+                      group = sample(letters[1:5], N, replace=TRUE),
+                      score = sample(100, N, replace = TRUE) # final column is y
+                      )
+
+pfOut <- polyFit(xyTrain, 2)
+
+# 4 new test points
+xTest <- data.frame(x1 = rnorm(4), 
+                    x2 = rnorm(4),
+                    group = sample(letters[1:5], 4, replace=TRUE))
+  
+predict(pfOut, xTest) # returns vector of 4 predictions
+
+
+# spot checks
+stopifnot(length(predict(pfOut, xTest)) == nrow(xTest))
 
 }
