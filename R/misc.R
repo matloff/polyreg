@@ -9,3 +9,19 @@ toFactors <- function(df,cols)
    df
 }
 
+# converts a single column to a matrix of dummy variables; column names
+# will be concatenation of the original column names and levels(the
+# column); column must be a factor
+
+toDummies <- function(df,col)
+{
+   require(dummies)
+   dumms <- dummy(df[,col])
+   namesDumms <- paste0(names(df)[col],levels(df[,col]))
+   tmp <- cbind(df[,-col],dumms)
+   nctmp <- ncol(tmp)
+   ncdumms <- ncol(dumms)
+   names(tmp)[(nctmp-ncdumms+1):nctmp] <- namesDumms
+   tmp
+}
+

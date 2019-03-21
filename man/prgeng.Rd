@@ -27,7 +27,7 @@ birth, place of birth
 sex, 1 for male, 2 for female
 
 }
-\usage{data(prgeng)
+\usage{data(prgeng)}
 \source{Public Use Microdata Sample: 2000 Census of Population and Housing.}
 \references{
   Census 2000, Public Use Microdata Sample, (PUMS), United States, prepared by the U.S. Census Bureau, 2003. 
