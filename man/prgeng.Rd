@@ -18,24 +18,16 @@ wkswrkd, number of weeks worked
 
 categorical variables:
 
-cit, citizenship; 1-4 code various categories of citizens; 5 means noncitizen (including permanent residents
-
 educ: 01-09 code no college; 10-12 means some college; 13 is a bachelor's degree, 14 a master's, 15 a professional degree, and 16 is a doctorate
 
 occ, occupation
 
 birth, place of birth
 
-powpuma, location of work
-
 sex, 1 for male, 2 for female
 
 }
 \usage{data(prgeng)
-# dim(prgeng)
-# [1] 20090 11
-}
-\format{A data.frame containing N = 20,090 observations by P = 11 variables.}
 \source{Public Use Microdata Sample: 2000 Census of Population and Housing.}
 \references{
   Census 2000, Public Use Microdata Sample, (PUMS), United States, prepared by the U.S. Census Bureau, 2003. 
