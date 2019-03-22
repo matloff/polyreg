@@ -1,6 +1,5 @@
 \name{misc}
 \alias{toFactors}
-\alias{toDummies}
 
 \title{Miscellaneous}
 
@@ -8,13 +7,11 @@
 
 \usage{
    toFactors(df,cols)
-   toDummies(df,col)
 }
 
 \arguments{
   \item{df}{A data frame.}
   \item{cols}{A vector of column numbers.}
-  \item{col}{A column number.}
 }
 
 \details{
@@ -25,12 +22,11 @@
    before calling the library's main functions, 
    including \code{getPoly}, \code{FSR}, or \code{polyFit}.
 
-   The \code{toDummies} function converts the \code{df} column 
-   \code{col} to a matrix of dummy variables, returns new version of 
-   \code{df}, with the original column removed. Convenience function.
-   Should NOT be used on categorical variables with more than two levels 
-   in conjunction with the library's main functions, 
-   including \code{getPoly}, \code{FSR}, or \code{polyFit}.
-
 }
 
+\examples{
+data(prgeng) # US Census engineer wage data 
+xy <- prgeng[, c(1:4,6,5)] # Y value (wageinc here) must be last for polyFit() and FSR()
+xy <- toFactors(xy, 2:4)  # convert education, occupation, and sex to factors
+                          # (don't pass categorical variables as integer codes when fitting)
+}
