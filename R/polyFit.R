@@ -145,9 +145,12 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
           } # more than two classes
       # end 'glm' case
       }  else  {  # 'mvrlm' case
-            #requireNamespace(dummies)
-            # dms <- dummy(y)
-            dms <- model.matrix(~ as.factor(y) - 1, y)
+            # requireNamespace(dummies)
+            # require(dummies)
+            # dms <- dummies::dummy(y)
+            # dms <- model.matrix(~ as.factor(y) - 1, y)
+            yf <- as.factor(y)
+            dms <- model.matrix(~yf-1)
             dms <- as.data.frame(dms)
             dxy <- cbind(plm.xy[,-ncol(plm.xy)],dms)
             nms <- names(dms)
