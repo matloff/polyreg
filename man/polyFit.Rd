@@ -94,4 +94,14 @@ predict(pfOut, xTest) # returns vector of 4 predictions
 # spot checks
 stopifnot(length(predict(pfOut, xTest)) == nrow(xTest))
 
+data(prgeng) 
+pef <- toFactors(prgeng,2:3)  # eduction, occupation
+pef1 <- pef[,c(1:4,6,5)]  # Y value must be last
+pfout <- polyFit(pef1,2)  # try degree 2 model
+# say we want to predict wage for a woman, age 35, some college,
+# occupation 101, worked 52 weeks
+newx <- data.frame(age=35,educ=11,occ=101,sex=2,wkswrkd=52) 
+predict(pfout,newx)  # 46125.74
+
+
 }
