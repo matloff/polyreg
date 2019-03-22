@@ -95,13 +95,26 @@ predict(pfOut, xTest) # returns vector of 4 predictions
 stopifnot(length(predict(pfOut, xTest)) == nrow(xTest))
 
 data(prgeng) 
-pef <- toFactors(prgeng,2:3)  # eduction, occupation
-pef1 <- pef[,c(1:4,6,5)]  # Y value must be last
+
+# regression example
+pef <- toFactors(prgeng,2:3)  # eduction, occupation => factors
+pef1 <- pef[,c(1:4,6,5)]  # Y value (wageinc here) must be last
 pfout <- polyFit(pef1,2)  # try degree 2 model
 # say we want to predict wage for a woman, age 35, some college,
 # occupation 101, worked 52 weeks
 newx <- data.frame(age=35,educ=11,occ=101,sex=2,wkswrkd=52) 
 predict(pfout,newx)  # 46125.74
+
+# classification example, logistic
+pef2 <- pef[,c(1,2,4:6,3)]  # Y value (occupaton here) must be last
+pfout <- polyFit(pef2,2,use='glm')  # try degree 2 model
+# say we want to predict occupation for a woman, age 35, college grad,
+# occupation 101, worked 52 weeks; and for a man with the same
+# characteristics
+newx <- data.frame(age=c(35,35),educ=c(13,13),sex=c(2,1),
+   wageinc=c(62000,62000),wkswrkd=c(52,52)) 
+preds <- predict(pfout,newx)  
+levels(pef2$occ)[preds]  # translate from class number; 102, 102
 
 
 }
