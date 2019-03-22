@@ -15,7 +15,8 @@ toFactors <- function(df,cols)
 
 toDummies <- function(df,col)
 {
-   require(dummies)
+   # require(dummies)
+   # requireNamespace(dummies)
    dumms <- dummies::dummy(df[,col])
    namesDumms <- paste0(names(df)[col],levels(df[,col]))
    tmp <- cbind(df[,-col],dumms)
