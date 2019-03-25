@@ -47,6 +47,10 @@ predict.FSR <- function(object, newdata, model_to_use=NULL, standardize=NULL, no
 
 }
 
+#' @export
+print.FSR <- function(object){
+  summary(object, estimation_overview=FALSE, results_overview=TRUE)
+}
 
 #' @export
 summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE, model_number = NULL, ...){
