@@ -8,19 +8,19 @@ complete <- function(x) !is.null(x) && sum(is.na(x)) == 0
 match_arg <- function(arg, choices){if(is.null(arg)) arg else match.arg(arg, choices)}
 
 
-model_matrix <- function(modelFormula, d, intercept, noisy=TRUE){
+model_matrix <- function(modelFormula, dataFrame, intercept, noisy=TRUE, ...){
 
-  tried <- try(model.matrix(modelFormula, d, na.action = "na.omit"), silent=TRUE)
-  if(inherits(tried, "try-error")){
-    if(noisy) cat("model.matrix() reported the following error:\n", tried, "\n\n")
-    return(NULL)
-  } else {
-
-    attr(tried, which = "formula") <- modelFormula # works in local but not global environment, fix
-
-    if(intercept) return(tried) else return(tried[,-1])
-  }
-
+    tried <- try(model.matrix(modelFormula, dataFrame, na.action = "na.omit", ...), silent=TRUE)
+    
+    if(inherits(tried, "try-error")){
+      
+      if(noisy) cat("model.matrix() reported the following error:\n", tried, "\n\n")
+      return(NULL)
+      
+    } else {
+      if(intercept) return(tried) else return(tried[,-1])
+    }
+  
 }
 
 get_degree <- function(combo){

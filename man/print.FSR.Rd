@@ -2,10 +2,11 @@
 \alias{print.FSR}
 \title{print.FSR}
 \usage{
-\method{print}{FSR}(object)
+\method{print}{FSR}(x, ...)
 }
 \arguments{
-\item{object}{an FSR object}
+\item{x}{an FSR object}
+\item{...}{ignore}
 }
 \description{
 print.FSR. See also summary.FSR.

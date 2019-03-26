@@ -10,7 +10,8 @@ new data.}
 
 \usage{
 polyFit(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
-     pcaLocation='front', pcaPortion=0.9, glmMethod="one", cls=NULL)
+     pcaLocation='front', pcaPortion=0.9, glmMethod="one", 
+     return_xy=FALSE, returnPoly=FALSE)
 \method{predict}{polyFit}(object, newdata, ...)
 }
 
@@ -32,11 +33,11 @@ polyFit(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
      this many components.  In the 'RSpectra' case, this value must be
      an integer of 1 or more.}
   \item{glmMethod}{Defaults to "one."}
-  \item{cls}{Virtual cluster, for parallel computation (One Vs. All
-     case).}
   \item{newdata}{Data frame, one row for each "X" to be predicted.  Must
      have the same column names as in \code{xy} (without "Y").}
   \item{object}{An item of class 'polyFit' containing output. Can be used with predict().}
+  \item{return_xy}{return data? Default: FALSE}
+  \item{returnPoly}{return polyMatrix object? Defaults to FALSE since may be quite large.}
   \item{...}{Additional arguments for getPoly().}
 }
 
@@ -105,11 +106,11 @@ pfout <- polyFit(xy, 2)  # try degree 2 model
 
 # say we want to predict wage for a woman, age 35, some college,
 # occupation 101, worked 52 weeks
-newx <- data.frame(age=35,educ=11,occ=101,sex=2,wkswrkd=52) 
-predict(pfout,newx)  # 38830.54 
+newx <- data.frame(age=35, educ=11, occ=101, sex=2, wkswrkd=52) 
+# predict(pfout,newx)  # 38830.54 
 
 # classification example, logistic
-xy <- xy[,c(1,2,4:6,3)]  # Y value (occupaton here) must be last
+xy <- cbind(xy[,-3], xy$occ)  # Y value (occupaton here) must be last
 pfout <- polyFit(xy,2,use='glm')  # try degree 2 model
 # say we want to predict occupation for a woman, age 35, college grad,
 # occupation 101, worked 52 weeks; and for a man with the same

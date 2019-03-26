@@ -36,7 +36,7 @@
 # useful
 
 polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
-     pcaLocation='front', pcaPortion=0.9, glmMethod="one", cls=NULL)
+     pcaLocation='front', pcaPortion=0.9, glmMethod="one", return_xy = FALSE, returnPoly = FALSE)
 {
 
   if (!use %in% c('lm','glm','mvrlm'))
@@ -132,7 +132,7 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
               cat('all-vs-all glm() time: ',tmp,'\n')
             } else if (glmMethod == "one") { # one-vs-all
               tmp <- system.time(
-                 ft <- polyOneVsAll(plm.xy, classes,cls)
+                 ft <- polyOneVsAll(plm.xy, classes) # cls could be passed here
               )
               cat('one-vs-all glm() time: ',tmp,'\n')
             } else if (glmMethod == "multlog") { # multinomial logistics
@@ -163,13 +163,16 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
   # create return value and wrap up
   pcaPrn <- if(doPCA) pcaPortion else 0
   
-  me <- list(xy=xy, degree=deg, maxInteractDeg=maxInteractDeg, use=use,
-    poly.xy=plm.xy, fit=ft, PCA=pcaMethod, pca.portion=pcaPrn,
-    pca.xy=xy.pca, pcaCol=k, pcaLocation=pcaLocation, glmMethod=glmMethod,
-    classProblem=classProblem, classes=classes, 
-    retainedNames=retainedNames, # retainedNames should perhaps be depracated with the new getPoly()
-    modelFormula=modelFormula, 
-    XtestFormula=XtestFormula)
+  me <- list(xy = if(return_xy) xy else NULL, 
+             degree=deg, 
+             maxInteractDeg=maxInteractDeg, 
+             use=use,
+             poly.xy = if(returnPoly) plm.xy else NULL, 
+             fit=ft, 
+             PCA=pcaMethod, pca.portion=pcaPrn, pca.xy=xy.pca, pcaCol=k, pcaLocation=pcaLocation, 
+             glmMethod=glmMethod,
+             classProblem=classProblem, classes=classes, 
+             retainedNames=retainedNames, modelFormula=modelFormula, XtestFormula=XtestFormula)
   class(me) <- "polyFit"
   return(me)
 

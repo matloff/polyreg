@@ -8,7 +8,8 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
                     standardize = FALSE,
                     noisy = TRUE, intercept = FALSE, 
                     returnDF = TRUE, 
-                    modelFormula = NULL, retainedNames = NULL, ...){
+                    modelFormula = NULL, retainedNames = NULL, 
+                    ...){
 
   if(sum(is.null(xdata) + is.null(Xy)) != 1)
     stop("please provide getPoly() xdata or Xy (but not both).")
@@ -152,20 +153,23 @@ polyDF <- function(polyMat){
 
 
 # parallel version of getPoly()
-getPolyPar <- function(cls,xdata,deg,maxInteractDeg=deg)
-{
-  distribsplit(cls,'xdata')
-  cmd <- paste0('clusterEvalQ(cls,getPoly(xdata,',
-                deg,',',
-                maxInteractDeg,'))')
-  clusterEvalQ(cls,library(polyreg))
-  res <- eval(parse(text=cmd))
-  xd <- NULL
-  for (i in 1:length(cls)) {
-    xd <- rbind(xd,res[[i]]$xdata)
-  }
-  return (polyMatrix(xd, res[[1]]$endCols))
-}
+# needs updating
+# or to be absorbed into model_matrix()
+#
+#getPolyPar <- function(cls, xdata)
+#{
+#  distribsplit(cls,'xdata')
+#  cmd <- paste0('clusterEvalQ(cls, getPoly(xdata,',
+#                deg,',',
+##                maxInteractDeg,'))')
+#  clusterEvalQ(cls,library(polyreg))
+#  res <- eval(parse(text=cmd))
+#  xd <- NULL
+#  for (i in 1:length(cls)) {
+#    xd <- rbind(xd,res[[i]]$xdata)
+#  }
+#  return (polyMatrix(xd, res[[1]]$endCols))
+#}
 
 polyAllVsAll <- function(plm.xy, classes){
   plm.xy <- as.data.frame(plm.xy)

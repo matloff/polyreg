@@ -16,7 +16,7 @@ predict.FSR <- function(object, newdata, model_to_use=NULL, standardize=NULL, no
 
   mf <- strsplit(mf, "~")[[1]][2]
   mf <- formula(paste("~", mf))
-  X_test <- model_matrix(modelFormula = mf, d = newdata, noisy = noisy, intercept = TRUE)
+  X_test <- model_matrix(modelFormula = mf, dataFrame = newdata, noisy = noisy, intercept = TRUE)
 
   y_hat <- X_test %*% object[[mod(m)]][["coeffs"]]
 
@@ -48,8 +48,8 @@ predict.FSR <- function(object, newdata, model_to_use=NULL, standardize=NULL, no
 }
 
 #' @export
-print.FSR <- function(object){
-  summary(object, estimation_overview=FALSE, results_overview=TRUE)
+print.FSR <- function(x, ...){
+  summary(x, estimation_overview=FALSE, results_overview=TRUE)
 }
 
 #' @export
