@@ -1,4 +1,5 @@
 S3method(predict,polyFit)
+S3method(print,polyFit)
 S3method(print,FSR)
 S3method(predict,FSR)
 S3method(summary,FSR)

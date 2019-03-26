@@ -48,6 +48,11 @@ predict.FSR <- function(object, newdata, model_to_use=NULL, standardize=NULL, no
 }
 
 #' @export
+print.polyFit <- function(x, ...){
+  print(x$fit)
+}
+
+#' @export
 print.FSR <- function(x, ...){
   summary(x, estimation_overview=FALSE, results_overview=TRUE)
 }
