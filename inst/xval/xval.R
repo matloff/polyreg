@@ -53,7 +53,6 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
 
   for (i in startDeg:maxDeg) {  # for each degree
      m <- if(i > maxInteractDeg) maxInteractDeg else i
-     browser()
      pol <- polyFit(training,i,m,use,pcaMethod,pcaLocation,
          pcaPortion,glmMethod,cls)
      pred <- predict(pol, test.x)
