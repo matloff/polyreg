@@ -12,3 +12,6 @@ data/prgeng.csv
 man/getPE.Rd
 R/getPE.R
 inst/xval/*
+man/print.FSR.Rd
+man/summary.FSR.Rd
+man/print.polyFit.Rd

@@ -33,3 +33,11 @@ sex, 1 for male, 2 for female
   Census 2000, Public Use Microdata Sample, (PUMS), United States, prepared by the U.S. Census Bureau, 2003. 
 }
 \keyword{datasets}
+
+\examples{
+data(prgeng) # US Census engineer wage data 
+xy <- prgeng[, c(1:4,6,5)] # Y value (wageinc here) must be last for polyFit() and FSR()
+xy <- toFactors(xy, 2:4)  # convert education, occupation, and sex to factors
+                          # (don't pass categorical variables as integer codes when fitting)
+}
+
