@@ -1,5 +1,21 @@
 # helper function used by FSR() and getPoly()
 
+# converts each df column in cols to factor, returns new df
+# for getPoly(), and by extension polyFit() and FSR():
+# should be used on any categorical variable stored as an integer
+# is optional for binary variables
+# is optional for categorical variables stored as characters
+#' @export
+toFactors <- function(df, cols)
+{  
+  for (i in cols) {
+    df[,i] <- as.factor(df[,i])
+  }
+  df
+}
+
+# the rest are not exported...
+
 N_distinct <- function(x) if(ncol(as.matrix(x)) == 1) length(unique(x)) else unlist(lapply(x, N_distinct))
 #is_continuous <- function(x) if(is.numeric(x)) N_distict(x) > 2 else FALSE
 is_continuous <- function(x) unlist(lapply(x, is.numeric)) & N_distinct(x) > 2
@@ -14,7 +30,7 @@ model_matrix <- function(modelFormula, dataFrame, intercept, noisy=TRUE, ...){
     
     if(inherits(tried, "try-error")){
       
-      if(noisy) cat("model.matrix() reported the following error:\n", tried, "\n\n")
+      if(noisy) warning("model.matrix() reported the following error:\n", tried, "\n\n")
       return(NULL)
       
     } else {
@@ -211,7 +227,8 @@ block_solve  <- function(S = NULL, X = NULL, max_block = 250, A_inv = NULL, recu
   solvable <- function(A, noisy=TRUE){
 
     tried <- try(solve(A), silent = noisy)
-    if(noisy) cat(".")
+    if(noisy) cat(".") # optional progress bar... better than message() or warning()
+                       # controlled by user input in FSR()
     if(inherits(tried, "try-error")) return(NULL) else return(tried)
 
   }
@@ -362,7 +379,7 @@ ols <- function(object, Xy, m, train = TRUE, y = NULL, y_test = NULL){
     warning("Unable to estimate model", m, "\n\n")
     object$unable_to_estimate <- object$unable_to_estimate + 1
   }
-  if(object$noisy) cat("\n")
+  if(object$noisy) message("\n")
   return(object)
 }
 
@@ -446,14 +463,14 @@ post_estimation <- function(object, Xy, m, y_test = NULL){
 # 09/11/18, NM: moved this function out of polyFit(), now standalone,
 # for readability
 
-applyPCA <- function(x,pcaMethod,pcaPortion) {
+applyPCA <- function(x, pcaMethod, pcaPortion) {
   
   if (pcaMethod == "prcomp") { # use prcomp for pca
     tmp <- system.time(
       #xy.pca <- prcomp(x[,-ncol(xy)])
       xy.pca <- prcomp(x)
     )
-    cat('PCA time: ',tmp,'\n')
+    message('PCA time: ',tmp,'\n')
     if (pcaPortion >= 1.0) k <- pcaPortion else {
       k <- 0
       pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
@@ -462,7 +479,7 @@ applyPCA <- function(x,pcaMethod,pcaPortion) {
           break
       }
     }
-    cat(k,' principal comps used\n')
+    message(k,' principal comps used\n')
     xdata <- xy.pca$x[,1:k, drop=FALSE]
     
   } else { # use RSpectra for PCA
@@ -471,11 +488,12 @@ applyPCA <- function(x,pcaMethod,pcaPortion) {
     k <- pcaPortion
     xy.eig <- eigs(xy.cov,k)
     xy.pca <- xy.eig
-    cat(k,' principal comps used\n')
+    message(k,' principal comps used\n')
     #xdata <- as.matrix(x[,-ncol(x)]) %*% xy.eig$vectors[,1:k]
     xdata <- as.matrix(x) %*% xy.eig$vectors[,1:k]
   }
   
   return(list(xdata=xdata,xy.pca=xy.pca,k=k))
 }
+
 

@@ -1,6 +1,8 @@
 #' @export
-predict.FSR <- function(object, newdata, model_to_use=NULL, standardize=NULL, noisy=TRUE,...){
-
+predict.FSR <- function(object, newdata, model_to_use=NULL, 
+                        standardize=NULL, noisy=TRUE,...)
+{
+  
 
   if(!is.null(standardize) && object$standardize){
     for(var_name in names(object[["train_scales"]])){
@@ -62,7 +64,7 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
 
   if(estimation_overview){
 
-    cat("The dependent variable is '",  object$y_name,
+    message("The dependent variable is '",  object$y_name,
         "' which will be treated as ",  object$outcome, ". ",
         " The data contains ", object$N, " observations (N_train == ",
         object$N_train, " and N_test == ", object$N_test,
@@ -84,47 +86,47 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
 
     if(sum(object$models$estimated) == 0){
 
-      cat("\nNo models could be estimated, likely due to (near) singularity; returning NULL. Check for highly correlated features or factors with rarely observed levels. (Increasing pTraining may help.)\n")
+      message("\nNo models could be estimated, likely due to (near) singularity; returning NULL. Check for highly correlated features or factors with rarely observed levels. (Increasing pTraining may help.)\n")
 
     }else{
-      cat("\nEstimated ", sum(object$models$estimated), " models. \n")
+      message("\nEstimated ", sum(object$models$estimated), " models. \n")
 
       if(object$outcome == "continuous"){
-        cat("\nThe best model has Predicted Adjusted R^2:", object$best_adjR2)
-        cat("\nThe best model has Mean Absolute Predicted Error:", object$best_MAPE)
+        message("\nThe best model has Predicted Adjusted R^2:", object$best_adjR2)
+        message("\nThe best model has Mean Absolute Predicted Error:", object$best_MAPE)
       }else{
         if(object$outcome == "binary"){
-          cat("\nThe best model has pseudo R^2 (adjusted for P and N):",
+          message("\nThe best model has pseudo R^2 (adjusted for P and N):",
               object$best_test_adjR2)
-          cat("\nThe best model has out-of-sample accuracy:",
+          message("\nThe best model has out-of-sample accuracy:",
               object$models$test_accuracy[which(object$best_formula == object$models$formula)])
         }else{
-          cat("\nThe best model has out-of-sample accuracy (adjusted for P and N):",
+          message("\nThe best model has out-of-sample accuracy (adjusted for P and N):",
               object$best_test_adj_accuracy)
         }
       }
-      cat("\n\nThe output has a data.frame out$models that contains measures of fit and information about each model, such as the formula call. The output is also a nested list such that if the output is called 'out', out$model1, out$model2, and so on, contain further metadata. The predict method will automatically use the model with the best validated fit but individual models can also be selected like so:\n\npredict(z, newdata = Xnew, model_to_use = 3) \n\n")
+      message("\n\nThe output has a data.frame out$models that contains measures of fit and information about each model, such as the formula call. The output is also a nested list such that if the output is called 'out', out$model1, out$model2, and so on, contain further metadata. The predict method will automatically use the model with the best validated fit but individual models can also be selected like so:\n\npredict(z, newdata = Xnew, model_to_use = 3) \n\n")
     }
   }
 
   if(!is.null(model_number)){
 
     m <- model_number
-    cat("\n\n\nThe added coefficient, corresponding to ", object$models$features[m],
+    message("\n\n\nThe added coefficient, corresponding to ", object$models$features[m],
         ifelse(object$models$accepted[m], ", WAS", ", WAS NOT"),
         " accepted into model ", m, ".\n\n", sep="")
 
     if(object$outcome == "continuous"){
 
-      cat("Adjusted R2", object$models$test_adjR2[m], "\n")
-      cat("Mean Absolute Predicted Error (MAPE)", object$models$MAPE[m], "\n")
+      message("Adjusted R2", object$models$test_adjR2[m], "\n")
+      message("Mean Absolute Predicted Error (MAPE)", object$models$MAPE[m], "\n")
 
       if(sum(object$models$accepted[1:m]) > 1){
 
-        cat("adjusted R^2 improvement over best model so far:",
+        message("adjusted R^2 improvement over best model so far:",
             object$models$test_adjR2[m] - max(object$models$test_adjR2[1:(m - 1)], na.rm=TRUE),
             "\n")
-        cat("MAPE improvement over best model so far:",
+        message("MAPE improvement over best model so far:",
             object$models$MAPE[m] - max(object$models$MAPE[1:(m - 1)], na.rm=TRUE),
             "\n\n\n")
 
@@ -132,20 +134,20 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
     }else{
 
       if(object$outcome == "binary")
-        cat("Pseudo R2 (adjusted for P and N)", object$models$test_adjR2[m], "\n")
+        message("Pseudo R2 (adjusted for P and N)", object$models$test_adjR2[m], "\n")
 
       if(!object$linear_estimation){
-        cat("(training) AIC:",  object$models$AIC[m], "\n")
-        cat("(training) BIC:",  object$models$BIC[m], "\n")
+        message("(training) AIC:",  object$models$AIC[m], "\n")
+        message("(training) BIC:",  object$models$BIC[m], "\n")
       }
-      cat("(test) classification accuracy:", object$models$test_accuracy[m], "\n")
+      message("(test) classification accuracy:", object$models$test_accuracy[m], "\n")
 
       if(sum(object$models$accepted) > 1){
-        cat("Classification accuracy improvement on the test data:",
+        message("Classification accuracy improvement on the test data:",
             object$models$test_accuracy[m] - max(object$models$test_accuracy[1:(m - 1)], na.rm=TRUE),
             "\n")
         if(object$outcome == "binary"){
-          cat("pseudo-R^2 (adjusted based on P and N) improvement over best model so far:",
+          message("pseudo-R^2 (adjusted based on P and N) improvement over best model so far:",
               object$models$test_adjR2[m] - max(object$models$test_adjR2[1:(m - 1)], na.rm=TRUE),
               "\n")
         }

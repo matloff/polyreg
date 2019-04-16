@@ -11,9 +11,9 @@ data frame or data matrix.
 
 \usage{
 getPoly(xdata = NULL, deg = 1, maxInteractDeg = deg,
-                     Xy = NULL, standardize = FALSE,
-                     noisy = TRUE, intercept = FALSE, returnDF = TRUE, 
-                     modelFormula = NULL, retainedNames = NULL, ...)
+        Xy = NULL, standardize = FALSE,
+        noisy = TRUE, intercept = FALSE, returnDF = TRUE, 
+        modelFormula = NULL, retainedNames = NULL, ...)
 }
 
 

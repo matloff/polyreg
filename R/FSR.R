@@ -10,27 +10,6 @@
 # until either max_poly_degree and max_interaction_degree are reached or
 # improvements do not add at least threshold (default 0.01) to explained variance (of validation data).
 #' FSR
-#' @param Xy matrix or data.frame; outcome must be in final column.
-#' @param max_poly_degree highest power to raise continuous features; default 3 (cubic).
-#' @param outcome Treat y as either 'continuous', 'binary', 'multinomial', or NULL (auto-detect based on response).
-#' @param linear_estimation Logical: model outcome as linear and estimate with ordinary least squares? Recommended for speed on large datasets even if outcome is categorical. (For multinomial outcome, this means treated response as vector.) If FALSE, estimator chosen based on 'outcome' (i.e., OLS for continuous outcomes, glm() to estimate logistic regression models for 'binary' outcomes, and nnet::multinom() for 'multinomial').
-#' @param max_interaction_degree highest interaction order; default 2 (allow x_i*x_j). Also interacts each level of factors with continuous features.
-#' @param threshold_include minimum improvement to include a recently added term in the model (change in fit originally on 0 to 1 scale). -1.001 means 'include all'. Default: 0.01. (Adjust R^2 for linear models, Pseudo R^2 for logistic regression, out-of-sample accuracy for multinomial models. In latter two cases, the same adjustment for number of predictors is applied as pseudo-R^2.)
-#' @param threshold_estimate minimum improvement to keep estimating (pseudo R^2 so scale 0 to 1). -1.001 means 'estimate all'. Default: 0.001.
-#' @param min_models minimum number of models to estimate. Defaults to the number of features (unless P > N).
-#' @param max_fails maximum number of models to FSR() can fail on computationally before exiting. Default == 2.
-#' @param standardize if TRUE (not default), standardizes continuous variables.
-#' @param pTraining portion of data for training
-#' @param file_name If a file name (and path) is provided, saves output after each model is estimated as an .RData file. ex: file_name = "results.RData". See also store_fit for options as to how much to store in the outputted object.
-#' @param store_fit If file_name is provided, FSR() will return coefficients, measures of fit, and call details. Save entire fit objects? Options include "none" (default, just save those other items), "accepted_only" (only models that meet the threshold), and "all".
-#' @param max_block Most of the linear algebra is done recursively in blocks to ease memory managment. Default 250. Changing up or down may slow things...
-#' @param noisy display measures of fit, progress, etc. Recommended.
-#' @param seed Automatically set but can also be passed as paramater.
-#' @return list with slope coefficients, model details, and measures of fit
-#' @examples
-#' out <- FSR(mtcars)
-#' @importFrom nnet multinom
-#' @importFrom stats relevel glm
 #' @export
 FSR <- function(Xy,
                 max_poly_degree = 3, max_interaction_degree = 2,
@@ -280,7 +259,7 @@ FSR <- function(Xy,
 
           }else{
 
-            if(noisy) cat("\n\n")
+            if(noisy) message("\n")
             system.time(out[[mod(m)]][["fit"]] <- multinom(as.formula(out$models$formula[m]),
                                                            Xy[out$split == "train", ], trace = noisy))
             out[[mod(m)]][["coeffs"]] <- t(as.matrix(coefficients(out[[mod(m)]][["fit"]])))

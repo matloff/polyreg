@@ -8,7 +8,7 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
                     standardize = FALSE,
                     noisy = TRUE, intercept = FALSE, 
                     returnDF = TRUE, 
-                    modelFormula = NULL, retainedNames = NULL, 
+                    modelFormula = NULL, retainedNames = NULL,
                     ...){
 
   if(sum(is.null(xdata) + is.null(Xy)) != 1)
@@ -17,7 +17,7 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
 
   W <- if(is.null(xdata)) Xy else xdata
   if(!(is.matrix(W) || is.data.frame(W))){
-    cat("getPoly() expects a matrix or a data.frame. The input will be coerced to a data.frame but you may wish to stop and provide one directly.\n\n")
+    if(noisy) message("getPoly() expects a matrix or a data.frame. The input will be coerced to a data.frame but you may wish to stop and provide one directly.\n\n")
     if(is.numeric(W))
       W <- data.frame(t(W)) # really a guess that vectors are meant to be rows
   }else{

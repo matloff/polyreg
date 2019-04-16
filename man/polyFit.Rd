@@ -11,7 +11,7 @@ new data.}
 \usage{
 polyFit(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
      pcaLocation='front', pcaPortion=0.9, glmMethod="one", 
-     return_xy=FALSE, returnPoly=FALSE)
+     return_xy=FALSE, returnPoly=FALSE, noisy=TRUE)
 \method{predict}{polyFit}(object, newdata, ...)
 }
 
@@ -38,6 +38,7 @@ polyFit(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
   \item{object}{An item of class 'polyFit' containing output. Can be used with predict().}
   \item{return_xy}{return data? Default: FALSE}
   \item{returnPoly}{return polyMatrix object? Defaults to FALSE since may be quite large.}
+  \item{noisy}{Logical: display messages?}
   \item{...}{Additional arguments for getPoly().}
 }
 
@@ -47,7 +48,7 @@ polyFit(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
    polynomial terms from predictor variables, then fits the generated
    data to a linear or logistic regression model.  (Powers of dummy
    variables will not be generated, other than degree 1, but interaction
-   terms will calculated.
+   terms will calculated.)
 
    If \code{pcaMethod} is not \code{NULL}, a principal component
    analysis is performed before or after generating the polynomials.
