@@ -56,6 +56,9 @@ get_degree <- function(combo){
 get_interactions <- function(features, maxInteractDeg, 
                              may_not_repeat = NULL, maxDeg = NULL, 
                              include_features = TRUE){
+  
+  if(length(features) < maxInteractDeg)
+    stop("too few x variables to obtain desired interaction degree.")
 
   interactions <- list()
 
@@ -68,7 +71,7 @@ get_interactions <- function(features, maxInteractDeg,
       if(!is.null(maxDeg)) # drop combos for which sum of degrees > maxDeg
         combos <- combos[,-which(colSums(apply(combos, 1:2, get_degree)) > maxDeg)]
 
-      interactions[[i]] <- apply(combos, 2, paste, collapse = " * ")
+      interactions[[i]] <- apply(as.matrix(combos), 2, paste, collapse = " * ")
 
     }
   }
