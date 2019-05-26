@@ -93,7 +93,7 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
                      scaleXMat=FALSE,nHoldout=min(10000,round(0.2*nrow(xy))),
                      yCol = NULL)
 {
-#  requireNamespace(nnet)
+  require(nnet)
   ncxy <- ncol(xy)
 
   if(nHoldout > nrow(xy))
@@ -151,7 +151,7 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 xvalKf <- function(xy, nHoldout = min(10000, round(0.2*nrow(xy))),
                    yCol=NULL, units, activation, dropout)
 {
-
+  require(kerasformula)
   # build up the 'layers' argument for kms()
   u <- paste0('units=c(',paste0(units,collapse=','),')')
   a <- 'activation=c('
@@ -278,6 +278,7 @@ xvalDnet <- function(x,y,hidden,output='"sigm"',numepochs=3,
                      nHoldout=min(10000,round(0.2*nrow(x))))
 {
   # requireNamespace(deepnet)
+  require(deepnet)
 
   if (scaleXMat) x <- scale(x)
 
