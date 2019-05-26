@@ -1,11 +1,18 @@
 
-##################################################################
-# xvalPoly: generate mean absolute error of fitted models
+################################################################## 
+# xvalPoly: fits models of degree 1, 2, ... up through 'maxDeg', 
+# reporting accuracy of each
 ##################################################################
 
-# arguments:
-#   for most args, see the comments for polyFit(); note that Y in xy
-#   must be a factor in the classification case
+# arguments: (see polyFit() for details on some of these)
+#   xy: data frame/matrix, Y column last if yCol NULL; in
+#      classification case, Y must be a factor
+#   maxDeg: models will be fit of degrees startDeg,
+#      startDeg+1,...,maxDeg
+#   use: 'lm' or 'glm'
+#   pcaMethod: 'prcomp' or 'RSpectra'
+#   pcaPortion: target fraction of variance for selected comps
+#   glmMethod: 'one' or 'all' or 'multlog'
 #   nHoldout: number of cases for the test set
 #   yCol: if not NULL, Y is in this column, and will be moved to last
 
@@ -18,7 +25,7 @@
 xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
                pcaMethod = NULL, pcaPortion = 0.9, glmMethod = "one",
                nHoldout = min(10000, round(0.2*nrow(xy))),
-               pcaLocation='front', yCol = NULL, cls = NULL, startDeg = 1)
+               yCol = NULL, startDeg = 1)
 {
 
   if (!is.null(yCol)) xy <- moveY(xy,yCol)
@@ -33,7 +40,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
   # is this a classification problem?
   classProblem <- is.factor(y) || is.character(y) || use == 'mvrlm'
   if (classProblem) {
-    stop('under construction, classification case. For now, please see FSR().')
+    # stop('under construction, classification case. For now, please see FSR().')
      if (is.factor(y))  { # change to numeric code for the classes
         y <- as.numeric(y)
         xy[,ncol(xy)] <- y
@@ -53,8 +60,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
 
   for (i in startDeg:maxDeg) {  # for each degree
      m <- if(i > maxInteractDeg) maxInteractDeg else i
-     pol <- polyFit(training,i,m,use,pcaMethod,pcaLocation,
-         pcaPortion,glmMethod,cls)
+     pol <- polyFit(training,i,m,use,pcaMethod,pcaPortion,glmMethod)
      pred <- predict(pol, test.x)
      if (use == "lm") {
        acc[i] <- mean(abs(pred - test.y))
