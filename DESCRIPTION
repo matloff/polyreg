@@ -4,12 +4,12 @@ Version: 0.6.4
 Authors@R: c(person("Norm", "Matloff", email = "matloff@cs.ucdavis.edu", role = c("aut", "cre"), comment = c(ORCID = "0000-0001-9179-6785")),
            person("Xi", "Cheng", email = "xicheng0821@gmail.com", role = c("aut")),
            person("Pete", "Mohanty", email = "pmohanty@stanford.edu", role = c("aut"), comment = c(ORCID = "0000-0001-8531-3345")),
-           person("Bohdan", "Khomtchouk", email = "bohdan@stanford.edu", role = c("aut")), 
+           person("Bohdan", "Khomtchouk", email = "bohdan@uchicago.edu", role = c("aut")), 
            person("Matthew", "Kotila", email = "mrkotila@ucdavis.edu", role = c("aut")), 
            person("Robin", "Yancey", email = "reyancey@ucdavis.edu", role = c("aut")),
            person("Robert", "Tucker", email = "ratucker@ucdavis.edu", role = c("aut")),
            person("Allan", "Zhao", email = "awxzhao@ucdavis.edu", role = c("aut")),
-           person("Tiffany", "Jiang", email = "thjiang@ucdavis.edu", role = c("ctb")))
+           person("Tiffany", "Jiang", email = "thjiang@ucdavis.edu", role = c("aut")))
 Maintainer: Norm Matloff <matloff@cs.ucdavis.edu>
 Description: Automate formation and evaluation of polynomial regression models. Provides support for cross-validating categorical variables. The motivation for this package is described in 'Polynomial Regression As an Alternative to Neural Nets' by Xi Cheng, Bohdan Khomtchouk, Norman Matloff, and Pete Mohanty (<arXiv:1806.06850>).
 License: GPL (>= 2)
