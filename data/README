@@ -1,7 +1,9 @@
 
 prgeng data:
 
-   prgeng.txt has educ, occ as integers; use read.table() to load
+   prgeng.txt has educ, occ as integers; use read.table() to load, get
+   prgeng
 
-   prgeng.RData has educ, occ as factors; use load() to load
+   peDumms.RData has educ, occ as factors; use load() to load, get
+   peDumms
 
