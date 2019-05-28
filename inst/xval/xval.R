@@ -60,7 +60,8 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
 
   for (i in startDeg:maxDeg) {  # for each degree
      m <- if(i > maxInteractDeg) maxInteractDeg else i
-     pol <- polyFit(training,i,m,use,pcaMethod,pcaPortion,glmMethod)
+     pol <- 
+        polyFit(training,i,m,use,pcaMethod,'front',pcaPortion,glmMethod)
      pred <- predict(pol, test.x)
      if (use == "lm") {
        acc[i] <- mean(abs(pred - test.y))
