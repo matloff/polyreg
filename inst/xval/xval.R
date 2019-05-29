@@ -150,7 +150,7 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 #    dropout=c(0.4,0.3,0.3,NA))
 
 xvalKf <- function(xy, nHoldout = min(10000, round(0.2*nrow(xy))),
-                   yCol=NULL, units, activation, dropout)
+                   yCol=NULL, units, activation, dropout,learnRate=NULL)
 {
   require(kerasformula)
   # build up the 'layers' argument for kms()
@@ -184,6 +184,7 @@ xvalKf <- function(xy, nHoldout = min(10000, round(0.2*nrow(xy))),
   # loss <- 'NULL'
   kfout <- NULL
   cmd <- paste0('kfout <- kms(',yName,' ~ .,data=training,',layers,')')
+  if (!is.null(learnRate)) cmde <- paste0(cmd,learnRate)
   eval(parse(text=cmd))
   preds <- predict(kfout,testingx)$fit
   if (!classcase) {  # regression case
