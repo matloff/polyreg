@@ -150,7 +150,8 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 #    dropout=c(0.4,0.3,0.3,NA))
 
 xvalKf <- function(xy, nHoldout = min(10000, round(0.2*nrow(xy))),
-                   yCol=NULL, units, activation, dropout,learnRate=NULL)
+                   yCol=NULL, units, activation, dropout,
+                   learnRate=NULL,Nepochs=NULL)
 {
   require(kerasformula)
   # build up the 'layers' argument for kms()
@@ -185,6 +186,7 @@ xvalKf <- function(xy, nHoldout = min(10000, round(0.2*nrow(xy))),
   kfout <- NULL
   cmd <- paste0('kfout <- kms(',yName,' ~ .,data=training,',layers,')')
   if (!is.null(learnRate)) cmde <- paste0(cmd,learnRate)
+  if (!is.null(Nepochs)) cmde <- paste0(cmd,',',Nepochs)
   eval(parse(text=cmd))
   preds <- predict(kfout,testingx)$fit
   if (!classcase) {  # regression case
@@ -276,7 +278,7 @@ kmswrapper <- function(model, x_test, y_test) {
 
 xvalDnet <- function(x,y,hidden,output='"sigm"',numepochs=3,
                      pcaMethod = FALSE,pcaPortion = 0.9,
-                     scaleXMat = TRUE,
+                     scaleXMat = TRUE,learningrate=NULL,
                      nHoldout=min(10000,round(0.2*nrow(x))))
 {
   # requireNamespace(deepnet)
@@ -295,7 +297,8 @@ xvalDnet <- function(x,y,hidden,output='"sigm"',numepochs=3,
   cmd <- paste0('nnout <- nn.train(trainingx,trainingy,')
   cmd <- paste0(cmd,'hidden=',hidden,',')
   cmd <- paste0(cmd,'output=',output,',')
-  cmd <- paste0(cmd,'numepochs=',numepochs)
+  cmd <- paste0(cmd,'numepochs=',numepochs,',')
+  cmd <- paste0(cmd,'learningrate=',learningrate)
   cmd <- paste0(cmd,')')
   eval(parse(text=cmd))
   preds <- nn.predict(nnout,testingx)
