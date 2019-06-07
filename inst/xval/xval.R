@@ -150,44 +150,23 @@ xvalNnet <- function(xy,size,linout, pcaMethod = FALSE,pcaPortion = 0.9,
 #    dropout=c(0.4,0.3,0.3,NA))
 
 xvalKf <- function(xy, nHoldout = min(10000, round(0.2*nrow(xy))),
-                   yCol=NULL, units, activation, dropout,
-                   learnRate=NULL,Nepochs=NULL)
+                   yCol=ncol(xy), units, activation, dropout=0.4,
+                   learnRate=0.1,Nepochs=15)
 {
   require(kerasformula)
-  # build up the 'layers' argument for kms()
-  u <- paste0('units=c(',paste0(units,collapse=','),')')
-  a <- 'activation=c('
-  for (i in 1:length(activation)) {
-     ia <- activation[i]
-     a <- paste0(a,'"',ia,'"')
-     if (i < length(activation)) a <- paste0(a,',')
-  }
-  a <- paste0(a,')')
-  d <- paste0('c(',paste0(dropout,collapse=','),')')
-  layers <- paste0('layers=list(',u,',')
-  layers <- paste0(layers,a,',')
-  layers <- paste0(layers,d,',')
-  layers <- paste0(layers,'use_bias = TRUE, kernel_initializer = NULL,')
-  layers <- paste0(layers,'kernel_regularizer = "regularizer_l1",')
-  layers <- paste0(layers,'bias_regularizer = "regularizer_l1",')
-  layers <- paste0(layers,'activity_regularizer = "regularizer_l1")')
 
-  if (is.null(yCol)) yCol <- ncol(xy)
   tmp <- splitData(xy,nHoldout)
   training <- tmp$trainSet
   testing <- tmp$testSet
   testingx <- tmp$testSet[,-yCol]
   testingy <- tmp$testSet[,yCol]
-
-  yName <- names(xy)[yCol]
   trainingy <- training[,yCol]
   classcase <- is.factor(trainingy)
-  # loss <- 'NULL'
-  kfout <- NULL
-  cmd <- paste0('kfout <- kms(',yName,' ~ .,data=training,',layers,')')
-  if (!is.null(learnRate)) cmde <- paste0(cmd,learnRate)
-  if (!is.null(Nepochs)) cmde <- paste0(cmd,',',Nepochs)
-  eval(parse(text=cmd))
+
+  yName <- names(xy)[yCol]
+  frml <- as.formula(paste(yName,'~.')) 
+  kfout <- kms(frml,data=training,units=units,activation=activation,
+     dropout=dropout,Nepochs=Nepochs,optimizer_args = list(lr=learnRate))
   preds <- predict(kfout,testingx)$fit
   if (!classcase) {  # regression case
      ry <- range(trainingy)
