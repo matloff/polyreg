@@ -167,6 +167,7 @@ xvalKf <- function(xy, nHoldout = min(10000, round(0.2*nrow(xy))),
   frml <- as.formula(paste(yName,'~.')) 
   kfout <- kms(frml,data=training,units=units,activation=activation,
      dropout=dropout,Nepochs=Nepochs,optimizer_args = list(lr=learnRate))
+  if (sd(kfout$predictions) == 0) warning('kms() produced constant predictions')
   preds <- predict(kfout,testingx)$fit
   if (!classcase) {  # regression case
      ry <- range(trainingy)
