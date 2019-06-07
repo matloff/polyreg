@@ -8,11 +8,13 @@
 
 mov <- function(x,lag)
 {
-   lx <- length(x)
+   lx <- length(x) 
    res <- vector(length=lx-lag)
-   for (i in 1:(lx-lag)) {                                                                         s <- i
-      e <- i+lag-1
+   for (i in 1:(lx-lag)) {
+      s <- i
+      e <- i + lag - 1
       res[i] <- mean(x[s:e])
-   }                                                                                            res
+   }
+   res
 }
 
