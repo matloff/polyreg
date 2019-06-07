@@ -230,7 +230,7 @@ predict.polyFit <- function(object, newdata, ...)
   
   # glm case
   if (is.null(object$glmMethod)) { # only two classes
-    pre <- predict(object$fit, plm.newdata)
+    pre <- predict(object$fit, plm.newdata, type = 'response')
     pred <- ifelse(pre > 0.5, object$classes[1], object$classes[2])
   } else { # more than two classes
     len <- length(object$classes)
