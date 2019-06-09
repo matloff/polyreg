@@ -65,7 +65,7 @@ xvalPoly <- function(xy, maxDeg, maxInteractDeg = maxDeg, use = "lm",
      pred <- predict(pol, test.x)
      if (use == "lm") {
        acc[i] <- mean(abs(pred - test.y))
-       cat('RMSE: ',sqrt(mean((pred-test.y)^2)))
+       cat('RMSE: ',sqrt(mean((pred-test.y)^2)),'\n')
      } else
        acc[i] <- mean(pred == test.y) # accuracy
      cat('accuracy: ',acc[i],'\n')
