@@ -166,7 +166,7 @@ xvalKf <- function(xy, nHoldout = min(10000, round(0.2*nrow(xy))),
 
   yName <- names(xy)[yCol]
   frml <- as.formula(paste(yName,'~.')) 
-  kfout <- kms(frml,data=training,units=units,activation=activation,
+  kfout <- kms(frml,data=training,units=units,activation=activation,validation_split = 0,pTesting=0,
      dropout=dropout,Nepochs=Nepochs,optimizer_args = list(lr=learnRate))
   if (sd(kfout$predictions) == 0) warning('kms() produced constant predictions')
   preds <- predict(kfout,testingx)$fit
