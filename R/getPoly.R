@@ -19,7 +19,8 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
   if(!(is.matrix(W) || is.data.frame(W))){
     if(noisy) message("getPoly() expects a matrix or a data.frame. The input will be coerced to a data.frame but you may wish to stop and provide one directly.\n\n")
     if(is.numeric(W))
-      W <- data.frame(t(W)) # really a guess that vectors are meant to be rows
+      # W <- data.frame(t(W)) # really a guess that vectors are meant to be rows
+      W <- data.frame(W) # really a guess that vectors are meant to be rows
   }else{
     W <- if(is.null(xdata)) as.data.frame(W) else as.data.frame(W)
   }
@@ -104,6 +105,7 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
   }
   
   X <- model_matrix(modelFormula, W, intercept, noisy, ...)
+  if (!is.matrix(X)) X <- matrix(X,ncol=1)
   
   if(is.null(retainedNames))
     retainedNames <- colnames(X)
