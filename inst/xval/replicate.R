@@ -23,6 +23,7 @@ loss <- function(y, yhat){
 rep_kms <- function(xy, input_formula, reps = 5, stat = median, 
                     nHoldout = min(10000, round(0.2*nrow(xy))),
                     yCol = NULL,
+                    validation_split = 0,
                     seed = list(seed = NULL, disable_gpu = FALSE, disable_parallel_cpu = FALSE), 
                     noisy = FALSE, ...){
   
@@ -31,10 +32,10 @@ rep_kms <- function(xy, input_formula, reps = 5, stat = median,
   args <- list(...)
   args$verbose <- noisy
   args$input_formula <- input_formula
+  args$validation_split <- validation_split
   
   # handle using predict() instead, override user preferences here...
   args$pTraining <- 1
-  args$validation_split <- 0
   
   if(!is.null(yCol)){
     xy <- cbind(xy[,-yCol], xy[,yCol])
