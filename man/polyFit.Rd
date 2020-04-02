@@ -96,6 +96,7 @@ predict(pfOut, xTest) # returns vector of 4 predictions
 # spot checks
 stopifnot(length(predict(pfOut, xTest)) == nrow(xTest))
 
+library(regtools)
 data(prgeng) # US Census engineer wage data 
 indx <- seq(1, nrow(prgeng), 10)
 xy <- prgeng[indx, c(1:4,6,5)] # Y value (wageinc here) must be last

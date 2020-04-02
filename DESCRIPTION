@@ -19,4 +19,4 @@ Depends:
 URL: https://github.com/matloff/polyreg
 BugReports: https://github.com/matloff/polyreg/issues
 RoxygenNote: 6.0.1
-Imports: nnet,dummies, parallel, partools, regtools, RSpectra, stats, utils
+Imports: nnet,dummies, parallel, partools, RSpectra, stats, utils
