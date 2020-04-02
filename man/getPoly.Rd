@@ -104,4 +104,6 @@ ncol(getPoly(Xy=rawdata, deg=2)$xdata) < ncol(getPoly(rawdata, 2)$xdata)
 # which should be used to ensure factors are handled correctly out-of-sample
 Xtrain <- getPoly(rawdata[1:100,],2)
 Xtest <- getPoly(rawdata[101:125,], 2, modelFormula = Xtrain$XtestFormula)
-    
+
+}
+
