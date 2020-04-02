@@ -105,12 +105,3 @@ ncol(getPoly(Xy=rawdata, deg=2)$xdata) < ncol(getPoly(rawdata, 2)$xdata)
 Xtrain <- getPoly(rawdata[1:100,],2)
 Xtest <- getPoly(rawdata[101:125,], 2, modelFormula = Xtrain$XtestFormula)
     
-# additional spot checks
-stopifnot(ncol(getPoly(rawdata, 1, 1)$xdata) == P)
-stopifnot(ncol(getPoly(rawdata, 1, 1, returnDF = FALSE)$xdata) == P)
-stopifnot(length(getPoly(rawdata, 1, 1)$retainedNames) == P)    
-stopifnot(identical(colnames(Xtrain), colnames(Xtest)))
-
-
-}
-

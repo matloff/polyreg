@@ -100,7 +100,8 @@ data(prgeng) # US Census engineer wage data
 indx <- seq(1, nrow(prgeng), 10)
 xy <- prgeng[indx, c(1:4,6,5)] # Y value (wageinc here) must be last
 xy <- toFactors(xy, 2:4)  # convert education, occupation, and sex to factors
-                          # (don't pass categorical variables as integer codes when fitting)
+                          # (don't pass categorical variables as 
+                          # integer codes when fitting)
 
 # regression example
 pfout <- polyFit(xy, 2)  # try degree 2 model
