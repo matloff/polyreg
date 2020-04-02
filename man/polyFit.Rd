@@ -96,36 +96,4 @@ predict(pfOut, xTest) # returns vector of 4 predictions
 # spot checks
 stopifnot(length(predict(pfOut, xTest)) == nrow(xTest))
 
-library(regtools)
-data(prgeng) # US Census engineer wage data 
-indx <- seq(1, nrow(prgeng), 10)
-xy <- prgeng[indx, c(1:4,6,5)] # Y value (wageinc here) must be last
-xy <- toFactors(xy, 2:4)  # convert education, occupation, and sex to factors
-                          # (don't pass categorical variables as 
-                          # integer codes when fitting)
-
-# regression example
-pfout <- polyFit(xy, 2)  # try degree 2 model
-
-# say we want to predict wage for a woman, age 35, some college,
-# occupation 101, worked 52 weeks
-newx <- data.frame(age=35, educ=11, occ=101, sex=2, wkswrkd=52) 
-# predict(pfout,newx)  # 38830.54 
-
-# classification example, logistic
-xy <- cbind(xy[,-3], xy$occ)  # Y value (occupaton here) must be last
-pfout <- polyFit(xy,2,use='glm')  # try degree 2 model
-# say we want to predict occupation for a woman, age 35, college grad,
-# occupation 101, worked 52 weeks; and for a man with the same
-# characteristics
-newx <- data.frame(age=c(35,35),
-                   educ=c(13,13),
-                   sex=c(2,1),
-                   wageinc=c(62000,62000),
-                   wkswrkd=c(52,52)) 
-preds <- predict(pfout,newx)  
-levels(xy$occ)[preds]  # translate from class number; 102, 102
-
-
-
 }
