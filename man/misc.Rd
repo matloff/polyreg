@@ -24,10 +24,3 @@
 
 }
 
-\examples{
-data(prgeng) # US Census engineer wage data 
-xy <- prgeng[, c(1:4,6,5)] # Y value (wageinc here) must be last for polyFit() and FSR()
-xy <- toFactors(xy, 2:4)  # convert education, occupation, and sex to factors
-                          # (don't pass categorical variables as integer 
-                          # codes when fitting)
-}
