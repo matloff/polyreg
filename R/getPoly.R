@@ -9,7 +9,6 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
                     noisy = TRUE, intercept = FALSE, 
                     returnDF = TRUE, 
                     modelFormula = NULL, retainedNames = NULL,
-                    stringsAsFactors = FALSE,
                     ...){
 
   if(sum(is.null(xdata) + is.null(Xy)) != 1)
@@ -20,7 +19,7 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
   if(noisy && !(is.matrix(W) || is.data.frame(W))){
     message("getPoly() expects a matrix or a data.frame. The input will be coerced to a data.frame but you may wish to stop and provide one directly.\n\n")
   }
-  W <- as.data.frame(W, stringsAsFactors=stringsAsFactors)
+  W <- as.data.frame(W, stringsAsFactors=TRUE)
   
   if(standardize){
     to_z <- which(unlist(lapply(W, is_continuous)))
@@ -140,7 +139,7 @@ polyMatrix <- function(xdata, modelFormula, XtestFormula, retainedNames){
 polyDF <- function(polyMat){
 
   stopifnot(class(polyMat) == "polyMatrix")
-  polyMat$xdata <- as.data.frame(polyMat$xdata, stringsAsFactors=stringsAsFactors)
+  polyMat$xdata <- as.data.frame(polyMat$xdata, stringsAsFactors=polyMat$stringsAsFactors)
   if(length(polyMat$retainedNames) != length(colnames(polyMat$xdata))){
     warning("xdata contains", length(colnames(polyMat$xdata)), 
         "columns but retainedNames has", length(polyMat$retainedNames), "items")
@@ -170,8 +169,8 @@ polyDF <- function(polyMat){
 #  return (polyMatrix(xd, res[[1]]$endCols))
 #}
 
-polyAllVsAll <- function(plm.xy, classes){
-  plm.xy <- as.data.frame(plm.xy, stringsAsFactors=stringsAsFactors)
+polyAllVsAll <- function(plm.xy, classes, stringsAsFactors=TRUE){
+  plm.xy <- as.data.frame(plm.xy, stringsAsFactors=TRUE)
   len <- length(classes)
   ft <- list()
   for (i in 1:len) {
@@ -187,8 +186,8 @@ polyAllVsAll <- function(plm.xy, classes){
   return(ft)
 }
 
-polyOneVsAll <- function(plm.xy, classes,cls=NULL) {
-  plm.xy <- as.data.frame(plm.xy, stringsAsFactors=stringsAsFactors)
+polyOneVsAll <- function(plm.xy, classes, cls=NULL) {
+  plm.xy <- as.data.frame(plm.xy, stringsAsFactors=TRUE)
   ft <- list()
   predClassi <- function(i)
   {

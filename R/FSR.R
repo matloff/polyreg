@@ -47,7 +47,7 @@ FSR <- function(Xy,
                            prob = c(pTraining, pValidation))
 
 
-  Xy <- as.data.frame(Xy)
+  Xy <- as.data.frame(Xy, stringsAsFactors=TRUE)
   factor_features <- c() # stores individual levels, omitting one
 
   Xy_distincts <- unlist(lapply(Xy, N_distinct))

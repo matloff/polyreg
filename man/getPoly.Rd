@@ -13,8 +13,7 @@ data frame or data matrix.
 getPoly(xdata = NULL, deg = 1, maxInteractDeg = deg,
         Xy = NULL, standardize = FALSE,
         noisy = TRUE, intercept = FALSE, returnDF = TRUE, 
-        modelFormula = NULL, retainedNames = NULL, 
-        stringsAsFactors=FALSE, ...)
+        modelFormula = NULL, retainedNames = NULL, ...)
 }
 
 
@@ -30,7 +29,6 @@ getPoly(xdata = NULL, deg = 1, maxInteractDeg = deg,
   \item{returnDF}{ Return a data.frame (as opposed to model.matrix)? (Default: TRUE.)}
   \item{modelFormula}{ Internal use. Formula used to generate the training model matrix. Note: anticipates that polynomial terms are generated using internal functions of library(polyreg). Also, providing modelFormula bypasses deg and maxInteractDeg.}
   \item{retainedNames}{ Internal use. colnames of polyMatrix object$xdata. Requires modelFormula be inputted as well.}
-  \item{stringsAsFactors}{ To be passed onto data.frame. Default == FALSE.}
   \item{...}{ Additional arguments to be passed to model.matrix() via polyreg:::model_matrix(). Note na.action = "na.omit".}
 }
 
