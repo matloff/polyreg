@@ -467,8 +467,10 @@ post_estimation <- function(object, Xy, m, y_test = NULL){
 
       object$models$accepted[m] <- TRUE
 
-      if(object$outcome == "continuous")
+      if(object$outcome == "continuous"){
+        object[['best_adjR2']] <- adjR2 
         object[["best_MAPE"]] <- MAPE
+      }
   }
   return(object)
 }

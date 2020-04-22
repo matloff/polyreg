@@ -92,13 +92,13 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
       message("\nEstimated ", sum(object$models$estimated), " models. \n")
 
       if(object$outcome == "continuous"){
-        message("\nThe best model has Predicted Adjusted R^2:", object$best_adjR2)
-        message("\nThe best model has Mean Absolute Predicted Error:", object$best_MAPE)
+        message("\nThe best model has Predicted Adjusted R^2: ", round(object$best_adjR2, 4))
+        message("\nThe best model has Mean Absolute Predicted Error: ", round(object$best_MAPE, 4))
       }else{
         if(object$outcome == "binary"){
-          message("\nThe best model has pseudo R^2 (adjusted for P and N):",
+          message("\nThe best model has pseudo R^2 (adjusted for P and N): ",
               object$best_test_adjR2)
-          message("\nThe best model has out-of-sample accuracy:",
+          message("\nThe best model has out-of-sample accuracy: ",
               object$models$test_accuracy[which(object$best_formula == object$models$formula)])
         }else{
           message("\nThe best model has out-of-sample accuracy (adjusted for P and N):",
@@ -118,37 +118,37 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
 
     if(object$outcome == "continuous"){
 
-      message("Adjusted R2", object$models$test_adjR2[m], "\n")
-      message("Mean Absolute Predicted Error (MAPE)", object$models$MAPE[m], "\n")
+      message("Adjusted R^2: ", round(object$models$test_adjR2[m], 5), "\n")
+      message("Mean Absolute Predicted Error (MAPE): ", round(object$models$MAPE[m], 5), "\n")
 
       if(sum(object$models$accepted[1:m]) > 1){
 
-        message("adjusted R^2 improvement over best model so far:",
-            object$models$test_adjR2[m] - max(object$models$test_adjR2[1:(m - 1)], na.rm=TRUE),
+        message("Adjusted R^2 improvement over best model so far: ",
+            round(object$models$test_adjR2[m] - max(object$models$test_adjR2[1:(m - 1)], na.rm=TRUE), 5),
             "\n")
-        message("MAPE improvement over best model so far:",
-            object$models$MAPE[m] - max(object$models$MAPE[1:(m - 1)], na.rm=TRUE),
+        message("MAPE improvement over best model so far: ",
+            round(object$models$MAPE[m] - max(object$models$MAPE[1:(m - 1)], na.rm=TRUE), 5),
             "\n\n\n")
 
       }
     }else{
 
       if(object$outcome == "binary")
-        message("Pseudo R2 (adjusted for P and N)", object$models$test_adjR2[m], "\n")
+        message("Pseudo R^2 (adjusted for P and N): ", round(object$models$test_adjR2[m], 5), "\n")
 
       if(!object$linear_estimation){
-        message("(training) AIC:",  object$models$AIC[m], "\n")
-        message("(training) BIC:",  object$models$BIC[m], "\n")
+        message("(training) AIC: ",  round(object$models$AIC[m], 5), "\n")
+        message("(training) BIC: ",  round(object$models$BIC[m], 5), "\n")
       }
-      message("(test) classification accuracy:", object$models$test_accuracy[m], "\n")
+      message("(test) classification accuracy:", round(object$models$test_accuracy[m], 5), "\n")
 
       if(sum(object$models$accepted) > 1){
-        message("Classification accuracy improvement on the test data:",
-            object$models$test_accuracy[m] - max(object$models$test_accuracy[1:(m - 1)], na.rm=TRUE),
+        message("Classification accuracy improvement on the test data: ",
+            round(object$models$test_accuracy[m] - max(object$models$test_accuracy[1:(m - 1)], na.rm=TRUE), 5), 
             "\n")
         if(object$outcome == "binary"){
           message("pseudo-R^2 (adjusted based on P and N) improvement over best model so far:",
-              object$models$test_adjR2[m] - max(object$models$test_adjR2[1:(m - 1)], na.rm=TRUE),
+              round(object$models$test_adjR2[m] - max(object$models$test_adjR2[1:(m - 1)], na.rm=TRUE), 5),
               "\n")
         }
       }
