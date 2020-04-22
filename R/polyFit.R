@@ -44,13 +44,8 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
   if (!use %in% c('lm','glm','mvrlm'))
      stop('"use" must be "lm", "glm", or "mvrlm"')
   
-  n_raw <- nrow(xy)
-  xy <- xy[complete.cases(xy),]
-  n <- nrow(xy)
-  if(noisy & n != n_raw) 
-    message(n_raw - n, 
-            " rows dropped due to missingness. You may be interested in library(toweranNA), a non-imputational apporoach to missing data for prediction and classification.\n")
-
+  xy <- complete(xy, noisy=noisy)
+  
   doPCA <- !is.null(pcaMethod)
   xdata <- xy[,-ncol(xy)]
 

@@ -25,6 +25,7 @@ FSR <- function(Xy,
 
   if(!is.matrix(Xy) && !is.data.frame(Xy))
     stop("Xy must be a matrix or data.frame. Either way, y must be the final column.")
+  Xy <- complete(Xy)
   if(pTraining <= 0 || pTraining > 1)
     stop("pTraining should all be between 0 and 1.")
   pValidation <- 1 - pTraining

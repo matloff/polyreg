@@ -20,6 +20,7 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
     message("getPoly() expects a matrix or a data.frame. The input will be coerced to a data.frame but you may wish to stop and provide one directly.\n\n")
   }
   W <- as.data.frame(W, stringsAsFactors=TRUE)
+  W <- complete(W, noisy=noisy)
   
   if(standardize){
     to_z <- which(unlist(lapply(W, is_continuous)))

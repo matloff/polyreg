@@ -15,5 +15,5 @@ importFrom(RSpectra,eigs)
 importFrom(utils,data)
 importFrom(stats,glm,alias,as.formula,binomial,coefficients,
              cor,cov,formula,lm,model.matrix,prcomp,
-             predict,sd,relevel)
+             predict,sd,relevel,complete.cases)
 importFrom(utils,combn,timestamp)
