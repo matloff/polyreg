@@ -20,8 +20,18 @@ N_distinct <- function(x) if(ncol(as.matrix(x)) == 1) length(unique(x)) else unl
 #is_continuous <- function(x) if(is.numeric(x)) N_distict(x) > 2 else FALSE
 is_continuous <- function(x) unlist(lapply(x, is.numeric)) & N_distinct(x) > 2
 mod <- function(m) paste0("model", m)
-complete_vector <- function(x) !is.null(x) && sum(is.na(x)) == 0
 match_arg <- function(arg, choices){if(is.null(arg)) arg else match.arg(arg, choices)}
+complete_vector <- function(x) !is.null(x) && sum(is.na(x)) == 0
+
+complete <- function(xy, noisy=TRUE){
+  n_raw <- nrow(xy)
+  xy <- xy[complete.cases(xy),]
+  n <- nrow(xy)
+  if(noisy & n != n_raw) 
+    message(n_raw - n, 
+            " rows dropped due to missingness. You may be interested in library(toweranNA), a non-imputational apporoach to missing data for prediction and classification.\n")
+  return(xy)
+}
 
 
 model_matrix <- function(modelFormula, dataFrame, intercept, noisy=TRUE, ...){
@@ -499,14 +509,5 @@ applyPCA <- function(x, pcaMethod, pcaPortion) {
   return(list(xdata=xdata,xy.pca=xy.pca,k=k))
 }
 
-complete <- function(xy, noisy=TRUE){
-  n_raw <- nrow(xy)
-  xy <- xy[complete.cases(xy),]
-  n <- nrow(xy)
-  if(noisy & n != n_raw) 
-    message(n_raw - n, 
-            " rows dropped due to missingness. You may be interested in library(toweranNA), a non-imputational apporoach to missing data for prediction and classification.\n")
-  return(xy)
-}
 
 

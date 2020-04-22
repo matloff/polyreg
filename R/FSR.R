@@ -281,7 +281,7 @@ FSR <- function(Xy,
         } # end logit
       } # end fit, etc.
 
-      out$models$estimated[m] <- complete(out[[mod(m)]][["coeffs"]])
+      out$models$estimated[m] <- complete_vector(out[[mod(m)]][["coeffs"]])
 
       if(out$noisy)
         summary(out, estimation_overview = FALSE, results_overview = FALSE, model_number = m)
