@@ -25,7 +25,7 @@ complete_vector <- function(x) !is.null(x) && sum(is.na(x)) == 0
 
 complete <- function(xy, noisy=TRUE){
   n_raw <- nrow(xy)
-  xy <- xy[complete.cases(xy),]
+  xy <- xy[complete.cases(xy),,drop=FALSE]
   n <- nrow(xy)
   if(noisy & n != n_raw) 
     message(n_raw - n, 

@@ -11,11 +11,14 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
                     modelFormula = NULL, retainedNames = NULL,
                     ...){
 
+# maxInteractDeg <- maxInteractDeg + 1
+
   if(sum(is.null(xdata) + is.null(Xy)) != 1)
     stop("please provide getPoly() xdata or Xy (but not both).")
   
 
   W <- if(is.null(xdata)) Xy else xdata
+  nX <- if(is.null(xdata)) ncol(Xy)-1 else ncol(xdata)  # NM, 11/13/2020
   if(noisy && !(is.matrix(W) || is.data.frame(W))){
     message("getPoly() expects a matrix or a data.frame. The input will be coerced to a data.frame but you may wish to stop and provide one directly.\n\n")
   }
@@ -100,9 +103,10 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
     # intercept handled by logical passed to model_matrix
     
   }
-  
+ 
+  if (ncol(W) == 1) names(W)[1] <- 'V1'  # bad kludge, NM, 11/12/20
   X <- model_matrix(modelFormula, W, intercept, noisy, ...)
-  if (!is.matrix(X)) X <- matrix(X,ncol=1)
+  if (!is.matrix(X)) X <- matrix(X,ncol=nX)
   
   if(is.null(retainedNames))
     retainedNames <- colnames(X)
