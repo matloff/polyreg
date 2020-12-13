@@ -49,6 +49,9 @@ getPoly(xdata = NULL, deg = 1, maxInteractDeg = deg,
    component in the return value;
    \code{predict.polyFit} does the latter automatically.
 
+   Note:  If a column that is an R factor has levels with spaces in the
+   names, this will interfere with the parsing, and must be avoided.
+
    % Also, this function treats predictor variables that have only two kinds
    % of values categorical variables, so the data needs preprocessing to
    % multiple dummy variables if needed.
