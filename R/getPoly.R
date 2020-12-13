@@ -88,7 +88,7 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
       # "I(x^1)" is overkill but aids with debugging ... 
       # browser()
       features <- c(continuous_features, factor_features)
-    }
+    } else cf <- NULL  # added by NM, 12/12/20
     
     features <- get_interactions(features, maxInteractDeg,
                                  c(cf, names(x_factors[x_factors])),
