@@ -86,7 +86,6 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
       # the string above will be used to make the appropriate formula
       # y ~ I(x^1) + I(x^2) + I(x^3)
       # "I(x^1)" is overkill but aids with debugging ... 
-      # browser()
       features <- c(continuous_features, factor_features)
     } else cf <- NULL  # added by NM, 12/12/20
     
@@ -106,7 +105,12 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
  
   if (ncol(W) == 1) names(W)[1] <- 'V1'  # bad kludge, NM, 11/12/20
   X <- model_matrix(modelFormula, W, intercept, noisy, ...)
-  if (!is.matrix(X)) X <- matrix(X,ncol=nX)
+  # if (!is.matrix(X)) X <- matrix(X,ncol=nX)
+  if (is.vector(X)) {
+     nms <- names(X)
+     X <- matrix(X,nrow=nrow(W))
+     colnames(X) <- nms
+  }
   
   if(is.null(retainedNames))
     retainedNames <- colnames(X)

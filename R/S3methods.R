@@ -277,3 +277,6 @@ predict.polyFit <- function(object, newdata, ...)
   # end glm case
   
 }
+
+ppf <- predict.polyFit
+
