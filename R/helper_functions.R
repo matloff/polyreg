@@ -24,11 +24,14 @@ match_arg <- function(arg, choices){if(is.null(arg)) arg else match.arg(arg, cho
 complete_vector <- function(x) !is.null(x) && sum(is.na(x)) == 0
 
 complete <- function(xy, noisy=TRUE){
+  n_row <- nrow(xy)
+  xy <- xy[complete.cases(xy),]
+  if (is.vector(xy)) xy <- matrix(xy,ncol=1)
   n_raw <- nrow(xy)
   xy <- xy[complete.cases(xy),,drop=FALSE]
   n <- nrow(xy)
-  if(noisy & n != n_raw) 
-    message(n_raw - n, 
+  if(noisy & n != n_row) 
+    message(n_row - n, 
             " rows dropped due to missingness. You may be interested in library(toweranNA), a non-imputational apporoach to missing data for prediction and classification.\n")
   return(xy)
 }
