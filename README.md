@@ -1,5 +1,8 @@
 # polyreg, an Alternative to Neural Networks
 
+NOTE:  IT IS RECOMMENDED TO USE THE FUNCTIONS qePolyLin() and
+qePolyLog() IN THE regtools PACKAGE, WHICH WRAPS polyreg.
+
 Development of a package to automate formation and evaluation of
 multivariate polynomial regression models.  
 

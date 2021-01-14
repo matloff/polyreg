@@ -163,6 +163,13 @@ summary.FSR <- function(object, estimation_overview=TRUE, results_overview=TRUE,
 predict.polyFit <- function(object, newdata, ...)
 {
   use <- object$use
+
+  if (is.vector(newdata)) {
+     if (object$nOrigFeatures == 1) {
+        newdata <- matrix(newdata,ncol=1)
+        colnames(newdata) <- object$namesOrigFeatures
+     }
+  }
   
   # the next couple dozen lines are devoted to forming plm.newdata, which
   # will ultimately be fed into predict.lm(), predict.glm() or whatever;

@@ -16,11 +16,21 @@ toFactors <- function(df, cols)
 
 # the rest are not exported...
 
-N_distinct <- function(x) if(ncol(as.matrix(x)) == 1) length(unique(x)) else unlist(lapply(x, N_distinct))
+N_distinct <- function(x) 
+{
+   if(ncol(as.matrix(x)) == 1) length(unique(x)) 
+   else unlist(lapply(x, N_distinct))
+}
+
 #is_continuous <- function(x) if(is.numeric(x)) N_distict(x) > 2 else FALSE
-is_continuous <- function(x) unlist(lapply(x, is.numeric)) & N_distinct(x) > 2
+is_continuous <- function(x) 
+   unlist(lapply(x, is.numeric)) & N_distinct(x) > 2
+
 mod <- function(m) paste0("model", m)
-match_arg <- function(arg, choices){if(is.null(arg)) arg else match.arg(arg, choices)}
+
+match_arg <- 
+   function(arg, choices){if(is.null(arg)) arg else match.arg(arg, choices)}
+
 complete_vector <- function(x) !is.null(x) && sum(is.na(x)) == 0
 
 complete <- function(xy, noisy=TRUE){
@@ -30,9 +40,6 @@ complete <- function(xy, noisy=TRUE){
   n_raw <- nrow(xy)
   xy <- xy[complete.cases(xy),,drop=FALSE]
   n <- nrow(xy)
-  if(noisy & n != n_row) 
-    message(n_row - n, 
-            " rows dropped due to missingness. You may be interested in library(toweranNA), a non-imputational apporoach to missing data for prediction and classification.\n")
   return(xy)
 }
 
@@ -47,7 +54,7 @@ model_matrix <- function(modelFormula, dataFrame, intercept, noisy=TRUE, ...){
       return(NULL)
       
     } else {
-      if(intercept) return(tried) else return(tried[,-1])
+      if(intercept) return(tried) else return(tried[,-1,drop=FALSE])
     }
   
 }

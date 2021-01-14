@@ -43,11 +43,14 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
 
   if (!use %in% c('lm','glm','mvrlm'))
      stop('"use" must be "lm", "glm", or "mvrlm"')
-  
+ 
+  nOrigFeatures <- ncol(xy) - 1
+  namesOrigFeatures <- colnames(xy[,1:nOrigFeatures,drop=FALSE])
+
   xy <- complete(xy, noisy=noisy)
   
   doPCA <- !is.null(pcaMethod)
-  xdata <- xy[,-ncol(xy)]
+  xdata <- xy[,-ncol(xy),drop=FALSE]
 
   y <- xy[,ncol(xy)]
   if(is.character(y))
@@ -170,10 +173,16 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
              use=use,
              poly.xy = if(returnPoly) plm.xy else NULL, 
              fit=ft, 
-             PCA=pcaMethod, pca.portion=pcaPrn, pca.xy=xy.pca, pcaCol=k, pcaLocation=pcaLocation, 
+             nOrigFeatures=nOrigFeatures,
+             namesOrigFeatures=namesOrigFeatures,
+             PCA=pcaMethod, pca.portion=pcaPrn, pca.xy=xy.pca, pcaCol=k, 
+                pcaLocation=pcaLocation, 
              glmMethod=glmMethod,
-             classProblem=classProblem, classes=classes, 
-             retainedNames=retainedNames, modelFormula=modelFormula, XtestFormula=XtestFormula)
+             classProblem=classProblem, 
+             classes=classes, 
+             retainedNames=retainedNames, 
+             modelFormula=modelFormula, 
+             XtestFormula=XtestFormula)
   class(me) <- "polyFit"
   return(me)
 
