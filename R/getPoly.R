@@ -23,7 +23,9 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
     message("getPoly() expects a matrix or a data.frame. The input will be coerced to a data.frame but you may wish to stop and provide one directly.\n\n")
   }
   W <- as.data.frame(W, stringsAsFactors=TRUE)
+  namesW <- names(W)
   W <- complete(W, noisy=noisy)
+  colnames(W) <- namesW
   
   if(standardize){
     to_z <- which(unlist(lapply(W, is_continuous)))
@@ -89,6 +91,7 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
       features <- c(continuous_features, factor_features)
     } else cf <- NULL  # added by NM, 12/12/20
     
+    if (ncol(W) > 1)
     features <- get_interactions(features, maxInteractDeg,
                                  c(cf, names(x_factors[x_factors])),
                                  maxDeg = deg)
@@ -103,7 +106,7 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
     
   }
  
-  if (ncol(W) == 1) names(W)[1] <- 'V1'  # bad kludge, NM, 11/12/20
+  ## if (ncol(W) == 1) names(W)[1] <- 'V1'  # bad kludge, NM, 11/12/20
   X <- model_matrix(modelFormula, W, intercept, noisy, ...)
   # if (!is.matrix(X)) X <- matrix(X,ncol=nX)
   if (is.vector(X)) {
@@ -123,6 +126,8 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
   if(returnDF) return(polyDF(polyMat)) else return(polyMat)
 
 }
+
+gtPoly <- getPoly
 
 ##################################################################
 # polyMatrix: the class of polyMatrix from getPoly
@@ -223,4 +228,3 @@ polyOneVsAll <- function(plm.xy, classes, cls=NULL) {
   }
   return(ft)
 }
-
