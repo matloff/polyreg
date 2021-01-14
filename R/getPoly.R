@@ -16,7 +16,9 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
 
   if(sum(is.null(xdata) + is.null(Xy)) != 1)
     stop("please provide getPoly() xdata or Xy (but not both).")
-  
+ 
+  if (!is.null(xdata) && is.vector(xdata))
+     stop('xdata must be a matrix or data frame')
 
   W <- if(is.null(xdata)) Xy else xdata
   nX <- if(is.null(xdata)) ncol(Xy)-1 else ncol(xdata)  # NM, 11/13/2020
@@ -94,7 +96,7 @@ getPoly <- function(xdata = NULL, deg = 1, maxInteractDeg = deg,
       features <- c(continuous_features, factor_features)
     } else cf <- NULL  # added by NM, 12/12/20
     
-    if (ncol(W) > 1)
+    # if (ncol(W) > 1)
     features <- get_interactions(features, maxInteractDeg,
                                  c(cf, names(x_factors[x_factors])),
                                  maxDeg = deg)
