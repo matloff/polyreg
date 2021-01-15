@@ -70,7 +70,8 @@ The return value of \code{polyFit()} is an \code{polyFit} object.  The
 orginal arguments are retained, along with the fitted models and so on.
 
 The prediction function \code{predict.polyFit} returns the predicted
-value(s) for \code{newdata}. In the classification case, these will be
+value(s) for \code{newdata}. It also contains probability for each class as
+an attribute named \code{prob}. In the classification case, these will be
 the predicted class labels, 1,2,3,...
 }
 
