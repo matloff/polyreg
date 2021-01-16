@@ -239,6 +239,8 @@ predict.polyFit <- function(object, newdata, ...)
   if (is.null(object$glmMethod)) { # only two classes
     pre <- predict(object$fit, plm.newdata, type = 'response')
     pred <- ifelse(pre > 0.5, object$classes[1], object$classes[2])
+    attr(pred, "prob") <- pre
+
   } else { # more than two classes
     len <- length(object$classes)
     if (object$glmMethod == "multlog") { # multinomial logistics
@@ -251,6 +253,7 @@ predict.polyFit <- function(object, newdata, ...)
       for (r in 1:nrow(tempM)) {
         pred[r] <- tempM[r,idx[r]]
       }
+      attr(pred, "prob") <- pr
       return(pred)
     } # end multinomial logistics
     else if (object$glmMethod == "all") { # all-vs-all method
@@ -264,7 +267,7 @@ predict.polyFit <- function(object, newdata, ...)
         } # for i
       } # for j
       winner <- apply(votes, 1, which.max)
-      
+      attr(pred, "prob") <- pre
     } else if (object$glmMethod == "one") { # one-vs-all method
       prob <- matrix(0, nrow=nrow(plm.newdata), ncol=len)
       for (i in 1:len) {
@@ -273,6 +276,7 @@ predict.polyFit <- function(object, newdata, ...)
                             plm.newdata, type = "response")
       }
       winner <- apply(prob, 1, which.max)
+      attr(pred, "prob") <- prob
     } # one-vs-all method
     # calculate pred for all-vs-all & one-vs-all
     pred <- NULL
