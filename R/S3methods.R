@@ -267,7 +267,6 @@ predict.polyFit <- function(object, newdata, ...)
         } # for i
       } # for j
       winner <- apply(votes, 1, which.max)
-      attr(pred, "prob") <- pre
     } else if (object$glmMethod == "one") { # one-vs-all method
       prob <- matrix(0, nrow=nrow(plm.newdata), ncol=len)
       for (i in 1:len) {
@@ -276,13 +275,13 @@ predict.polyFit <- function(object, newdata, ...)
                             plm.newdata, type = "response")
       }
       winner <- apply(prob, 1, which.max)
-      attr(pred, "prob") <- prob
     } # one-vs-all method
     # calculate pred for all-vs-all & one-vs-all
     pred <- NULL
     for (k in 1:nrow(plm.newdata)) {
       pred[k] <- object$classes[winner[k]]
     }
+    attr(pred, "prob") <- prob
   } # end more than two classes
   return(pred)
   # end glm case
