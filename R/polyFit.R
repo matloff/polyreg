@@ -88,7 +88,7 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
       tmp <- system.time(pMat <- getPoly(xdata, deg, maxInteractDeg))
       if(noisy) message('getPoly time: ', max(tmp),'\n\n')
       polyMat <- pMat$xdata
-   #   retainedNames <- pMat$retainedNames
+    #   retainedNames <- pMat$retainedNames
       applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion)
       polyMat <- applyPCAOutputs$xdata
 
@@ -128,18 +128,22 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
           if (length(classes) == 2) {
             plm.xy$y <- as.numeric(plm.xy$y == classes[1])
             tmp <- system.time(ft <- glm(y~., family = binomial,data = plm.xy))
-            if(noisy) message('2-class glm() time: ', max(tmp, na.rm = TRUE),'\n\n')
+            if(noisy) 
+              message('2-class glm() time: ', max(tmp, na.rm = TRUE),'\n\n')
             glmMethod <- NULL
           }  # end 2-class case
           else { # more than two classes
             if (glmMethod == "all") { # all-vs-all
               tmp <- system.time(ft <- polyAllVsAll(plm.xy, classes))
-              if(noisy) message('all-vs-all glm() time: ', max(tmp, na.rm = TRUE),'\n\n')
+              if(noisy) 
+                message('all-vs-all glm() time: ', max(tmp,na.rm=TRUE),'\n\n')
             } else if (glmMethod == "one") { # one-vs-all
               tmp <- system.time(
                  ft <- polyOneVsAll(plm.xy, classes) # cls could be passed here
               )
-              if(noisy) message('one-vs-all glm() time: ', max(tmp, na.rm = TRUE),'\n\n')
+              glmOuts <- ft
+              if(noisy) 
+                 message('one-vs-all glm() time: ', max(tmp,na.rm=TRUE),'\n\n')
             } else if (glmMethod == "multlog") { # multinomial logistics
               tmp <- system.time(
               ft <- multinom(y~., plm.xy)
@@ -166,6 +170,8 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
 
   # create return value and wrap up
   pcaPrn <- if(doPCA) pcaPortion else 0
+
+  if (!exists('glmOuts')) glmOuts <- NULL
   
   me <- list(xy = if(return_xy) xy else NULL, 
              degree=deg, 
@@ -182,7 +188,8 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
              classes=classes, 
              retainedNames=retainedNames, 
              modelFormula=modelFormula, 
-             XtestFormula=XtestFormula)
+             XtestFormula=XtestFormula,
+             glmOuts=glmOuts)
   class(me) <- "polyFit"
   return(me)
 
