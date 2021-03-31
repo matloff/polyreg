@@ -35,10 +35,12 @@ complete_vector <- function(x) !is.null(x) && sum(is.na(x)) == 0
 
 complete <- function(xy, noisy=TRUE){
   n_row <- nrow(xy)
-  xy <- xy[complete.cases(xy),,drop=FALSE]
+  # xy <- xy[complete.cases(xy),,drop=FALSE]
+  xy <- na.exclude(xy)
   if (is.vector(xy)) xy <- matrix(xy,ncol=1)
   n_raw <- nrow(xy)
-  xy <- xy[complete.cases(xy),,drop=FALSE]
+  # xy <- xy[complete.cases(xy),,drop=FALSE]
+  xy <- na.exclude(xy)
   n <- nrow(xy)
   return(xy)
 }
