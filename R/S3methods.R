@@ -288,5 +288,4 @@ predict.polyFit <- function(object, newdata, ...)
   
 }
 
-ppf <- predict.polyFit
 

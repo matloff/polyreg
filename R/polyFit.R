@@ -58,11 +58,12 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
   # is this a classification problem?
   classProblem <- is.factor(y) || use == 'mvrlm'
   if (classProblem) {
+     classes <- levels(y)
      if (is.factor(y))  { # change to numeric code for the classes
         y <- as.numeric(y)
+        numClasses <- 1:length(classes)
         xy[,ncol(xy)] <- y
      }
-     classes <- unique(y)
   } else classes <- FALSE
 
   if (doPCA)  {  # start PCA section
@@ -123,10 +124,9 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
     if(noisy) message('lm() time: ', max(tmp, na.rm=TRUE),'\n\n')
     glmMethod <- NULL
   } else if (use == "glm" || use == 'mvrlm') {
-       classes <- unique(y)  # see preprocessing of y, start of this ftn
        if (use == 'glm') {
-          if (length(classes) == 2) {
-            plm.xy$y <- as.numeric(plm.xy$y == classes[1])
+          if (length(numClasses) == 2) {
+            plm.xy$y <- as.numeric(plm.xy$y == numClasses[1])
             tmp <- system.time(ft <- glm(y~., family = binomial,data = plm.xy))
             if(noisy) 
               message('2-class glm() time: ', max(tmp, na.rm = TRUE),'\n\n')
@@ -134,12 +134,12 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
           }  # end 2-class case
           else { # more than two classes
             if (glmMethod == "all") { # all-vs-all
-              tmp <- system.time(ft <- polyAllVsAll(plm.xy, classes))
+              tmp <- system.time(ft <- polyAllVsAll(plm.xy, numClasses))
               if(noisy) 
                 message('all-vs-all glm() time: ', max(tmp,na.rm=TRUE),'\n\n')
             } else if (glmMethod == "one") { # one-vs-all
               tmp <- system.time(
-                 ft <- polyOneVsAll(plm.xy, classes) # cls could be passed here
+                 ft <- polyOneVsAll(plm.xy, numClasses) # cls could be passed here
               )
               glmOuts <- ft
               if(noisy) 
