@@ -10,7 +10,6 @@ export(toFactors)
 importFrom(dummies,dummy)
 importFrom(nnet,multinom)
 importFrom(parallel,clusterEvalQ,clusterExport,clusterApply)
-importFrom(partools,distribsplit)
 importFrom(RSpectra,eigs)
 importFrom(utils,data)
 importFrom(stats,glm,alias,as.formula,binomial,coefficients,
