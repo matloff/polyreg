@@ -18,7 +18,9 @@ polyFit(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
 \arguments{
   \item{xy}{Data frame with response variable in the last
      column.  In the classification case, response is class ID, stored
-     in a vector, not as a factor. Categorical variables (> 2 levels) should be passed as factors, not dummy variables or integers, to ensure the polynomial matrix is constructed properly.}
+     in a vector, not as a factor. Categorical variables (> 2 levels) 
+     must be passed as factors or character variables if \code{use}
+     is 'glm', integers for the 'mvrlm' case.
   \item{deg}{The max degree for polynomial terms.}
   \item{maxInteractDeg}{The max degree of interaction terms.}
   \item{use}{Set to 'lm' for linear regression, 'glm' for

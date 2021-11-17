@@ -4,13 +4,14 @@
 
 # arguments:
 #   xy: dataframe, response variable is in the last column; in
-#      classification case, this must be either an R factor or a
-#      numeric code for the various classes
+#      classification case (indicated by 'use', this must be either 
+#      an R factor or a numeric code for the various classes
 #   deg: the degree of the polynomial terms
 #   maxInteractDeg: the max degree of dummy and nondummy predictor variables
 #      interaction terms
 #   use: can be "lm" for linear regreesion, "glm" for logistic
-#      regression, or "mvrlm" for multivariate-response lm()
+#      regression, or "mvrlm" for multivariate-response lm(); the
+#      latter two indicate a classification case
 #   pcaMethod: default is NULL, can be either "prcomp" (use the prcomp()
 #      function to compute PCA) or "RSectra" (use sparse Matrix and
 #      compute eigenvalues/vectors to compute PCA)
@@ -24,7 +25,7 @@
 #   glmMethod: which method ("all" for all-vs-all, "one" for one-vs-all,
 #      "multlog" for multinomial logistic regression)
 #      to use for multi-class classification
-#   cls:  R 'parallel' cluster
+#   cls:  R 'parallel' cluster; currently not used
 
 # return: the object of class polyFit
 
