@@ -8,9 +8,12 @@ An important feature is that dummy variables are handled properly, so
 that for instance powers of a dummy variable do not exist as duplicates
 of the original.
 
-**Note:**  This library is also used in the **qeML** package, with a
+**Note:**  This library is also used in the 
+[qeML package](https://github.com/matloff/polyreg),
+with a
 convenient, consistent interface, and with extensions such as ridge
-polynomial regression.
+polynomial regression.  Other than special purposes, it is recommended
+that the user try the interface, rather than using **polyreg** directly.
 
 ##Motivation##
 
