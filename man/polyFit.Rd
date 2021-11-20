@@ -9,8 +9,7 @@ Fit polynomial regression using a linear or logistic model; predict
 new data.}
 
 \usage{
-polyFit(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
-     pcaLocation='front', pcaPortion=0.9, glmMethod="one", 
+polyFit(xy, deg, maxInteractDeg=deg, use = "lm", glmMethod="one", 
      return_xy=FALSE, returnPoly=FALSE, noisy=TRUE)
 \method{predict}{polyFit}(object, newdata, ...)
 }
@@ -27,15 +26,6 @@ polyFit(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
   \item{maxInteractDeg}{The max degree of interaction terms.}
   \item{use}{Set to 'lm' for linear regression, 'glm' for
      logistic regression, or 'mvrlm' for multivariate-response \code{lm}.}
-  \item{pcaMethod}{NULL for no PCA. For PCA, can be either 'prcomp'
-     (use the \code{prcomp} function) or 'RSpectra' (use
-     the \code{eigs} function in the \pkg{RSpectra} package.}
-  \item{pcaLocation}{In case PCA is applied, specify 'front' to have PCA
-     calculated before forming polynomials, otherwise 'back.}
-  \item{pcaPortion}{If less than 1.0, use as many principal components
-     so as to achieve this portion of total variance.  Otherwise, use
-     this many components.  In the 'RSpectra' case, this value must be
-     an integer of 1 or more.}
   \item{glmMethod}{Defaults to 'one,' meaning the One Versus All Method.
   Use 'all' for All Versus All.}
   \item{newdata}{Data frame, one row for each "X" to be predicted.  Must
@@ -55,9 +45,6 @@ polyFit(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
    data to a linear or logistic regression model.  (Powers of dummy
    variables will not be generated, other than degree 1, but interaction
    terms will calculated.)
-
-   If \code{pcaMethod} is not \code{NULL}, a principal component
-   analysis is performed before or after generating the polynomials.
 
    When logistic regression for classification is indicated, with more
    than two classes, All-vs-All or One-vs-All methods, coded
