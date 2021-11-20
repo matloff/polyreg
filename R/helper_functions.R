@@ -493,41 +493,5 @@ post_estimation <- function(object, Xy, m, y_test = NULL){
   return(object)
 }
 
-# 09/11/18, NM: moved this function out of polyFit(), now standalone,
-# for readability
-
-applyPCA <- function(x, pcaMethod, pcaPortion) {
-  
-  if (pcaMethod == "prcomp") { # use prcomp for pca
-    tmp <- system.time(
-      #xy.pca <- prcomp(x[,-ncol(xy)])
-      xy.pca <- prcomp(x)
-    )
-    message('PCA time: ',tmp,'\n')
-    if (pcaPortion >= 1.0) k <- pcaPortion else {
-      k <- 0
-      pcNo = cumsum(xy.pca$sdev)/sum(xy.pca$sdev)
-      for (k in 1:length(pcNo)) {
-        if (pcNo[k] >= pcaPortion)
-          break
-      }
-    }
-    message(k,' principal comps used\n')
-    xdata <- xy.pca$x[,1:k, drop=FALSE]
-    
-  } else { # use RSpectra for PCA
-    #requireNamespace(RSpectra)
-    xy.cov <- cov(x)
-    k <- pcaPortion
-    xy.eig <- eigs(xy.cov,k)
-    xy.pca <- xy.eig
-    message(k,' principal comps used\n')
-    #xdata <- as.matrix(x[,-ncol(x)]) %*% xy.eig$vectors[,1:k]
-    xdata <- as.matrix(x) %*% xy.eig$vectors[,1:k]
-  }
-  
-  return(list(xdata=xdata,xy.pca=xy.pca,k=k))
-}
-
 
 
