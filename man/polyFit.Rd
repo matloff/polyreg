@@ -86,8 +86,12 @@ xTest <- data.frame(x1 = rnorm(4),
   
 predict(pfOut, xTest) # returns vector of 4 predictions
 
-
-# spot checks
-stopifnot(length(predict(pfOut, xTest)) == nrow(xTest))
+data(pef)
+# predict wageinc
+z <- polyFit(pef[,c(setdiff(1:6,5),5)],2)
+predict(z,pef[2000,c(setdiff(1:6,5),5)])  # 56934.39
+# predict occ
+z <- polyFit(pef[,c(setdiff(1:6,3),3)],2,use='glm')
+predict(z,pef[2000,c(setdiff(1:6,3),3)])  # '100', probs 0.43, 0.26,...
 
 }
