@@ -66,11 +66,10 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm",
 
   # by now, polyMat is ready for input to lm() etc. in all cases
 
-  # this is the new xy, i.e. the polynomialized and possibly PCA-ized
-  # version of xy
+  # this is the new xy, i.e. the polynomialized version of xy
   plm.xy <- as.data.frame(cbind(polyMat,y), stringsAsFactors=TRUE)
 
-  # OK, PCA and getPoly() taken care of, now find the fit, to be
+  # OK, getPoly() taken care of, now find the fit, to be
   # assigned to ft
 
   if (use == "lm") {
