@@ -12,16 +12,6 @@
 #   use: can be "lm" for linear regreesion, "glm" for logistic
 #      regression, or "mvrlm" for multivariate-response lm(); the
 #      latter two indicate a classification case
-#   pcaMethod: default is NULL, can be either "prcomp" (use the prcomp()
-#      function to compute PCA) or "RSectra" (use sparse Matrix and
-#      compute eigenvalues/vectors to compute PCA)
-#   pcaPortion: number of principal components to be used; if < 1, this
-#      specifies a desired proportion of explained variance,
-#      otherwise the actual number of components; if RSectra
-#      method is used, must be >= 1
-#   pcaLocation: if 'front', compute principal comps and then form
-#      polynomial in them; if 'back', do the opposite;
-#      relevant only if pcaMethod is non-NULL
 #   glmMethod: which method ("all" for all-vs-all, "one" for one-vs-all,
 #      "multlog" for multinomial logistic regression)
 #      to use for multi-class classification
@@ -36,10 +26,9 @@
 # NM, 09/19/18: removed dropout option, getting in the way and not
 # useful
 
-polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
-                    pcaLocation='front', pcaPortion=0.9, glmMethod="one", 
-                    return_xy = FALSE, returnPoly = FALSE,
-                    noisy = TRUE)
+polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", 
+                    glmMethod="one", return_xy = FALSE, 
+                    returnPoly = FALSE, noisy = TRUE)
 {
 
   if (!use %in% c('lm','glm','mvrlm'))
@@ -50,7 +39,6 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
 
   xy <- complete(xy, noisy=noisy)
   
-  doPCA <- !is.null(pcaMethod)
   xdata <- xy[,-ncol(xy),drop=FALSE]
 
   y <- xy[,ncol(xy)]
@@ -67,44 +55,11 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
      }
   } else classes <- FALSE
 
-  if (doPCA)  {  # start PCA section
-    # safety checks first
-    if (pcaMethod == 'RSpectra' && pcaPortion < 1)
-       stop('use prcomp method for this case')
-    if (!pcaMethod %in% c('prcomp','RSpectra'))
-       stop("pcaMethod should be either NULL, prcomp, or RSpectra")
-    stopifnot(pcaLocation %in% c('front','back'))
-    # can't do PCA with R factors or char
-    if (!all(apply(xdata,2,is.numeric)))
-       stop('X data must be numeric for PCA')
-    # now compute
-    if (pcaLocation == 'front') {
-       applyPCAOutputs <- applyPCA(xdata,pcaMethod,pcaPortion)
-       xdata <- applyPCAOutputs$xdata
-       tmp <- system.time(pMat <- getPoly(xdata, deg, maxInteractDeg))
-       if(noisy) message('getPoly time: ', max(tmp),'\n\n')
-       polyMat <- pMat$xdata
-    #   retainedNames <- pMat$retainedNames
-    } else  {  # 'back'
-
-      tmp <- system.time(pMat <- getPoly(xdata, deg, maxInteractDeg))
-      if(noisy) message('getPoly time: ', max(tmp),'\n\n')
-      polyMat <- pMat$xdata
-    #   retainedNames <- pMat$retainedNames
-      applyPCAOutputs <- applyPCA(polyMat,pcaMethod,pcaPortion)
-      polyMat <- applyPCAOutputs$xdata
-
-    }
-    xy.pca <- applyPCAOutputs$xy.pca  # overall output of prcomp or RSpectra
-    k <- applyPCAOutputs$k
-  # end PCA section
-  }  else {   # no-PCA section
-     xy.pca <- NULL
      k <- 0
      tmp <- system.time(pMat <- getPoly(xdata, deg, maxInteractDeg))
      if(noisy) message('getPoly time: ', max(tmp, na.rm = TRUE),'\n\n')
      polyMat <- pMat$xdata
-  }
+
   retainedNames <- pMat$retainedNames
   modelFormula <- pMat$modelFormula
   XtestFormula <- pMat$XtestFormula
@@ -169,9 +124,6 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
 
   }  # end 'glm'/'mvrlm' case
 
-  # create return value and wrap up
-  pcaPrn <- if(doPCA) pcaPortion else 0
-
   if (!exists('glmOuts')) glmOuts <- NULL
   
   me <- list(xy = if(return_xy) xy else NULL, 
@@ -182,8 +134,6 @@ polyFit <- function(xy, deg, maxInteractDeg=deg, use = "lm", pcaMethod=NULL,
              fit=ft, 
              nOrigFeatures=nOrigFeatures,
              namesOrigFeatures=namesOrigFeatures,
-             PCA=pcaMethod, pca.portion=pcaPrn, pca.xy=xy.pca, pcaCol=k, 
-                pcaLocation=pcaLocation, 
              glmMethod=glmMethod,
              classProblem=classProblem, 
              classes=classes, 
