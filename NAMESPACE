@@ -10,9 +10,8 @@ export(toFactors)
 importFrom(dummies,dummy)
 importFrom(nnet,multinom)
 importFrom(parallel,clusterEvalQ,clusterExport,clusterApply)
-importFrom(RSpectra,eigs)
 importFrom(utils,data)
 importFrom(stats,glm,alias,as.formula,binomial,coefficients,
-             cor,cov,formula,lm,model.matrix,prcomp,
+             cor,cov,formula,lm,model.matrix,
              predict,sd,relevel,complete.cases,na.exclude)
 importFrom(utils,combn,timestamp)
