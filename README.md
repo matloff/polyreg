@@ -8,18 +8,20 @@ An important feature is that dummy variables are handled properly, so
 that for instance powers of a dummy variable do not exist as duplicates
 of the original.
 
-**Note:**  This library is also used in the 
-[qeML package](https://github.com/matloff/polyreg),
-with a
-convenient, consistent interface, and with extensions such as ridge
-polynomial regression.  Other than special purposes, it is recommended
-that the user try the interface, rather than using **polyreg** directly.
+**Note:**  This library is used in the 
+[qeML package](https://github.com/matloff/polyreg); 
+**qeML** ("quick and easy machine learning") provides a convenient,
+consistent interface to various machine learning algorithms, including
+polynomial regression via **polyreg**.  There is also a polynomial
+version of ridge regression.  Other than special purposes, it is
+recommended that the user try the **qeML**interface, rather than using
+**polyreg** directly.
 
-##Motivation##
+## Motivation
 
 In [Polynomial Regression As an Alternative to Neural
 Nets](https://arxiv.org/abs/1806.06850), by Cheng, Khomtchouk, Matloff
-and Mohanty, 2018, it is shown that dense, feedforward neural networks
+and Mohanty, 2018, it is argued  that dense, feedforward neural networks
 are essentially polynomial regression models.  This was extended in
 [Towards a Mathematical Framework to Inform Neural Network Modelling via Polynomial Regression](https://www.meta.org/papers/towards-a-mathematical-framework-to-inform-neural/33984736). 
 by Morala, Cifuentes, Lillo, and Iñaki Ucar.  The point is then, why go
@@ -31,12 +33,10 @@ our model, the d-degree polynomial version will have O(p<sup>d</sup>)
 variables, which can easily become computationally challenging.
 Nevertheless, our experiments have had quite encouraging results.
 
-##Usage##
+## Usage
 
-Other than the various cross-validation functions, the main functions
-are **polyfit()** and **predict.polyFit()**.  One can fit either
-regression or classification models, with an option to perform PCA for
-dimension reduction on the predictors/features.
+The main functions are **polyfit()** and **predict.polyFit()**.  One can
+fit either regression or classification models. 
 
 ## Example
 
