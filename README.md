@@ -9,7 +9,7 @@ that for instance powers of a dummy variable do not exist as duplicates
 of the original.
 
 **Note:**  This library is used in the 
-[qeML package](https://github.com/matloff/polyreg); 
+[qeML package](https://github.com/matloff/qeML); 
 **qeML** ("quick and easy machine learning") provides a convenient,
 consistent interface to various machine learning algorithms, including
 polynomial regression via **polyreg**.  There is also a polynomial
