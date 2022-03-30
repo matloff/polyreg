@@ -21,4 +21,4 @@ VignetteBuilder: knitr
 URL: https://github.com/matloff/polyreg
 BugReports: https://github.com/matloff/polyreg/issues
 RoxygenNote: 6.0.1
-Imports: nnet,dummies, parallel, stats, utils
+Imports: nnet,parallel, stats, utils
